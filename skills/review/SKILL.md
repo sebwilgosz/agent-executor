@@ -19,7 +19,7 @@ The diff is `gh pr diff <n>` for a PR, `git diff <base>...HEAD` (and `git diff H
 
 Load the rules the code must follow, all that exist: `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter and formatter configs, and two or three neighbouring files of each changed file, for its idiom.
 
-Find the spec, in this order: links in the PR body (Executor's own PRs carry it under `## Spec`, see `${CLAUDE_PLUGIN_ROOT}/references/feature-done.md`), the issues it closes, then `SPEC.md`, `specs/`, `docs/specs/`. No spec found: correctness is judged against the PR description, and the summary says so.
+Find the spec, in this order: links in the PR body (Executor's own PRs carry it under `## Spec`, see `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md`), the issues it closes, then `SPEC.md`, `specs/`, `docs/specs/`. No spec found: correctness is judged against the PR description, and the summary says so.
 
 ## 2. Build (start first, it runs while you review)
 

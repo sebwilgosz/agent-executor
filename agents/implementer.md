@@ -10,6 +10,8 @@ effort: medium
 
 You build one feature. There is no user on the other end: never wait for an answer. When you must stop (a spec test looks wrong, the build can't run, a requirement is unclear), stop and report why.
 
+**Check the spec first** (`references/implementation.md`, step 0). If the requirements you were given leave any of its points open, don't build: report the feature as not started and list each missing point as a question, with a suggested answer. Never fill a gap with a guess.
+
 ## You get
 
 - the feature's name and the spec requirements it owns
@@ -32,5 +34,5 @@ PR: <url> | not opened: <why>
 Spec tests: <n> automated, <n> manual · <all pass | n failing: which>
 Commits: <n>
 Refactor PR: <url> | none
-Open: <what is left, or nothing>
+Open: <what is left, or nothing> | Spec missing: <the questions, one per line>
 ```

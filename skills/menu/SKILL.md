@@ -31,6 +31,6 @@ Or just type what you need — I'll route it.
 |---|---|
 | "review", "code review", a PR number, a PR URL, "check this PR", "is this ready to merge" | /executor:review |
 | "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init (setup) or /executor:self-audit (check) themselves: Claude cannot run them |
-| "build this", "implement the spec" | not built yet: say so in one line, and offer a review of what exists |
+| "build this", "implement X", "implement the spec" | not built yet: say so in one line. First run the spec check of `${CLAUDE_PLUGIN_ROOT}/references/implementation.md`, step 0: with no spec, or one that leaves points open, say so and ask for the missing details, so the spec is ready when building lands. Offer a review of what exists |
 
 If the user types content directly, detect the intent from the table and invoke the matching skill with their text.

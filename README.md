@@ -43,7 +43,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 
 ## Coming next
 
-Build from a spec: you write the spec, Executor plans the features, starts each one by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds them in parallel worktrees in the repo's own patterns with a commit per finished step, reviews each one as above and hands you a stack of small PRs. You merge.
+Build from a spec: you write the spec (no spec, or a thin one, and Executor asks for the missing details before it builds anything), Executor plans the features, starts each one by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds them in parallel worktrees in the repo's own patterns with a commit per finished step, reviews each one as above and hands you a stack of small PRs. You merge.
 
 A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. A refactor the feature needs gets its own PR below it. The rules are in `references/implementation.md`, `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
 
