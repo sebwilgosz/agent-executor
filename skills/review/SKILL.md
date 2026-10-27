@@ -39,8 +39,8 @@ Go through the diff once per dimension:
 2. **Correctness against the spec**: every requirement the change claims to meet is met; every behaviour it adds is asked for. Off-by-one, nil and empty input, error paths, concurrency, ordering.
 3. **Test coverage**: each new or changed behaviour has a test that would fail without it. Each spec requirement has one. Tests that assert nothing count as missing.
 4. **Security**: injection, missing authorisation, secrets in code or logs, unsafe deserialisation, user input reaching a shell, a query or a path, new dependencies.
-5. **Best practices**: error handling, naming, dead code, needless complexity, resource leaks, performance traps in hot paths.
-6. **Repo conventions**: whatever the files loaded in step 1 require, and the idiom of the surrounding code.
+5. **Best practices**: error handling, naming, dead code, needless complexity, resource leaks, performance traps in hot paths. **Inline comments**: say which can be removed or cut shorter: a comment that restates the code, narrates its history, or went stale; one that a clearer name would make unnecessary. A comment that explains *why* stays. One finding per file, a Suggestion.
+6. **Repo conventions**: whatever the files loaded in step 1 require, and the idiom of the surrounding code. For a PR, also its description against `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md`: a wall of text, a missing Testing section, a missing diagram where the change has a shape. One finding for the whole description, a Suggestion, linked to the PR.
 
 Write each finding as the format file says: location, category, defect, "Fails when", severity. Merge findings with one root cause into one. Keep the ten most valuable Suggestions; Critical findings are never cut.
 

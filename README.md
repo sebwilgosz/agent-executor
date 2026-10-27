@@ -25,7 +25,7 @@ Type `/executor:review` with a PR number, a PR URL, a branch, or nothing for the
 A review runs in five steps:
 
 1. **Build.** Install, build, lint and tests, with the commands your repo already defines. The build must pass. A PR is built in a throwaway worktree, never over your working tree.
-2. **Review** the diff in six dimensions: duplication, correctness against your spec, test coverage, security, best practices and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around the change).
+2. **Review** the diff in six dimensions: duplication, correctness against your spec, test coverage, security, best practices (including inline comments that can go or be shorter) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around the change, and for a PR its description).
 3. **Verify.** Every finding goes to its own `executor:verifier` agent, which tries to disprove it. Each comes back confirmed, debunked or reclassified. What can't be shown in the code is dropped.
 4. **Fix.** Every confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits it on the PR's branch and reviews again, at most three rounds and without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork.
 5. **Report**, always in the same shape: verdict, build, spec, Critical, Fixed, Suggestions, what was dismissed and why, and a table of the six dimensions plus the build. Every finding links to the file and line.
@@ -43,9 +43,9 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 
 ## Coming next
 
-Build from a spec: hand Executor a spec with tests and it plans the features, builds them in parallel worktrees, reviews each one as above and hands you a stack of small PRs. You merge.
+Build from a spec: you write the spec, Executor plans the features, starts each one by writing high-level tests from the spec so the code can't drift from it, builds them in parallel worktrees, reviews each one as above and hands you a stack of small PRs. You merge.
 
-A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. The rules are in `references/feature-done.md` and `references/stacks.md`.
+A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. The rules are in `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
 
 ## Requirements
 
