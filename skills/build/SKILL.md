@@ -42,7 +42,7 @@ Branch names: `<stack>/<feature>`, short and in kebab case (`invites/send-email`
 
    Never give a builder the plan, other features' requirements or your reasoning. Mark each item `🔨 building` in the plan.
 3. **As each builder reports**, read its report block (`agents/builder.md`) and update its item:
-   - **PR opened:** mark it `PR #n ⏳ in review` and go to step 4 for it.
+   - **PR opened:** remove the builder's worktree (`git worktree remove <path>`; its branch is pushed), so the review can check the branch out to fix it. Mark it `PR #n ⏳ in review` and go to step 4 for it.
    - **Stopped** (a spec question, a red build, a spec test it thinks is wrong): mark it `⛔` with the reason in a few words, and keep the full questions for step 5. Its stack stops there; the other stacks carry on.
 4. **Next in the stack.** When an item is ticked, spawn the builder for the next item of its stack, as in point 2.
 
@@ -59,6 +59,6 @@ Run `/executor:review` on the PR, here: the builder can't, because it can't star
 
 When no builder is running and no review is left:
 
-1. Remove the worktrees the builders used (`git worktree remove`), once their branches are pushed.
+1. Remove the worktrees still left from builders that stopped (`git worktree remove`), once their branches are pushed.
 2. If any item is `⛔` or `❌`: ask everything that is open in one message, each question with a suggested answer, and a wrong spec test with its proposed change. With the answers, a run of `/executor:build` carries on from the first unticked item.
 3. Print the checklist from `.executor/plan.md` as it now stands, then one line: what is yours to merge, bottom of each stack first.
