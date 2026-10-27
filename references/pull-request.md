@@ -12,7 +12,7 @@ Always these sections, in this order. A section with nothing to say is left out,
 
 ```markdown
 ## Spec
-<link to the spec section this feature implements>
+<link to the spec, only when the reader can open it: an issue, a URL, a file in this repo> | <the requirements this PR meets, in a few words>
 
 ## What changes
 - <one line per change, as the user or the caller sees it>
@@ -24,12 +24,16 @@ Always these sections, in this order. A section with nothing to say is left out,
 **Spec tests**, written before the code:
 - [x] <requirement> — `<test that proves it>`
 
+**Manual scenarios**, where a requirement can't be automated:
+- [ ] <steps> → <expected result>  (ticked only when walked through)
+
 **Also added:** `<test>` — <what it covers> | none
+**Changed with approval:** `<spec test>` — <why it was wrong> | none
 **Build:** `<commands run>` — all green
 **Try it:** <steps to see it working> (only when there is something to see)
 
 ## Depends on
-<#PR it is stacked on> | nothing
+<#PR it is stacked on, e.g. its refactor PR> | nothing
 ```
 
 ## Readable, not long
@@ -40,6 +44,8 @@ Always these sections, in this order. A section with nothing to say is left out,
 - **Code in backticks**: files, functions, commands, flags.
 - **Link, don't paste.** No logs, no full test output, no copied spec text: link to them.
 - **Only the change.** No story of how it was built, no "I ran…", no notes to the reviewer about the session.
+- **Explain here, not in the code.** The why of a decision goes in the PR description and the commit messages; the code carries at most a short comment.
+- **Nothing local.** No local file paths, Obsidian notes or `[[wikilinks]]`, numbered items of a local spec, or brainstorming sections. Say the thing itself.
 
 ## Diagram
 
