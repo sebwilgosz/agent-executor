@@ -61,4 +61,4 @@ When the feature needs a refactor that would make its PR big, the refactor is a 
 
 ## Effort
 
-Implementation runs at medium reasoning effort: the `executor:implementer` agent sets `effort: medium`. Planning and review keep their own.
+Implementation runs at medium reasoning effort: the `executor:builder` agent sets `effort: medium`. Planning and review keep their own.

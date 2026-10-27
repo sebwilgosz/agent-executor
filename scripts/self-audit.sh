@@ -78,7 +78,7 @@ fi
 #    on it, and every skill it lists must exist.
 e=$ERRS; w=$WARNS
 [ -f "$ROOT/agents/verifier.md" ] || err "integrity: agents/verifier.md missing — review findings cannot be verified → $REINSTALL"
-[ -f "$ROOT/agents/implementer.md" ] || err "integrity: agents/implementer.md missing — features cannot be built → $REINSTALL"
+[ -f "$ROOT/agents/builder.md" ] || err "integrity: agents/builder.md missing — features cannot be built → $REINSTALL"
 for d in "$SK"/*/; do
   s=$(basename "$d"); [ "$s" = help ] && continue
   [ -f "$d/SKILL.md" ] || { err "integrity: skills/$s/ has no SKILL.md → $REINSTALL"; continue; }
