@@ -1,0 +1,12 @@
+{
+  "name": "executor",
+  "version": "0.1.0",
+  "description": "Executor: reviews every pull request against your spec and your repo's conventions, builds it, verifies each finding with its own agent, fixes the confirmed bugs and reviews again. Free.",
+  "author": {
+    "name": "Sebastian Wilgosz",
+    "url": "https://sebwilgosz.com"
+  },
+  "homepage": "https://sebwilgosz.com/products/executor",
+  "license": "MIT",
+  "keywords": ["code-review", "pull-requests", "testing", "security", "ci"]
+}

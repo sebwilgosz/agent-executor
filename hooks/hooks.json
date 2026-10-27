@@ -1,0 +1,22 @@
+{
+  "description": "Executor: whenever Claude creates a pull request, assign it to its author (plain shell, detached) and start a code review.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|mcp__.*__create_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/assign-author.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/review-new-pr.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
