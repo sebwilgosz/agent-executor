@@ -90,6 +90,9 @@ done
 for r in shared-setup init review-format implementation feature-done pull-request stacks; do
   [ -s "$ROOT/references/$r.md" ] || err "integrity: references/$r.md missing → $REINSTALL"
 done
+# hooks/register.ts prints the fenced block under "## HELP" without the model.
+awk '/^## HELP$/{h=1} h&&/^```$/{f++} END{exit !(f>=2)}' "$door" \
+  || warn "integrity: skills/help/SKILL.md has no fenced block under \"## HELP\" — /executor:help falls back to the model → $REINSTALL"
 [ "$e$w" = "$ERRS$WARNS" ] && ok "integrity: the help routes to every skill and all references are present"
 
 # -- the hooks: without them no PR is reviewed or assigned on its own.
