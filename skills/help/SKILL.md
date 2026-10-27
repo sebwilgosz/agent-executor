@@ -15,17 +15,17 @@ If called without text, show the help and wait for the user's input:
 
 ```
 EXECUTOR PLUGIN:
-  reviews every pull request, fixes what it finds
+  builds a spec into reviewed pull requests, reviews every pull request
 
 INCLUDES:
+  /executor:build <spec>           plan it with you, build in parallel,
+                                   review every PR; you merge
   /executor:review [PR | branch]   review, verify, fix, review again
                                    no argument: the current branch
 
 SETUP:
   /executor:init                   checks gh and its sign-in, offers to install gh stack
   /executor:self-audit             checks if everything is in place
-
-COMING NEXT: point me at a feature spec and watch me build it.
 ```
 
 ## Routing Table
@@ -34,6 +34,6 @@ COMING NEXT: point me at a feature spec and watch me build it.
 |---|---|
 | "review", "code review", a PR number, a PR URL, "check this PR", "is this ready to merge" | /executor:review |
 | "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init (setup) or /executor:self-audit (check) themselves: Claude cannot run them |
-| "build this", "implement X", "implement the spec" | not built yet: say so in one line. First run the spec check of `${CLAUDE_PLUGIN_ROOT}/references/implementation.md`, step 0: with no spec, or one that leaves points open, say so and ask for the missing details, so the spec is ready when building lands. Offer a review of what exists |
+| "build this", "implement X", "implement the spec", a spec or RFC | /executor:build |
 
 If the user types content directly, detect the intent from the table and invoke the matching skill with their text.

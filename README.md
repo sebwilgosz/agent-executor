@@ -37,13 +37,20 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | Skill | What it does |
 |---|---|
 | `/executor:help` | What Executor does; routes what you type to the right skill |
+| `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch |
 | `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it). You type it |
 | `/executor:self-audit` | Is everything in place, and is the plugin whole. You type it |
 
-## Coming next
+## Build from a spec
 
-Build from a spec: you write the spec (no spec, or a thin one, and Executor asks for the missing details before it builds anything), Executor plans the features, starts each one by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds them in parallel worktrees in the repo's own patterns with a commit per finished step, reviews each one as above and hands you a stack of small PRs. You merge.
+Type `/executor:build` with a spec (a path, a URL, an issue, or the text itself), or ask in plain words ("build docs/rfc-12.md"). You write the spec; a thin one gets questions, each with a suggested answer, before anything is built.
+
+1. **Plan.** Executor splits the spec into features and stacks and writes the plan as a checklist in `.executor/plan.md`: one item per feature, linked to its part of the spec. The file stays on your machine (it goes in `.git/info/exclude`). You approve it before anything is built.
+2. **Foundation.** Shared groundwork (schema, auth, skeleton) is built alone first. Executor stops after its PR; merge it and run `/executor:build` again.
+3. **Build.** One `executor:builder` agent per stack, all in parallel, each in its own worktree. A builder gets only its own feature's requirements. It starts by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds in the repo's own patterns with a commit per finished step, and opens a draft PR.
+4. **Review.** Every PR is reviewed as above. A ✅ or ⚠️ marks it ready and starts the next feature of its stack. A builder that stops on a question stops only its own stack.
+5. **Report.** The checklist as it stands, the open questions in one message, and what is yours to merge, bottom of each stack first. Run `/executor:build` again to carry on.
 
 A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. A refactor the feature needs gets its own PR below it. The rules are in `references/implementation.md`, `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
 
