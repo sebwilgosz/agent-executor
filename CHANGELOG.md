@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-10-27
+
+- `/executor:init`, which you type once after installing. It checks the GitHub CLI, its sign-in, `jq` and the gh-stack extension. Executor works best with gh stack, so when it is missing init says why and offers to install it; it also offers the two git settings that keep `gh stack` from stopping at a prompt, in the current repository only. The shared Engineer of Wealth setup is offered too, skipped by default, since Executor itself reads nothing from it.
+- `/executor:self-audit` and `scripts/self-audit.sh`: a read-only check of gh, its sign-in, gh stack, failed PR assignments in `assign.log`, the menu, the references, the two hooks and the user-only skills. One round, every finding says what to do, last line `executor: PASS|WARN|FAIL`.
+- `references/shared-setup.md`, the copy every Engineer of Wealth plugin ships, and `references/init.md`, Executor's own steps, so a central setup can run Executor's init with the others.
+
 ## 0.1.0 — 2026-10-26
 
 - `/executor:review`: builds the change and reviews it in six dimensions (duplication, correctness against the spec, test coverage, security, best practices, repo conventions). Findings are sorted into Critical and Suggestions, each linked to its file and line.
