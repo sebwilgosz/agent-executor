@@ -22,7 +22,7 @@ INCLUDES:
                                    no argument: the current branch
 
 SETUP:
-  /executor:init                   installs gh, gh stack with which executor works best
+  /executor:init                   checks gh and its sign-in, offers to install gh stack
   /executor:self-audit             checks if everything is in place
 
 COMING NEXT: point me at a feature spec and watch me build it.
