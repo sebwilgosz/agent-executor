@@ -25,7 +25,6 @@ INCLUDES:
 
 SETUP:
   /executor:init                   checks gh and its sign-in, offers to install gh stack
-  /executor:self-audit             checks if everything is in place
 ```
 
 ## Routing Table
@@ -33,7 +32,7 @@ SETUP:
 | User says... | Skill |
 |---|---|
 | "review", "code review", a PR number, a PR URL, "check this PR", "is this ready to merge" | /executor:review |
-| "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init (setup) or /executor:self-audit (check) themselves: Claude cannot run them |
+| "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init themselves: Claude cannot run it. It ends with the setup check |
 | "build this", "implement X", "implement the spec", a spec or RFC | /executor:build |
 
 If the user types content directly, detect the intent from the table and invoke the matching skill with their text.

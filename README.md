@@ -13,7 +13,7 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. It ends with `/executor:self-audit`, which you can run again any time something looks off.
+Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
 
 ## What it does today: review
 
@@ -40,7 +40,6 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch |
 | `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it). You type it |
-| `/executor:self-audit` | Is everything in place, and is the plugin whole. You type it |
 
 ## Build from a spec
 

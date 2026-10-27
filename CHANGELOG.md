@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-27
 
 - `/executor:build`: a spec to a stack of reviewed PRs. It checks the spec, plans it as a checklist in `.executor/plan.md` that you approve (`references/plan.md`), builds the foundation alone and stops for its merge, then runs one `executor:builder` per stack in parallel worktrees, reviews every PR, marks it ready on ✅ or ⚠️ and starts the next feature of its stack. A second run carries on from the first unticked item. You merge.
 - The `executor:implementer` agent is now `executor:builder`. It stops at the open PR; build runs the review.
 - `/executor:help` lists `/executor:build` and routes "build this" to it.
+- `/executor:self-audit` is gone: one skill fewer for Claude Code to load. The check is `scripts/self-audit.sh`, which init runs at its end and a central audit can call.
 - Review: a shorter description (it goes out with every request) and a shorter skill. The report drops the Fixed, Dismissed and dimensions sections: verdict, build, CI, spec and rounds, then what is still Critical and the Suggestions, each finding with a proposed fix. Debunked findings leave the report.
 - `/executor:help` reads better in a busy terminal: sections in capitals (INCLUDES, SETUP), commands in one column and what they do in another, and the build step marked as coming next.
 

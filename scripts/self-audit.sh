@@ -45,8 +45,8 @@ SK="$ROOT/skills"
 EOW="${EOW_HOME:-$HOME/.engineer-of-wealth}"
 LOG="$EOW/executor/assign.log"
 
-# Skills only the user may run: they install, configure or run scripts.
-USER_ONLY="help init self-audit"
+# Skills only the user may run.
+USER_ONLY="help init"
 
 # ===================================================================== SETUP
 if command -v gh >/dev/null; then
@@ -105,16 +105,16 @@ done
 [ "$e" = "$ERRS" ] && ok "integrity: both PR hooks are wired"
 
 # -- user-only skills. Claude must never trigger init (it installs and
-#    configures) or self-audit (it runs a script), and has no reason to
-#    start help (you type it); disable-model-invocation keeps them yours
-#    and keeps help out of the skill list every request carries.
+#    configures) and has no reason to start help (you type it);
+#    disable-model-invocation keeps them yours and out of the skill list
+#    every request carries.
 e=$ERRS
 for s in $USER_ONLY; do
   [ -f "$SK/$s/SKILL.md" ] || { err "integrity: skill $s missing → $REINSTALL"; continue; }
   sed -n '1,/^---$/{/^---$/!p;}' "$SK/$s/SKILL.md" | sed 1d | grep -q '^disable-model-invocation:[[:space:]]*true' \
     || err "integrity: $s lost disable-model-invocation: true — Claude could run it without you → $REINSTALL"
 done
-[ "$e" = "$ERRS" ] && ok "integrity: init and self-audit run only when you type them"
+[ "$e" = "$ERRS" ] && ok "integrity: help and init run only when you type them"
 grep -q '^<!-- shared-setup v[0-9]' "$ROOT/references/shared-setup.md" \
   || warn "integrity: references/shared-setup.md has no version line — plugins cannot tell whether their copies match → $REINSTALL"
 
