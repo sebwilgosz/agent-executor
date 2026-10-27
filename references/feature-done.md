@@ -2,22 +2,18 @@
 
 Executor builds a spec one feature at a time, each on its own branch. A feature ends in exactly one way: **a pull request is opened.** Not a summary, not a question, not a branch left on the machine. Every time, without asking.
 
-## It starts with the spec tests
+## How it's built
 
-You write the spec; Executor writes the tests. Before the first line of the feature's code, Executor turns every spec requirement the feature owns into a high-level test: what the user or the caller sees, not how the code does it. They fail at first. They are the ground the feature is built against, so it can't drift from the spec by accident.
-
-- One test per requirement, named after it, in the repo's test framework and style.
-- Commit them first, on the feature's branch, in their own commit: `Spec tests for <feature>`.
-- From then on they are **spec tests**: the code changes to pass them, they never change to pass the code. A spec test that turns out wrong (the spec says something else, or it can't be met as written) stops the feature: say which test and why, and ask.
+`${CLAUDE_PLUGIN_ROOT}/references/implementation.md`: spec tests first (automated where possible, manual scenarios where not), the repo's own patterns, a commit per finished step graded on security, performance and correctness, refactors in their own PR, no inline comments, no references to local material.
 
 ## When it's finished
 
 All of these, checked, not assumed:
 
-1. Every spec requirement this feature owns has its spec test, and every one passes.
+1. Every spec requirement this feature owns has its spec test or manual scenario, and every one passes: tests run green, scenarios walked through where the session can, otherwise listed for you to check.
 2. The whole build passes: install, build, lint or type check, the full test suite, with the repo's own commands (the same ones `executor:review` runs, step 2).
 3. No spec test changed after its first commit.
-4. The branch holds only this feature's commits, on top of the branch it depends on.
+4. The branch holds only this feature's commits, on top of the branch it depends on. A refactor it needed is in its own PR below it.
 
 If any of these fails, the feature isn't finished: keep working, or stop and say what blocks it. Never open a PR for a red build to "show progress".
 

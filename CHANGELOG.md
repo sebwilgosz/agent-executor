@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 — 2026-10-27
+
+- `references/implementation.md`: how a feature is built. Spec tests first, automated where possible and written as manual scenarios where not, coarse and covering the edge cases, there to keep the work from drifting. Then the repo's existing patterns before anything new, correctness and performance as part of the job, a commit for every finished step, each graded on security, performance and correctness, then best practices and repo consistency.
+- A refactor that would make the feature's PR big goes into its own PR, below the feature in the stack.
+- No inline comments by default; explanations go in commit messages and the PR description. Project docs live in the README and dedicated Markdown files. Nothing ever refers to local material: local paths, notes-app notes or wikilinks, numbered items of a local spec, brainstorming sections.
+- New `executor:implementer` agent, one per feature, at medium reasoning effort. Nothing spawns it yet; the build step that will comes next.
+- The PR description gains manual scenarios in Testing, and its Spec section links only what a reader can open.
+- The review flags references to local material (Critical in code and the description) and a refactor mixed into a feature PR.
+
 ## 0.1.2 — 2026-10-27
 
 - A feature now starts with its spec tests: you write the spec, Executor turns each requirement the feature owns into a high-level test before the first line of code and commits them first. They are the ground the feature is built against, so it can't drift from the spec; the code changes to pass them, never the other way round (`references/feature-done.md`).
