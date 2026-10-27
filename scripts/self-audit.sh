@@ -3,7 +3,7 @@
 # SETUP: can Executor open and stack pull requests (gh, its sign-in, the
 #        gh stack extension) and did the assign hook fail (EOW_HOME overrides
 #        ~/.engineer-of-wealth).
-# INTEGRITY: is the installed plugin whole (menu, references, hooks, verifier).
+# INTEGRITY: is the installed plugin whole (help, references, hooks, verifier).
 #
 # Every finding ends with "→ <what to do>", so a central caller (one loop over
 # all installed plugins) needs nothing but this output.
@@ -46,7 +46,7 @@ EOW="${EOW_HOME:-$HOME/.engineer-of-wealth}"
 LOG="$EOW/executor/assign.log"
 
 # Skills only the user may run: they install, configure or run scripts.
-USER_ONLY="init self-audit"
+USER_ONLY="help init self-audit"
 
 # ===================================================================== SETUP
 if command -v gh >/dev/null; then
@@ -68,29 +68,29 @@ else
 fi
 
 # ================================================================= INTEGRITY
-door="$SK/menu/SKILL.md"
+door="$SK/help/SKILL.md"
 if [ ! -f "$door" ]; then
-  err "integrity: Executor incomplete — no skills/menu/SKILL.md under $ROOT → $REINSTALL"
-  DONE=1; exit 0   # finish prints the summary; nothing below can run without the menu
+  err "integrity: Executor incomplete — no skills/help/SKILL.md under $ROOT → $REINSTALL"
+  DONE=1; exit 0   # finish prints the summary; nothing below can run without the help
 fi
 
-# -- the menu is the only way a user discovers a skill, so every skill must be
+# -- the help is the only way a user discovers a skill, so every skill must be
 #    on it, and every skill it lists must exist.
 e=$ERRS; w=$WARNS
 [ -f "$ROOT/agents/verifier.md" ] || err "integrity: agents/verifier.md missing — review findings cannot be verified → $REINSTALL"
 [ -f "$ROOT/agents/implementer.md" ] || err "integrity: agents/implementer.md missing — features cannot be built → $REINSTALL"
 for d in "$SK"/*/; do
-  s=$(basename "$d"); [ "$s" = menu ] && continue
+  s=$(basename "$d"); [ "$s" = help ] && continue
   [ -f "$d/SKILL.md" ] || { err "integrity: skills/$s/ has no SKILL.md → $REINSTALL"; continue; }
-  grep -qF "/executor:$s" "$door" || warn "integrity: skill $s exists but the menu never routes to it → $REINSTALL"
+  grep -qF "/executor:$s" "$door" || warn "integrity: skill $s exists but the help never routes to it → $REINSTALL"
 done
 for s in $(grep -oE '/executor:[a-z-]+' "$door" | sed 's#/executor:##' | sort -u); do
-  [ -f "$SK/$s/SKILL.md" ] || err "integrity: the menu routes to /executor:$s, which does not exist → $REINSTALL"
+  [ -f "$SK/$s/SKILL.md" ] || err "integrity: the help routes to /executor:$s, which does not exist → $REINSTALL"
 done
 for r in shared-setup init review-format implementation feature-done pull-request stacks; do
   [ -s "$ROOT/references/$r.md" ] || err "integrity: references/$r.md missing → $REINSTALL"
 done
-[ "$e$w" = "$ERRS$WARNS" ] && ok "integrity: the menu routes to every skill and all references are present"
+[ "$e$w" = "$ERRS$WARNS" ] && ok "integrity: the help routes to every skill and all references are present"
 
 # -- the hooks: without them no PR is reviewed or assigned on its own.
 e=$ERRS
@@ -102,8 +102,9 @@ done
 [ "$e" = "$ERRS" ] && ok "integrity: both PR hooks are wired"
 
 # -- user-only skills. Claude must never trigger init (it installs and
-#    configures) or self-audit (it runs a script); disable-model-invocation
-#    keeps them yours.
+#    configures) or self-audit (it runs a script), and has no reason to
+#    start help (you type it); disable-model-invocation keeps them yours
+#    and keeps help out of the skill list every request carries.
 e=$ERRS
 for s in $USER_ONLY; do
   [ -f "$SK/$s/SKILL.md" ] || { err "integrity: skill $s missing → $REINSTALL"; continue; }

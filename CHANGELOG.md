@@ -2,9 +2,10 @@
 
 ## Unreleased
 
-- `/executor:menu` on its own prints the menu at once, with no model call: a hook in `hooks/register.ts` answers the command with the menu block of `skills/menu/SKILL.md`, the one place the menu is written. With text after it (`/executor:menu review 42`), or where Claude Code runs no plugin hooks, the skill runs and routes as before.
-- The menu skill no longer names a model. It now only routes, and the session's own model reads the conversation from its cache, where a switch to another model would read it all again.
-- The menu skill is yours to type and no longer Claude's to start (`disable-model-invocation`), so its description leaves the skill list every session sends to the model. Asking in plain words ("review #42") still reaches `/executor:review` through that skill's own description.
+- `/executor:menu` is now `/executor:help`, in `skills/help/`. The skill shows what Executor does and routes; the self-audit checks it under its new name and holds it to `disable-model-invocation` like `init` and `self-audit`.
+- `/executor:help` on its own prints the help at once, with no model call: a hook in `hooks/register.ts` answers the command with the help block of `skills/help/SKILL.md`, the one place the help is written. With text after it (`/executor:help review 42`), or where Claude Code runs no plugin hooks, the skill runs and routes as before.
+- The help skill no longer names a model. It now only routes, and the session's own model reads the conversation from its cache, where a switch to another model would read it all again.
+- The help skill is yours to type and no longer Claude's to start (`disable-model-invocation`), so its description leaves the skill list every session sends to the model. Asking in plain words ("review #42") still reaches `/executor:review` through that skill's own description.
 
 ## 0.1.3 — 2026-10-27
 

@@ -36,7 +36,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 
 | Skill | What it does |
 |---|---|
-| `/executor:menu` | The menu; routes what you type to the right skill |
+| `/executor:help` | What Executor does; routes what you type to the right skill |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch |
 | `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it). You type it |
 | `/executor:self-audit` | Is everything in place, and is the plugin whole. You type it |

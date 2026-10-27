@@ -1,6 +1,6 @@
 ---
-name: menu
-description: "Executor front door: shows the Executor menu and routes to the right skill. Today that is code review of a pull request or the current branch, plus setup and its check."
+name: help
+description: "Executor front door: shows what Executor does and routes to the right skill. Today that is code review of a pull request or the current branch, plus setup and its check."
 disable-model-invocation: true
 ---
 # EXECUTOR (front door)
@@ -9,9 +9,9 @@ disable-model-invocation: true
 
 **This skill is a ROUTER.** It loads no context; every skill loads its own.
 
-## MENU
+## HELP
 
-If called without text, show the menu and wait for the user's input:
+If called without text, show the help and wait for the user's input:
 
 ```
 1. REVIEW         → /executor:review   (a PR number or URL, a branch, or nothing for the current branch)
