@@ -1,7 +1,7 @@
 ---
 name: menu
 description: "Executor front door: shows the Executor menu and routes to the right skill. Today that is code review of a pull request or the current branch, plus setup and its check."
-model: sonnet
+model: haiku
 ---
 # EXECUTOR (front door)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `/executor:menu` runs on Haiku instead of Sonnet: it only prints a fixed menu or routes to another skill, so the smallest model answers it fastest.
+
 ## 0.1.3 — 2026-10-27
 
 - `references/implementation.md`: how a feature is built. It starts with a spec check: when there's no spec, or it leaves open what the feature does, its inputs and outputs, edge cases, scope or how to tell it's done, Executor says so and asks for the missing details instead of guessing, then confirms the requirements as a short list before writing anything. Then spec tests, automated where possible and written as manual scenarios where not, coarse and covering the edge cases, there to keep the work from drifting. Then the repo's existing patterns before anything new, correctness and performance as part of the job, a commit for every finished step, each graded on security, performance and correctness, then best practices and repo consistency.
