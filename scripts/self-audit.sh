@@ -86,7 +86,7 @@ done
 for s in $(grep -oE '/executor:[a-z-]+' "$door" | sed 's#/executor:##' | sort -u); do
   [ -f "$SK/$s/SKILL.md" ] || err "integrity: the menu routes to /executor:$s, which does not exist → $REINSTALL"
 done
-for r in shared-setup init review-format feature-done stacks; do
+for r in shared-setup init review-format feature-done pull-request stacks; do
   [ -s "$ROOT/references/$r.md" ] || err "integrity: references/$r.md missing → $REINSTALL"
 done
 [ "$e$w" = "$ERRS$WARNS" ] && ok "integrity: the menu routes to every skill and all references are present"

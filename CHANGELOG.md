@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 — 2026-10-27
+
+- A feature now starts with its spec tests: you write the spec, Executor turns each requirement the feature owns into a high-level test before the first line of code and commits them first. They are the ground the feature is built against, so it can't drift from the spec; the code changes to pass them, never the other way round (`references/feature-done.md`).
+- `references/pull-request.md`: how Executor's PRs read. Fixed sections (Spec, What changes, Diagram, Testing, Depends on), bullets instead of paragraphs, one screen long, a Mermaid diagram or a screenshot when the change has a shape, and the spec tests in their own Testing section.
+- The review checks two more things, both as Suggestions: inline comments that can be removed or cut shorter (best practices), and a PR description that breaks `pull-request.md` (repo conventions).
+
 ## 0.1.1 — 2026-10-27
 
 - `/executor:init`, which you type once after installing. It checks the GitHub CLI, its sign-in, `jq` and the gh-stack extension. Executor works best with gh stack, so when it is missing init says why and offers to install it; it also offers the two git settings that keep `gh stack` from stopping at a prompt, in the current repository only. The shared Engineer of Wealth setup is offered too, skipped by default, since Executor itself reads nothing from it.
