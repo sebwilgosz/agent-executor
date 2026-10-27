@@ -3,6 +3,7 @@
 ## 0.1.3 — 2026-10-27
 
 - `references/implementation.md`: how a feature is built. It starts with a spec check: when there's no spec, or it leaves open what the feature does, its inputs and outputs, edge cases, scope or how to tell it's done, Executor says so and asks for the missing details instead of guessing, then confirms the requirements as a short list before writing anything. Then spec tests, automated where possible and written as manual scenarios where not, coarse and covering the edge cases, there to keep the work from drifting. Then the repo's existing patterns before anything new, correctness and performance as part of the job, a commit for every finished step, each graded on security, performance and correctness, then best practices and repo consistency.
+- Spec tests serve a correct feature, not the other way round: code is never shaped to pass a test and a test is never weakened to pass. When building shows a spec test or the spec is wrong, Executor stops, says which, why and what it would change, and changes it only with your approval; the PR lists such changes. The review treats code shaped to pass a test as Critical.
 - A refactor that would make the feature's PR big goes into its own PR, below the feature in the stack.
 - No inline comments by default; explanations go in commit messages and the PR description. Project docs live in the README and dedicated Markdown files. Nothing ever refers to local material: local paths, notes-app notes or wikilinks, numbered items of a local spec, brainstorming sections.
 - New `executor:implementer` agent, one per feature, at medium reasoning effort. Nothing spawns it yet; the build step that will comes next.
@@ -11,7 +12,7 @@
 
 ## 0.1.2 — 2026-10-27
 
-- A feature now starts with its spec tests: you write the spec, Executor turns each requirement the feature owns into a high-level test before the first line of code and commits them first. They are the ground the feature is built against, so it can't drift from the spec; the code changes to pass them, never the other way round (`references/feature-done.md`).
+- A feature now starts with its spec tests: you write the spec, Executor turns each requirement the feature owns into a high-level test before the first line of code and commits them first. They are the ground the feature is built against, so it can't drift from the spec (`references/feature-done.md`).
 - `references/pull-request.md`: how Executor's PRs read. Fixed sections (Spec, What changes, Diagram, Testing, Depends on), bullets instead of paragraphs, one screen long, a Mermaid diagram or a screenshot when the change has a shape, and the spec tests in their own Testing section.
 - The review checks two more things, both as Suggestions: inline comments that can be removed or cut shorter (best practices), and a PR description that breaks `pull-request.md` (repo conventions).
 

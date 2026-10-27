@@ -28,6 +28,7 @@ Always these sections, in this order. A section with nothing to say is left out,
 - [ ] <steps> → <expected result>  (ticked only when walked through)
 
 **Also added:** `<test>` — <what it covers> | none
+**Changed with approval:** `<spec test>` — <why it was wrong> | none
 **Build:** `<commands run>` — all green
 **Try it:** <steps to see it working> (only when there is something to see)
 

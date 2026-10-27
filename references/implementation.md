@@ -24,7 +24,10 @@ Before the first line of the feature's code, turn the requirements this feature 
 - **Manual scenarios where not:** when a requirement can't be automated (a visual result, an outside service, a device), write it as a short scenario: steps and the expected result. They go in the PR's Testing section.
 - **Coarse, not fine-grained.** One test or scenario per requirement, plus the edge cases that matter: empty, too much, wrong input, failure of what it depends on. Don't polish them; finer tests come while building, where the code needs them.
 - **They fail at first.** That is the point. Commit the automated ones before any code, in their own commit.
-- **They don't move.** The code changes to pass them, never the other way round. A spec test that turns out wrong stops the feature: say which and why, and ask.
+- **They serve the feature, not the other way round.** The goal is a correct feature, not green tests.
+  - Never shape the code to pass a test: no special-casing its inputs, no hard-coded expected values, no mocking away what it checks.
+  - Never weaken a test so it passes.
+  - When building shows that a spec test, or the spec itself, is wrong (it asks for something impossible, contradicts another requirement, or misses what the feature really has to do), stop. Say which, why, and what you would change. Change it only once the user approves, and list the change in the PR's Testing section.
 
 ## 2. Build in the repo's way
 

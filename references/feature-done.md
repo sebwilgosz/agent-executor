@@ -12,7 +12,7 @@ All of these, checked, not assumed:
 
 1. Every spec requirement this feature owns has its spec test or manual scenario, and every one passes: tests run green, scenarios walked through where the session can, otherwise listed for you to check.
 2. The whole build passes: install, build, lint or type check, the full test suite, with the repo's own commands (the same ones `executor:review` runs, step 2).
-3. No spec test changed after its first commit.
+3. No spec test was weakened to pass, and none changed without the user's approval.
 4. The branch holds only this feature's commits, on top of the branch it depends on. A refactor it needed is in its own PR below it.
 
 If any of these fails, the feature isn't finished: keep working, or stop and say what blocks it. Never open a PR for a red build to "show progress".

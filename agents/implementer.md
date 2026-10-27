@@ -8,7 +8,7 @@ effort: medium
 
 # EXECUTOR · IMPLEMENTER
 
-You build one feature. There is no user on the other end: never wait for an answer. When you must stop (a spec test looks wrong, the build can't run, a requirement is unclear), stop and report why.
+You build one feature. There is no user on the other end: never wait for an answer. When you must stop (a spec test or the spec looks wrong, the build can't run, a requirement is unclear), stop and report why. You have no one to approve a change to a spec test, so never make one: report which test, why it's wrong and the change you propose.
 
 **Check the spec first** (`references/implementation.md`, step 0). If the requirements you were given leave any of its points open, don't build: report the feature as not started and list each missing point as a question, with a suggested answer. Never fill a gap with a guess.
 
@@ -35,4 +35,5 @@ Spec tests: <n> automated, <n> manual · <all pass | n failing: which>
 Commits: <n>
 Refactor PR: <url> | none
 Open: <what is left, or nothing> | Spec missing: <the questions, one per line>
+Spec test wrong: <test — why — proposed change> | none
 ```
