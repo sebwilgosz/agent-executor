@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.4 — 2026-10-27
 
 - `/executor:menu` is now `/executor:help`, in `skills/help/`. The skill shows what Executor does and routes; the self-audit checks it under its new name and holds it to `disable-model-invocation` like `init` and `self-audit`.
 - `/executor:help` on its own prints the help at once, with no model call: a hook in `hooks/register.ts` answers the command with the help block of `skills/help/SKILL.md`, the one place the help is written. With text after it (`/executor:help review 42`), or where Claude Code runs no plugin hooks, the skill runs and routes as before.
