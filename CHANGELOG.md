@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- `/executor:menu` runs on Haiku instead of Sonnet: it only prints a fixed menu or routes to another skill, so the smallest model answers it fastest.
+- `/executor:menu` on its own prints the menu at once, with no model call: a hook in `hooks/register.ts` answers the command with the menu block of `skills/menu/SKILL.md`, the one place the menu is written. With text after it (`/executor:menu review 42`), or where Claude Code runs no plugin hooks, the skill runs and routes as before.
+- The menu skill no longer names a model. It now only routes, and the session's own model reads the conversation from its cache, where a switch to another model would read it all again.
 
 ## 0.1.3 — 2026-10-27
 
