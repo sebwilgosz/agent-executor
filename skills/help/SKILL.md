@@ -22,6 +22,8 @@ INCLUDES:
                                    review every PR; you merge
   /executor:review [PR | branch]   review, verify, fix, review again
                                    no argument: the current branch
+  /executor:ship                   commit, push, open a draft PR
+                                   the review starts on its own
 
 SETUP:
   /executor:init                   checks gh and its sign-in, offers to install gh stack
@@ -32,6 +34,7 @@ SETUP:
 | User says... | Skill |
 |---|---|
 | "review", "code review", a PR number, a PR URL, "check this PR", "is this ready to merge" | /executor:review |
+| "ship this", "push", "commit and push", "push changes", "open a PR", "submit the branch" | /executor:ship |
 | "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init themselves: Claude cannot run it. It ends with the setup check |
 | "build this", "implement X", "implement the spec", a spec or RFC | /executor:build |
 
