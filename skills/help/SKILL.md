@@ -14,15 +14,18 @@ disable-model-invocation: true
 If called without text, show the help and wait for the user's input:
 
 ```
-1. REVIEW         → /executor:review   (a PR number or URL, a branch, or nothing for the current branch)
+EXECUTOR PLUGIN:
+  reviews every pull request, fixes what it finds
 
-Setup (you type these):
-   INIT           → /executor:init     (gh, its sign-in and gh stack, which Executor works best with)
-   SELF-AUDIT     → /executor:self-audit   (is everything in place)
+INCLUDES:
+  /executor:review [PR | branch]   review, verify, fix, review again
+                                   no argument: the current branch
 
-Coming next: build from a spec — features in parallel, each finished feature opens its PR, a stack of reviewed PRs, you merge.
+SETUP:
+  /executor:init                   checks gh and its sign-in, offers to install gh stack
+  /executor:self-audit             checks if everything is in place
 
-Or just type what you need — I'll route it.
+COMING NEXT: point me at a feature spec and watch me build it.
 ```
 
 ## Routing Table

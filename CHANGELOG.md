@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `/executor:help` reads better in a busy terminal: sections in capitals (INCLUDES, SETUP), commands in one column and what they do in another, and the build step marked as coming next.
+
 ## 0.1.4 — 2026-10-27
 
 - `/executor:menu` is now `/executor:help`, in `skills/help/`. The skill shows what Executor does and routes; the self-audit checks it under its new name and holds it to `disable-model-invocation` like `init` and `self-audit`.
