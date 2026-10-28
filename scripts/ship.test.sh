@@ -85,15 +85,32 @@ check  "idempotent: still pushes"            "PUSHED" "$out"
 check  "idempotent: reports the existing PR" "#42" "$out"
 refute "idempotent: never asks to open another PR" "OPEN_PR" "$out"
 
-# 5. Base math: in a stack → base is the branch below (the current branch's base).
+# 5. Base math: in a multi-branch stack → base is the branch below. gh stack's
+#    real JSON gives each branch's base as a commit SHA (not a name), so the
+#    stub mirrors that: the current branch's base is the SHA that is the branch
+#    below's head, and ship.sh must resolve it back to that branch's name.
 export GH_PR_LIST=""
 cat > "$ROOT/stack.json" <<'JSON'
-{"branches":[{"name":"feat/lower","base":"main","isCurrent":false},
-             {"name":"feat/one","base":"feat/lower","isCurrent":true}]}
+{"trunk":"main","currentBranch":"feat/one","branches":[
+  {"name":"feat/lower","head":"2222222222222222222222222222222222222222","base":"1111111111111111111111111111111111111111","isCurrent":false},
+  {"name":"feat/one","head":"3333333333333333333333333333333333333333","base":"2222222222222222222222222222222222222222","isCurrent":true}]}
 JSON
 export GH_STACK="$ROOT/stack.json"
 out=$(run)
-check "stack: base is the branch below, not the default" "base=feat/lower" "$out"
+check  "stack: base is the branch below, resolved from its SHA" "base=feat/lower" "$out"
+refute "stack: base is never a raw commit SHA" "222222222222" "$out"
+
+# 5b. Bottom of a stack: the current branch's base is the trunk commit, which no
+#     stack branch has as its head → base falls back to the default branch, never
+#     a bare SHA (the bug the name-shaped stub used to hide).
+cat > "$ROOT/stack-bottom.json" <<'JSON'
+{"trunk":"main","currentBranch":"feat/one","branches":[
+  {"name":"feat/one","head":"3333333333333333333333333333333333333333","base":"1111111111111111111111111111111111111111","isCurrent":true}]}
+JSON
+export GH_STACK="$ROOT/stack-bottom.json"
+out=$(run)
+check  "stack bottom: base is the default branch" "base=main" "$out"
+refute "stack bottom: base is never a raw commit SHA" "111111111111" "$out"
 export GH_STACK=""
 
 # 6. Failure is logged and returned as a note, never a raw failed call.
