@@ -35,6 +35,15 @@ Every `gh stack` command runs non-interactively. Without these flags and argumen
 
 Commit with plain `git add <paths>` and `git commit`, never `-A`: each branch takes only its own feature's files.
 
+## Keeping a stack healthy
+
+The stack stays rooted in live branches, never in merged ones. The ship and review flows rely on this.
+
+- **Use `gh stack` whenever it's available.** It keeps the chain's bases consistent; the manual `gh pr create --base <the branch below>` fallback is only for a repo without stacked PRs (exit 9).
+- **After any PR in the stack merges, run `gh stack sync --prune`.** It restacks every branch above the merged one onto the live base, up to the default branch, and drops the merged branch (see the Commands table).
+- **Never leave a branch based on a merged branch.** A branch whose base merged is restacked with `gh stack sync --prune` before any more work lands on it.
+- **Never merge in a way that bypasses the restack.** No manual merge that strands the branches above it; let the sync move them onto the live base.
+
 ## Titles and bodies
 
 `submit --auto` writes titles and bodies from the commits. Right after it, give every new PR its real ones: `gh pr edit <n> --title "<feature name>" --body-file <file>`, with the body from `references/feature-done.md`.
