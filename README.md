@@ -39,6 +39,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | `/executor:help` | What Executor does; routes what you type to the right skill |
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch |
+| `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
 | `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it). You type it |
 
 ## Build from a spec

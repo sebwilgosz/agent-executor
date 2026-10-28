@@ -104,6 +104,13 @@ done
 [ -s "$ROOT/scripts/new-prs.sh" ] || err "integrity: scripts/new-prs.sh missing — both hooks source it → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: both PR hooks are wired"
 
+# -- ship: the skill and its engine. ship.sh does the guard/push/PR math; the
+#    skill opens the draft PR so the PR hooks above take over.
+e=$ERRS
+[ -f "$SK/ship/SKILL.md" ] || err "integrity: skills/ship/SKILL.md missing — /executor:ship cannot run → $REINSTALL"
+[ -s "$ROOT/scripts/ship.sh" ] || err "integrity: scripts/ship.sh missing — /executor:ship has no engine → $REINSTALL"
+[ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
+
 # -- user-only skills. Claude must never trigger init (it installs and
 #    configures) and has no reason to start help (you type it);
 #    disable-model-invocation keeps them yours and out of the skill list
