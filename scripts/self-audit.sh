@@ -131,4 +131,20 @@ done
 grep -q '^<!-- shared-setup v[0-9]' "$ROOT/references/shared-setup.md" \
   || warn "integrity: references/shared-setup.md has no version line — plugins cannot tell whether their copies match → $REINSTALL"
 
+# -- version assertion: each entry skill (build, ship, init) calls
+#    version-check.sh at its start, baking the installed version, so a session
+#    carrying a stale snapshot stops with a reload note instead of a generic
+#    failure. A baked version that lags the manifest would make a current
+#    session falsely report a mismatch, so the two must stay in step.
+e=$ERRS
+[ -s "$ROOT/scripts/version-check.sh" ] || err "integrity: scripts/version-check.sh missing — entry skills cannot assert the loaded version → $REINSTALL"
+if command -v jq >/dev/null; then pv=$(jq -r '.version // empty' "$ROOT/.claude-plugin/plugin.json" 2>/dev/null)
+else pv=$(grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' "$ROOT/.claude-plugin/plugin.json" | head -1 | grep -oE '"[^"]+"$' | tr -d '"'); fi
+for s in build ship init; do
+  bv=$(grep -oE "version-check\.sh[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+" "$SK/$s/SKILL.md" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  if [ -z "$bv" ]; then err "integrity: skill $s does not assert the loaded version (no version-check.sh call) → $REINSTALL"
+  elif [ -n "$pv" ] && [ "$bv" != "$pv" ]; then err "integrity: skill $s asserts version $bv but the plugin is $pv — bump its version-check.sh call → $REINSTALL"; fi
+done
+[ "$e" = "$ERRS" ] && ok "integrity: build, ship and init assert the installed version"
+
 DONE=1

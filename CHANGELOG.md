@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The entry skills (`/executor:build`, `/executor:ship`, `/executor:init`) assert at their start that the loaded plugin matches the installed one. A session spawned from a long-lived session inherits that session's snapshot of the plugin; when the plugin was updated afterwards, the spawn would run the old instructions against the new install and fail with a generic error. Now `scripts/version-check.sh` compares the version baked into the skill's own text against the on-disk manifest and, on a drift, the skill stops with one line — the two versions and "reload the plugin or start a fresh session" — instead of a silent or generic failure. The self-audit checks each entry skill asserts the version and that the baked version tracks the manifest. (A snapshot from before this change still cannot self-check: an absent skill can't run a guard, so a truly pre-0.2.0 session falls back to the generic error.)
+
 ## 0.2.0 — 2026-10-27
 
 - `/executor:build`: a spec to a stack of reviewed PRs. It checks the spec, plans it as a checklist in `.executor/plan.md` that you approve (`references/plan.md`), builds the foundation alone and stops for its merge, then runs one `executor:builder` per stack in parallel worktrees, reviews every PR, marks it ready on ✅ or ⚠️ and starts the next feature of its stack. A second run carries on from the first unticked item. You merge.
