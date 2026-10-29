@@ -26,7 +26,8 @@ INCLUDES:
                                    the review starts on its own
 
 SETUP:
-  /executor:init                   checks gh and its sign-in, offers to install gh stack
+  /executor:init                   checks gh and its sign-in, offers gh stack
+                                   and the per-repo enable
 ```
 
 ## Routing Table

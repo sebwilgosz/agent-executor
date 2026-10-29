@@ -111,6 +111,12 @@ e=$ERRS
 [ -s "$ROOT/scripts/ship.sh" ] || err "integrity: scripts/ship.sh missing — /executor:ship has no engine → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
 
+# -- init's per-repo enable: the engine behind E2. Without it /executor:init
+#    cannot detect or add the repo's .claude/settings.json enable.
+[ -s "$ROOT/scripts/init-plugin-enable.sh" ] \
+  && ok "integrity: init's per-repo enable engine is present" \
+  || err "integrity: scripts/init-plugin-enable.sh missing — /executor:init cannot offer the per-repo enable → $REINSTALL"
+
 # -- user-only skills. Claude must never trigger init (it installs and
 #    configures) and has no reason to start help (you type it);
 #    disable-model-invocation keeps them yours and out of the skill list

@@ -80,12 +80,17 @@ if [ -n "$n" ]; then
 fi
 
 # No PR yet. Base = the default branch, unless this branch sits in a gh stack,
-# where it is the branch below (the current branch's base in the stack).
+# where it is the branch below. gh stack reports each branch's base as a commit
+# SHA, not a name, so map that SHA to the stack branch whose head it is — that
+# branch's name is a valid PR base. A base that is the trunk commit (the bottom
+# of the stack) matches no branch, so the default branch stands.
 base="$def"
 if command -v jq >/dev/null 2>&1 && command -v gh >/dev/null 2>&1; then
   if sv=$(gh stack view --json 2>/dev/null) && [ -n "$sv" ]; then
-    parent=$(printf '%s' "$sv" | jq -r '.branches[]? | select(.isCurrent==true) | .base // empty' 2>/dev/null)
-    [ -n "$parent" ] && [ "$parent" != null ] && base="$parent"
+    below=$(printf '%s' "$sv" | jq -r '
+      (.branches[]? | select(.isCurrent==true) | .base) as $pb
+      | ([.branches[]? | select(.head==$pb) | .name] | first) // empty' 2>/dev/null)
+    [ -n "$below" ] && [ "$below" != null ] && base="$below"
   fi
 fi
 printf 'OPEN_PR: base=%s head=%s\n' "$base" "$branch"
