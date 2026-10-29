@@ -39,12 +39,39 @@ On YES run exactly `gh extension install github/gh-stack`, then `gh stack --vers
 
 **Files to write:** none. Executor has no settings yet. Its only file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails.
 
-## E2: Check
+## E2: Enable Executor in this repository
+
+Executor is disabled user-globally and turned on per build repository, because Claude Code settings do not inherit down the directory tree: the enable has to sit in the repository's committed `.claude/settings.json` (never `settings.local.json`, which is gitignored) so every worktree inherits it. Run this only when the current folder is a git repository; otherwise skip E2 with one line saying so.
+
+Run `bash <plugin root>/scripts/init-plugin-enable.sh` once — the deterministic engine, no AI — and read its tagged lines (`TARGET:`, `STATE:`, `TRACK:`). It reads the **on-disk** `.claude/settings.json`, what Claude Code actually loads, not the version in git HEAD.
+
+- `STATE: enabled` — the enable is already there; say so and do nothing. If `TRACK: untracked`, remind the user to commit `.claude/settings.json` so every worktree inherits it.
+- `STATE: missing-file` or `STATE: missing-key` — offer to add it in these words, then ask:
+
+  ```
+  Executor is enabled per repository, not globally, so it stays out of your
+  non-build trees and present in this one. The enable goes in this repo's
+  committed .claude/settings.json ("executor@engineer-of-wealth": true under
+  enabledPlugins); any other plugins and settings there are kept.
+
+  Add it now?
+  - YES — merge the enable into .claude/settings.json (uncommitted)
+  - NO  — leave it; /executor:init offers it again
+  ```
+
+  On YES run `bash <plugin root>/scripts/init-plugin-enable.sh --apply`. On `STATE: wrote`, tell the user the file was written **uncommitted** and, since `TRACK: untracked` until they commit it, offer to commit it (YES / NO — ask first, and only commit `.claude/settings.json`). Never commit on your own. On NO, go on without writing.
+- `STATE: invalid-json` — the file exists but does not parse; say so and stop E2 without touching it. The user fixes the JSON, then runs `/executor:init` again.
+- `STOP: <reason>` — show the reason as it is; it already says what to do.
+
+Running E2 again after the enable is in place reports `STATE: enabled` and writes nothing: the step is idempotent.
+
+## E3: Check
 
 Run `bash <plugin root>/scripts/self-audit.sh` once, exactly that command with the absolute path and no quotes. Reply with its summary line and every `✗` and `⚠` line as it is: each one already says what to do.
 
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1 is the only thing that runs without asking.
+- Ask before installing or configuring anything; the table in E1 and the read-only detect in E2 are the only things that run without asking. The E2 write runs only on YES.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
-- Write nothing outside `~/.engineer-of-wealth/` except the two git settings in the current repository, and only on YES.
+- Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
+- Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2.

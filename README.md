@@ -13,7 +13,7 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
+Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
 
 ## What it does today: review
 
@@ -40,7 +40,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch |
 | `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
-| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it). You type it |
+| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), and the per-repo enable. You type it |
 
 ## Build from a spec
 
