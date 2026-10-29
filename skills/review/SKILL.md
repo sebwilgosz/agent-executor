@@ -50,7 +50,7 @@ Go through the diff once per dimension:
 Write each finding as the format file says. Merge findings with one root cause into one. Keep the ten most valuable Suggestions; Critical findings are never cut.
 ## 4. Draft the two sections
 
-Sort the findings into **Critical** and **Suggestions**, one bullet each, in the format file's finding line. This draft is what the verifiers check.
+Sort the findings into **Critical** and **Suggestions**, one numbered finding each in the format file's finding line, the count running continuously across both sections. This draft is what the verifiers check.
 
 ## 5. Verify: one agent per finding
 
