@@ -10,6 +10,10 @@ deterministic work — the guard, the push, the PR-exists check and the base
 branch — is `${CLAUDE_PLUGIN_ROOT}/scripts/ship.sh`. You write only the commit
 message and the PR body. You never run the review; opening the PR starts it.
 
+## 0. Assert the plugin is current
+
+This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.2.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — ship nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
+
 ## 1. Commit what is pending
 
 If the working tree has uncommitted changes, commit them first — `ship.sh`
