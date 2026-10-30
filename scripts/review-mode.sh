@@ -53,8 +53,13 @@ if [ "$kind" = pr ]; then
   read -r pr author fork <<<"$out"
 else
   [ -n "$target" ] || target=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-  if out=$(gh pr list --head "$target" --state open --limit 1 --json number,author,isCrossRepository \
-           --jq '.[0] // empty | "\(.number) \(.author.login) \(.isCrossRepository)"' 2>"$ERR"); then
+  # --head matches the branch name in every fork, so a stranger's patch-1 would
+  # answer for yours: keep only a PR whose head lives with origin's owner. With
+  # no owner to read, keep the same-repository PRs.
+  owner=$(git remote get-url origin 2>/dev/null | sed -nE 's#^(.*[:/])?([A-Za-z0-9_.-]+)/[^/]+$#\2#p' | tr '[:upper:]' '[:lower:]')
+  if [ -n "$owner" ]; then keep="(.headRepositoryOwner.login | ascii_downcase) == \"$owner\""; else keep=".isCrossRepository | not"; fi
+  if out=$(gh pr list --head "$target" --state open --limit 50 --json number,author,isCrossRepository,headRepositoryOwner \
+           --jq "[.[] | select($keep)][0] // empty | \"\\(.number) \\(.author.login) \\(.isCrossRepository)\"" 2>"$ERR"); then
     [ -n "$out" ] && read -r pr author fork <<<"$out"
   else
     log_fail "gh pr list --head $target"
