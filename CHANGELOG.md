@@ -2,10 +2,11 @@
 
 ## 0.3.1 — 2026-10-30
 
-- `/executor:review` fixes only your own work. Before, every confirmed Critical finding was committed and pushed to the PR's branch whoever wrote the PR, which is wrong on a teammate's PR and fails on a fork. Now step 1 decides the mode: fix by default only when the PR's author is the `gh` user and the PR isn't from a fork, or, for a branch with no PR, when every commit past the default branch carries your git email. Anything else is report-only: steps 1–5 and 7 run unchanged, nothing is committed, checked out or pushed, the Critical findings stay open and the verdict rule applies to them. `--fix` forces fixing, never on a fork, where the push can't land; `--no-fix` forces report-only. The decision is `scripts/review-mode.sh`, which wraps the `gh` and `git` calls, logs failures to `~/.engineer-of-wealth/executor/review.log` and falls back to report-only when it can't tell.
+- `/executor:review` fixes only your own work. Before, every confirmed Critical finding was committed and pushed to the PR's branch whoever wrote the PR, which is wrong on a teammate's PR and fails on a fork. Now step 1 decides the mode: fix by default only when the PR's author is the `gh` user and the PR isn't from a fork, or, for a branch with no PR, when every commit past the default branch carries your git email (in any case). A branch is judged by its open PR only when that PR's head lives with origin's owner, so a stranger's fork PR that shares the branch name doesn't count. Anything else is report-only: steps 1–5 and 7 run unchanged, nothing is committed, checked out or pushed, the Critical findings stay open and the verdict rule applies to them. `--fix` forces fixing, never on a fork, where the push can't land; `--no-fix` forces report-only. The decision is `scripts/review-mode.sh`, which wraps the `gh` and `git` calls, logs failures to `~/.engineer-of-wealth/executor/review.log` and falls back to report-only when it can't tell.
 - The summary's `Rounds:` line names the mode and why it ran, e.g. `report-only · PR by @teammate` or `fix · your PR · 1 · 2 bugs auto-fixed`.
 - `/executor:build` runs the review with `--fix`: its PRs are yours, and a failed `gh` lookup shouldn't stop it fixing them. The hook-started review needs no flag, since the PRs Claude opens are yours.
-- The self-audit checks `scripts/review-mode.sh` is present.
+- `scripts/default-branch.sh`: the one default-branch lookup, sourced by `ship.sh` and `review-mode.sh` so both agree on the base.
+- The self-audit checks `scripts/review-mode.sh` and `scripts/default-branch.sh` are present.
 
 ## 0.3.0 — 2026-10-30
 
