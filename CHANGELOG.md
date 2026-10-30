@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-10-30
 
+- `/executor:ship`: from finished code to an open draft PR. It commits what is pending, pushes, and opens a **draft** PR; the existing hook then assigns the author and starts the review. `scripts/ship.sh` does the deterministic work (the branch guard, the push, the PR-exists check, the base branch) and wraps every `gh` and `git` call, logging failures to `~/.engineer-of-wealth/executor/ship.log` instead of failing into the conversation. A branch that already has a PR is only pushed, never given a second PR. In a `gh` stack the base is the branch below, resolved to its name from the commit `gh stack view --json` reports.
+- `CONTRIBUTING.md`: the seven rules Executor holds itself to, from "deterministic work is a script, never the model" to "two approvals". The review already reads it as a conventions source.
+- `references/stacks.md` gains "Keeping a stack healthy": after any PR in a stack merges, `gh stack sync --prune` restacks the rest onto the live base, and no branch is left on a merged one.
+- `/executor:init` offers to enable Executor in the repo's own `.claude/settings.json`, for anyone who keeps it off globally: it merges the enable into `enabledPlugins`, keeps every other setting, never touches `settings.local.json` and never commits on its own. The detect-and-merge is `scripts/init-plugin-enable.sh`.
+- Review findings carry one number (`#1` … `#n`) running through Critical and Suggestions, so a finding can be cited after the review. The summary header names the PR as `<owner>/<repo>#<n>`, with the branch on its own line.
 - The entry skills (`/executor:build`, `/executor:ship`, `/executor:init`) assert at their start that the loaded plugin matches the installed one. A session spawned from a long-lived session inherits that session's snapshot of the plugin; when the plugin was updated afterwards, the spawn would run the old instructions against the new install and fail with a generic error. Now `scripts/version-check.sh` compares the version baked into the skill's own text against the on-disk manifest and, on a drift, the skill stops with one line — the two versions and "reload the plugin or start a fresh session" — instead of a silent or generic failure. The self-audit checks each entry skill asserts the version and that the baked version tracks the manifest. (A snapshot from before this change still cannot self-check: an absent skill can't run a guard, so a truly pre-0.2.0 session falls back to the generic error.)
 
 ## 0.2.0 — 2026-10-27
