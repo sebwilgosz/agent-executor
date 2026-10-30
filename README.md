@@ -27,8 +27,8 @@ A review runs in five steps:
 1. **Build.** Install, build, lint and tests, with the commands your repo already defines. The build must pass. A PR is built in a throwaway worktree, never over your working tree.
 2. **Review** the diff in six dimensions: duplication, correctness against your spec, test coverage, security, best practices (including inline comments that can go or be shorter) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around the change, and for a PR its description).
 3. **Verify.** Every finding goes to its own `executor:verifier` agent, which tries to disprove it. Each comes back confirmed, debunked or reclassified. Debunked findings are dropped from the report.
-4. **Fix.** Every confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits it on the PR's branch and reviews again, at most three rounds and without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork.
-5. **Report**, always in the same shape: verdict, build, CI, spec, how many bugs were fixed, then what is still Critical and the Suggestions. Each finding links to the file and line and says when it fails and how to fix it.
+4. **Fix**, on your own PRs. Every confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits it on the PR's branch and reviews again, at most three rounds and without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports: nothing is committed or pushed. `--fix` and `--no-fix` override that, and a fork stays report-only either way.
+5. **Report**, always in the same shape: verdict, build, CI, spec, which mode ran and how many bugs were fixed, then what is still Critical and the Suggestions. Each finding links to the file and line and says when it fails and how to fix it.
 
 Suggestions are listed, never fixed for you. Nothing is posted to GitHub unless you ask.
 
