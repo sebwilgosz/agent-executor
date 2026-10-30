@@ -9,7 +9,7 @@ You approve twice: the plan, and the merge. Build does everything between them. 
 
 Read before you start, from the plugin root: `references/implementation.md` (step 0, the spec check), `references/plan.md` (the checklist), `references/stacks.md` (how a spec maps to stacks, and the commands).
 
-**First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.2.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
+**First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.3.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
 
 ## 0. Carry on, or start
 
