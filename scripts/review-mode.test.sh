@@ -42,7 +42,7 @@ chmod +x "$BIN/gh"
 export PATH="$BIN:$PATH"
 
 # A repo whose origin/main is the base; `mine` holds only my commits, `theirs`
-# also a teammate's.
+# also a teammate's, `shouty` mine under my email in capitals.
 REPO="$ROOT/repo"
 git init -q -b main "$REPO"
 cd "$REPO" || exit 1
@@ -53,6 +53,7 @@ git update-ref refs/remotes/origin/main HEAD
 git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 git checkout -q -b mine;   git commit -q --allow-empty -m one
 git checkout -q -b theirs; git -c user.email=Mate@Example.com commit -q --allow-empty -m two
+git checkout -q -b shouty main; git -c user.email=ME@Example.COM commit -q --allow-empty -m three
 git checkout -q -b fresh main
 
 run(){ bash "$MODE" "$@" 2>&1; }
@@ -95,6 +96,7 @@ git remote set-url origin git@github.com:Me/repo.git
 # 4. A branch with no PR: yours only when every commit past the base is yours.
 is "your branch fixes"               "MODE: fix · your branch"                                "$(run branch mine)"
 is "a teammate's commit reports" "MODE: report-only · branch has commits by Mate@Example.com" "$(run branch theirs)"
+is "your email in other case is yours" "MODE: fix · your branch"                              "$(run branch shouty)"
 is "no commits past the base: yours" "MODE: fix · your branch"                                "$(run branch fresh)"
 is "no name: the current branch"     "MODE: fix · your branch"                                "$(run branch)"
 is "--fix on someone's branch fixes" "MODE: fix · --fix, branch theirs"                       "$(run branch theirs --fix)"
