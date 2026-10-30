@@ -82,14 +82,10 @@ fi
 # is yours.
 git rev-parse --verify --quiet "$target^{commit}" >/dev/null || say report-only "branch $target not found"
 [ "$flag" = --fix ] && say fix "--fix, branch $target"
-def=""
-ref=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null) && def=${ref#refs/remotes/}
-[ -n "$def" ] || for b in origin/main origin/master main master; do
-  git rev-parse --verify --quiet "$b^{commit}" >/dev/null && { def=$b; break; }
-done
-[ -n "$def" ] || say report-only "no default branch to compare $target with"
+. "$(dirname "$0")/default-branch.sh"
+git rev-parse --verify --quiet "$cmp^{commit}" >/dev/null || say report-only "no default branch to compare $target with"
 mine=$(git config user.email 2>/dev/null)
 [ -n "$mine" ] || say report-only "git user.email is not set, can't tell whose commits these are"
-others=$(git log --format=%ae "$def..$target" 2>/dev/null | grep -vixF -- "$mine" | sort -u | paste -sd ',' - | sed 's/,/, /g')
+others=$(git log --format=%ae "$cmp..$target" 2>/dev/null | grep -vixF -- "$mine" | sort -u | paste -sd ',' - | sed 's/,/, /g')
 [ -z "$others" ] && say fix "your branch"
 say report-only "branch has commits by $others"

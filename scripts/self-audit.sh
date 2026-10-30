@@ -115,6 +115,7 @@ done
 e=$ERRS
 [ -f "$SK/ship/SKILL.md" ] || err "integrity: skills/ship/SKILL.md missing — /executor:ship cannot run → $REINSTALL"
 [ -s "$ROOT/scripts/ship.sh" ] || err "integrity: scripts/ship.sh missing — /executor:ship has no engine → $REINSTALL"
+[ -s "$ROOT/scripts/default-branch.sh" ] || err "integrity: scripts/default-branch.sh missing — ship and review source it for the base → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
 
 # -- init's per-repo enable: the engine behind E2. Without it /executor:init

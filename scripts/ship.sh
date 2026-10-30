@@ -27,20 +27,7 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || stop "not a git repositor
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
 [ -n "$branch" ] && [ "$branch" != HEAD ] || stop "detached HEAD — check out a branch first"
 
-# Default branch: the local origin/HEAD, else what gh reports, else main/master.
-def=""
-if ref=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null); then
-  def=${ref#refs/remotes/origin/}
-fi
-if [ -z "$def" ] && command -v gh >/dev/null 2>&1; then
-  def=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name 2>/dev/null)
-fi
-if [ -z "$def" ]; then
-  for b in main master; do
-    git show-ref --verify --quiet "refs/heads/$b" && { def=$b; break; }
-  done
-fi
-[ -n "$def" ] || def=main
+. "$(dirname "$0")/default-branch.sh"
 
 # Guard 1: never ship the default branch itself.
 [ "$branch" = "$def" ] && stop "on the default branch ($def) — switch to a feature branch"
@@ -50,8 +37,6 @@ fi
   stop "uncommitted changes — commit (or set aside) them, then ship again"
 
 # Guard 2: the branch must carry commits the default branch lacks.
-cmp="$def"
-git show-ref --verify --quiet "refs/remotes/origin/$def" && cmp="origin/$def"
 ahead=$(git rev-list --count "$cmp..HEAD" 2>/dev/null || echo 0)
 [ "${ahead:-0}" -gt 0 ] || stop "$branch has no commits beyond $def — nothing to ship"
 

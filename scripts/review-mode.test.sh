@@ -4,7 +4,8 @@
 # --fix and --no-fix override (never onto a fork), a branch without a PR is
 # judged by its commit authors, and any lookup that fails reports.
 # No network: a stub `gh` on PATH answers from $GH_VIEW / $GH_LIST / $GH_USER
-# ("FAIL" makes that call fail), and a local repo stands in for the branch.
+# / $GH_REPO ("FAIL" makes that call fail), and a local repo stands in for the
+# branch.
 #
 # Run: bash scripts/review-mode.test.sh   (exit 0 = all pass)
 set -u
@@ -30,6 +31,7 @@ case "$1 $2" in
   "pr view") reply "${GH_VIEW:-}" ;;
   "pr list") reply "${GH_LIST:-}" ;;
   "api user") reply "${GH_USER:-me}" ;;
+  "repo view") reply "${GH_REPO:-}" ;;
 esac
 exit 0
 STUB
@@ -79,6 +81,14 @@ is "no commits past the base: yours" "MODE: fix · your branch"                 
 is "no name: the current branch"     "MODE: fix · your branch"                                "$(run branch)"
 is "--fix on someone's branch fixes" "MODE: fix · --fix, branch theirs"                       "$(run branch theirs --fix)"
 is "a missing branch reports"        "MODE: report-only · branch nope not found"              "$(run branch nope)"
+
+# With origin/HEAD unset the base is what gh reports, as ship.sh sees it: on a
+# `trunk` that already holds the teammate's commit, `theirs` adds nothing past it.
+git symbolic-ref --delete refs/remotes/origin/HEAD
+git update-ref refs/remotes/origin/trunk theirs
+is "no origin/HEAD: gh names the base" "MODE: fix · your branch" "$(GH_REPO=trunk run branch theirs)"
+git update-ref -d refs/remotes/origin/trunk
+git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 
 # 5. A lookup that fails reports, logs, and never crashes.
 out=$(GH_VIEW=FAIL run pr 7); rc=$?
