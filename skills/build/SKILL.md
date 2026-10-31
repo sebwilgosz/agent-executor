@@ -9,7 +9,7 @@ You approve twice: the plan, and the merge. Build does everything between them. 
 
 Read before you start, from the plugin root: `references/implementation.md` (step 0, the spec check), `references/plan.md` (the checklist), `references/stacks.md` (how a spec maps to stacks, and the commands).
 
-**First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.3.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
+**First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.3.1`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
 
 ## 0. Carry on, or start
 
@@ -52,7 +52,7 @@ Builders run at the same time; reviews run one at a time, in this session, as th
 
 ## 4. Review each PR
 
-Run `/executor:review` on the PR, here: the builder can't, because it can't start the review's verifier agents. The review fixes what it can on the PR's own branch and ends with its summary.
+Run `/executor:review <n> --fix` on the PR, here: the builder can't, because it can't start the review's verifier agents. The review fixes what it can on the PR's own branch and ends with its summary.
 
 - **✅ or ⚠️:** `gh pr ready <n>`, mark the item `PR #n ✅ ready` and tick it. The next item of its stack can start (step 3, point 4).
 - **❌:** the PR stays a draft. Mark the item `PR #n ❌` with what is still Critical; its stack stops there.

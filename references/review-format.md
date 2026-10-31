@@ -20,7 +20,7 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 
 ## Severity
 
-- **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, or leaves a spec requirement unmet or untested. Critical findings are bugs: the review fixes them.
+- **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, or leaves a spec requirement unmet or untested. Critical findings are bugs: in fix mode the review fixes them, in report-only mode they stay open.
 - **Suggestion**: everything else worth changing. Suggestions are listed, never fixed by the review.
 
 ## The summary
@@ -33,7 +33,7 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 **Build:** <✅ passed · `<command>`> | <❌ failed · `<command>`> | <⚪ not run · <reason>>
 CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 **Spec:** <link to the spec> | none found, PR description
-**Rounds:** <n> · <f> bugs auto-fixed | no fixes needed
+**Rounds:** fix · <why> · <n> · <f> bugs auto-fixed | fix · <why> · no fixes needed | report-only · <why>
 
 ### Critical (<n>)
 
@@ -52,3 +52,4 @@ CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 
 - **The header is the review's reference.** `[<owner>/<repo>#<PR>](PR URL)` is the GitHub shorthand that stays unambiguous when several reviews are printed together — one per repo or per PR — in a multi-repo build. Keep it an `#` heading so each review is its own self-contained, linkable section.
 - **A local diff has no PR**, so the header drops the link: `# Executor review · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
+- **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · fork PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings are all still open and the verdict rule applies to them unchanged.

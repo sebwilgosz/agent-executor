@@ -104,11 +104,18 @@ done
 [ -s "$ROOT/scripts/new-prs.sh" ] || err "integrity: scripts/new-prs.sh missing — both hooks source it → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: both PR hooks are wired"
 
+# -- the review's mode: without review-mode.sh the review can't tell your PR
+#    from a teammate's, so it would never know whether it may fix and push.
+[ -s "$ROOT/scripts/review-mode.sh" ] \
+  && ok "integrity: the review's fix/report-only engine is present" \
+  || err "integrity: scripts/review-mode.sh missing — /executor:review cannot decide whether to fix → $REINSTALL"
+
 # -- ship: the skill and its engine. ship.sh does the guard/push/PR math; the
 #    skill opens the draft PR so the PR hooks above take over.
 e=$ERRS
 [ -f "$SK/ship/SKILL.md" ] || err "integrity: skills/ship/SKILL.md missing — /executor:ship cannot run → $REINSTALL"
 [ -s "$ROOT/scripts/ship.sh" ] || err "integrity: scripts/ship.sh missing — /executor:ship has no engine → $REINSTALL"
+[ -s "$ROOT/scripts/default-branch.sh" ] || err "integrity: scripts/default-branch.sh missing — ship and review source it for the base → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
 
 # -- init's per-repo enable: the engine behind E2. Without it /executor:init

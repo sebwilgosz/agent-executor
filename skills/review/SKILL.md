@@ -1,19 +1,21 @@
 ---
 name: review
-description: "Executor: review a pull request or the current branch auto-fixing verified confirmed bugs. Use when a PR was just created, when the user asks for a code review, or names a PR 'review #42', 'review github.com/…/pull/42"
+description: "Executor: review a pull request or the current branch, verifying every finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR ('review #42', 'review github.com/…/pull/42')."
 ---
 
 # EXECUTOR · REVIEW
 
-Review once, verify every finding independently, fix the confirmed bugs, review the fixes. The output is always the summary in `${CLAUDE_PLUGIN_ROOT}/references/review-format.md`: read it before step 4.
+Review once, verify every finding independently, then fix the confirmed bugs and review the fixes, or only report them. The output is always the summary in `${CLAUDE_PLUGIN_ROOT}/references/review-format.md`: read it before step 4.
 
-## 1. Target
+## 1. Target and mode
 
 | User gave        | Target                                                                                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | PR number or URL | that pull request (`gh pr view <n> --json number,title,url,headRefName,headRefOid,baseRefName,isCrossRepository,body,files,additions,deletions,closingIssuesReferences`) |
 | a branch name    | that branch against its base                                                                                                                                             |
 | nothing          | the current branch against its base, plus uncommitted changes                                                                                                            |
+
+**Mode.** Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-mode.sh pr <n|url>` for a PR, or `… branch [<name>]` for a branch, passing `--fix` or `--no-fix` if the user gave one. It prints one line, `MODE: fix · <why>` or `MODE: report-only · <why>`, and that is the mode for the whole review: fix only on your own PR or branch, never on a fork, where the push can't land; `--fix` and `--no-fix` override the rest. Keep `<why>` for the Rounds line.
 
 Load the rules the code must follow, all that exist: `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter and formatter configs, and two or three neighbouring files of each changed file, for its idiom.
 
@@ -71,7 +73,9 @@ Apply each verdict:
 | RECLASSIFIED | move it to the severity the verifier gave, with its wording |
 | DEBUNKED     | remove from output                                          |
 
-## 6. Fix the bugs, then review again
+## 6. Fix the bugs, then review again (fix mode only)
+
+**Report-only** skips this step: nothing is committed, checked out or pushed, and every Critical finding stays open in the summary. Go to step 7.
 
 Every Critical finding left after step 5 is a bug, and Executor fixes it. Suggestions are never fixed here.
 
@@ -86,4 +90,4 @@ Every Critical finding left after step 5 is a bug, and Executor fixes it. Sugges
 
 ## 7. Report
 
-Clean up any worktree you added (`git worktree remove`). Then print the summary exactly as `references/review-format.md` lays it out, and nothing after it but the commit links. Never post the review to GitHub unless the user asks.
+Clean up any worktree you added (`git worktree remove`). Then print the summary exactly as `references/review-format.md` lays it out, and nothing after it but the commit links, if fix mode made any. Never post the review to GitHub unless the user asks.
