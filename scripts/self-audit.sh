@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # self-audit.sh — Executor health check. Read-only.
 # SETUP: can Executor open and stack pull requests (gh, its sign-in, the
-#        gh stack extension) and did the assign hook fail (EOW_HOME overrides
-#        ~/.engineer-of-wealth).
+#        gh stack extension), did the assign hook fail, and is every search
+#        root a folder (EOW_HOME overrides ~/.engineer-of-wealth).
 # INTEGRITY: is the installed plugin whole (help, references, hooks, verifier).
 #
 # Every finding ends with "→ <what to do>", so a central caller (one loop over
@@ -67,6 +67,17 @@ else
   ok "setup: no failed PR assignments"
 fi
 
+if [ -s "$ROOT/scripts/roots.sh" ]; then
+  . "$ROOT/scripts/roots.sh"
+  e=$WARNS
+  for r in "${roots[@]}"; do
+    [ -d "$r" ] && continue
+    case "$r" in "$HOME"/*) r="~/${r#"$HOME"/}" ;; esac
+    warn "setup: search root $r is missing, so Executor finds no checkouts there → create the folder, or change the roots with /executor:init"
+  done
+  [ "$e" = "$WARNS" ] && ok "setup: search roots present (${#roots[@]})"
+fi
+
 # ================================================================= INTEGRITY
 door="$SK/help/SKILL.md"
 if [ ! -f "$door" ]; then
@@ -117,6 +128,12 @@ e=$ERRS
 [ -s "$ROOT/scripts/ship.sh" ] || err "integrity: scripts/ship.sh missing — /executor:ship has no engine → $REINSTALL"
 [ -s "$ROOT/scripts/default-branch.sh" ] || err "integrity: scripts/default-branch.sh missing — ship and review source it for the base → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
+
+# -- the search roots: every script that looks for a PR's local checkout
+#    sources roots.sh, the one reader of the setting.
+[ -s "$ROOT/scripts/roots.sh" ] \
+  && ok "integrity: the search roots reader is present" \
+  || err "integrity: scripts/roots.sh missing — Executor cannot read where to look for local checkouts → $REINSTALL"
 
 # -- init's per-repo enable: the engine behind E2. Without it /executor:init
 #    cannot detect or add the repo's .claude/settings.json enable.
