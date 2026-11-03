@@ -152,18 +152,18 @@ fi
 
 . "$SELF_DIR/default-branch.sh"
 
-# Where the default branch is checked out, and the folder to open.
-bare=$(git rev-parse --is-bare-repository 2>/dev/null)
-main_wt=""; first_wt=""; def_wt=""; p=""; p_bare=0
+# Where the default branch is checked out, and the folder to open. Bare is
+# read from the list, not the folder: a bare repo's worktree isn't bare itself.
+main_wt=""; first_wt=""; def_wt=""; p=""; p_bare=0; bare=0
 while IFS= read -r l; do
   case "$l" in
     "worktree "*) p=${l#worktree }; p_bare=0; [ -n "$main_wt" ] || main_wt=$p ;;
-    bare) p_bare=1 ;;
+    bare) p_bare=1; [ "$p" = "$main_wt" ] && bare=1 ;;
     "branch refs/heads/$def") [ -d "$p" ] && def_wt=$p ;;
     "") [ "$p_bare" -eq 0 ] && [ -z "$first_wt" ] && [ -d "$p" ] && first_wt=$p ;;
   esac
 done < <(git worktree list --porcelain 2>/dev/null; echo)
-if [ "$bare" = true ]; then
+if [ "$bare" -eq 1 ]; then
   folder=${def_wt:-${first_wt:-$co}}
 else
   folder=${main_wt:-$co}

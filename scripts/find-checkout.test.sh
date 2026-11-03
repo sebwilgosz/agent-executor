@@ -165,6 +165,11 @@ out=$(run 'acme/api#7')
 is "plain bare clone: opened at the default branch's worktree" "CHECKOUT: $CASE/p/api/main" "$(line CHECKOUT "$out")"
 check "plain bare clone: the default branch is fast-forwarded" "BASE: main · main fast-forwarded" "$out"
 is "plain bare clone: main is at origin's" "$(remote_main api)" "$(git -C "$CASE/p/api" rev-parse main)"
+fresh; roots_cfg "$CASE/p"
+bare_api "$CASE/outside/api.git"
+git -C "$CASE/outside/api.git" worktree add -q "$CASE/p/api-feature" -b feature-x main
+out=$(run 'acme/api#7')
+is "worktree of a bare repo outside the roots: opened at the worktree" "CHECKOUT: $CASE/p/api-feature" "$(line CHECKOUT "$out")"
 
 # The update: fast-forward only, never over your work, never switching.
 fresh; roots_cfg "$CASE/p"
