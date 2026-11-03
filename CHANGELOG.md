@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2 — 2026-11-02
+
+- `/executor:review` and the `verifier` agent run at `effort: high` whatever the session's effort is. Before, review ran at the session's effort and the verifier inherited it, so lowering the session default quietly weakened the checks that decide what ships. The builder stays at `effort: medium`: the spec has already settled the design, and it is the expensive agent.
+
 ## 0.3.1 — 2026-10-30
 
 - `/executor:review` fixes only your own work. Before, every confirmed Critical finding was committed and pushed to the PR's branch whoever wrote the PR, which is wrong on a teammate's PR and fails on a fork. Now step 1 decides the mode: fix by default only when the PR's author is the `gh` user and the PR isn't from a fork, or, for a branch with no PR, when every commit past the default branch carries your git email (in any case). A branch is judged by its open PR only when that PR's head lives with origin's owner, so a stranger's fork PR that shares the branch name doesn't count. Anything else is report-only: steps 1–5 and 7 run unchanged, nothing is committed, checked out or pushed, the Critical findings stay open and the verdict rule applies to them. `--fix` forces fixing, never on a fork, where the push can't land; `--no-fix` forces report-only. The decision is `scripts/review-mode.sh`, which wraps the `gh` and `git` calls, logs failures to `~/.engineer-of-wealth/executor/review.log` and falls back to report-only when it can't tell.

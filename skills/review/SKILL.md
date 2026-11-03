@@ -1,6 +1,7 @@
 ---
 name: review
 description: "Executor: review a pull request or the current branch, verifying every finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR ('review #42', 'review github.com/…/pull/42')."
+effort: high
 ---
 
 # EXECUTOR · REVIEW
