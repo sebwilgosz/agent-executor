@@ -208,6 +208,7 @@ is "main in a worktree with work: still on main there" main "$(git -C "$CASE/wt-
 # A failed fetch is one line, and the checkout is still found.
 fresh; roots_cfg "$CASE/p"
 clone_to api "$CASE/p/api"
+git config --file "$ROOT/broken" "url.$ROOT/offline/.insteadOf" "https://github.com/"
 out=$(GIT_CONFIG_GLOBAL="$ROOT/broken" run 'acme/api#7'); rc=$?
 is "fetch fails: still found" "CHECKOUT: $CASE/p/api" "$(line CHECKOUT "$out")"
 is "fetch fails: one note" 1 "$(count NOTE "$out")"
