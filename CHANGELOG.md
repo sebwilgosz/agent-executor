@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 — 2026-11-03
+
+- Review a pull request from any folder. Say "let's review acme/api#7", or run `/executor:review` with `owner/repo#N` or a pull URL, in any session. In the PR's own repository it reviews as before. Anywhere else it finds the repository's checkout and proposes a new session there running `/executor:review <url>`; where the client can't start one, it prints one command, `cd "<checkout>" && claude "/executor:review <url>"`. It never reviews a repository from a folder that isn't its checkout. With no checkout it lists where it looked and asks before cloning into the first root; on no, nothing is cloned. A bare PR number or a branch name still means the current repository.
+- `scripts/find-checkout.sh` does the finding, no AI. It searches the roots two levels deep, so a bare repository and its worktrees are found as one checkout, opened at its default-branch worktree. It fetches `origin` and fast-forwards the default branch only where it is checked out clean; uncommitted work, local commits and the branch someone is on are left alone. Then the hand-off passes `--base origin/<default>` and the summary's Branch line says the review worked from `origin/<default>`. Every `git` and `gh` failure is logged to `~/.engineer-of-wealth/executor/checkout.log` and comes back as one line.
+- The search roots, Executor's first setting: a `## Roots` list in `~/.engineer-of-wealth/executor/config.md`, `~/Projects` by default, read by `scripts/roots.sh`. `/executor:init` asks for them, and the self-audit warns about a root that doesn't exist and checks the roots reader and the checkout finder are present.
+- `/executor:help` lists the review from any folder and routes "let's review <ref>" to it.
+
 ## 0.3.2 — 2026-11-02
 
 - `/executor:review` and the `verifier` agent run at `effort: high` whatever the session's effort is. Before, review ran at the session's effort and the verifier inherited it, so lowering the session default quietly weakened the checks that decide what ships. The builder stays at `effort: medium`: the spec has already settled the design, and it is the expensive agent.

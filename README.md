@@ -13,7 +13,7 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
+Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
 
 ## What it does today: review
 
@@ -32,15 +32,40 @@ A review runs in five steps:
 
 Suggestions are listed, never fixed for you. Nothing is posted to GitHub unless you ask.
 
+### Review from any folder
+
+Name a pull request of another repository as `owner/repo#N` or by its URL, in any session: "let's review acme/api#7", or `/executor:review https://github.com/acme/api/pull/7`. A review always runs in the repository's own checkout, so Executor finds that first (`scripts/find-checkout.sh`, no AI):
+
+1. **Already there.** When the current folder's `origin` is the PR's repository, it reviews here, as above.
+2. **Find the checkout** under your search roots, two levels deep, so a bare repository with its worktrees (`~/Projects/api/main`) is found, as one checkout.
+3. **Update it.** It fetches `origin`, then fast-forwards the default branch only where it is checked out clean. Uncommitted work, local commits and the branch someone is on are left alone; the review then works from `origin/<default>` and its summary says so.
+4. **Hand off.** It proposes a new session in that checkout running `/executor:review <url>`. Where your client can't start one, it prints the one command to run:
+
+   ```
+   cd "/home/you/Projects/api" && claude "/executor:review https://github.com/acme/api/pull/7"
+   ```
+
+5. **No checkout.** It lists where it looked and asks before cloning into the first root (`gh repo clone acme/api ~/Projects/api`). On no, nothing is cloned.
+
+The search roots are Executor's one setting, in `~/.engineer-of-wealth/executor/config.md`, searched in order. `/executor:init` asks for them, `~/Projects` by default, and the setup check warns about a root that doesn't exist:
+
+```markdown
+## Roots
+- ~/Projects
+- ~/code
+```
+
+A bare PR number or a branch name always means the current repository.
+
 Every PR Claude opens is also assigned to you, its author. That one is plain shell, not AI: a second hook runs `gh pr edit --add-assignee @me` in the background, so your session never waits on GitHub. If it fails, the reason is in `~/.engineer-of-wealth/executor/assign.log`.
 
 | Skill | What it does |
 |---|---|
 | `/executor:help` | What Executor does; routes what you type to the right skill |
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
-| `/executor:review` | Review, verify, fix and re-review a PR or a branch |
+| `/executor:review` | Review, verify, fix and re-review a PR or a branch; another repo's PR opens in its checkout |
 | `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
-| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), and the per-repo enable. You type it |
+| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable and the search roots. You type it |
 
 ## Build from a spec
 
