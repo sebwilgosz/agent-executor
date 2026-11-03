@@ -135,6 +135,12 @@ e=$ERRS
   && ok "integrity: the search roots reader is present" \
   || err "integrity: scripts/roots.sh missing — Executor cannot read where to look for local checkouts → $REINSTALL"
 
+# -- finding a PR's checkout: without find-checkout.sh a review of another
+#    repo's PR has no way to its local checkout.
+[ -s "$ROOT/scripts/find-checkout.sh" ] \
+  && ok "integrity: the PR checkout finder is present" \
+  || err "integrity: scripts/find-checkout.sh missing — /executor:review cannot find a PR's local checkout → $REINSTALL"
+
 # -- init's per-repo enable: the engine behind E2. Without it /executor:init
 #    cannot detect or add the repo's .claude/settings.json enable.
 [ -s "$ROOT/scripts/init-plugin-enable.sh" ] \
