@@ -157,6 +157,14 @@ git -C "$CASE/p/api" worktree add -q "$CASE/p/api/feature-x" -b feature-x main
 out=$(run 'acme/api#7')
 is "bare, no default worktree: its first worktree" "CHECKOUT: $CASE/p/api/feature-x" "$(line CHECKOUT "$out")"
 check "bare, no default worktree: works from origin/main" "BASE: origin/main · " "$out"
+fresh; roots_cfg "$CASE/p"
+git clone -q --bare "https://github.com/acme/api.git" "$CASE/p/api"
+git -C "$CASE/p/api" worktree add -q "$CASE/p/api/main" main
+advance api
+out=$(run 'acme/api#7')
+is "plain bare clone: opened at the default branch's worktree" "CHECKOUT: $CASE/p/api/main" "$(line CHECKOUT "$out")"
+check "plain bare clone: the default branch is fast-forwarded" "BASE: main · main fast-forwarded" "$out"
+is "plain bare clone: main is at origin's" "$(remote_main api)" "$(git -C "$CASE/p/api" rev-parse main)"
 
 # The update: fast-forward only, never over your work, never switching.
 fresh; roots_cfg "$CASE/p"

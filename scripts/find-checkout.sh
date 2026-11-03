@@ -142,7 +142,10 @@ if [ -z "${GIT_SSH_COMMAND:-}${GIT_SSH:-}" ] && ! git config --get core.sshComma
   export GIT_SSH_COMMAND="ssh -o BatchMode=yes"
 fi
 note=""
-if ! git fetch --quiet origin 2>"$ERR"; then
+# A plain `git clone --bare` has no fetch refspec, so origin/<default> would never appear.
+fetch=(origin)
+git config --get-all remote.origin.fetch >/dev/null 2>&1 || fetch+=('+refs/heads/*:refs/remotes/origin/*')
+if ! git fetch --quiet "${fetch[@]}" 2>"$ERR"; then
   log_fail "git fetch origin in $co"
   note="git fetch origin failed in $co ($(first_err)), so this works from what is local → check your connection and GitHub access (gh auth status), see $LOG"
 fi
