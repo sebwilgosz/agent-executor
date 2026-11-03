@@ -37,7 +37,7 @@ On YES run exactly `gh extension install github/gh-stack`, then `gh stack --vers
 - Stacked PRs must be enabled on each GitHub repository. Where they are not, `gh stack submit` fails and Executor falls back to plain PRs on its own.
 - In each repository Executor builds in, two settings keep `gh stack` from stopping at a prompt: `git config rerere.enabled true` and `git config remote.pushDefault origin`. If the current folder is a git repository and either is unset, offer to set them here (YES / NO); never set them globally.
 
-**Files to write:** none. Executor has no settings yet. Its only file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails.
+**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails.
 
 ## E2: Enable Executor in this repository
 
@@ -65,13 +65,49 @@ Run `bash <plugin root>/scripts/init-plugin-enable.sh` once — the deterministi
 
 Running E2 again after the enable is in place reports `STATE: enabled` and writes nothing: the step is idempotent.
 
-## E3: Check
+## E3: Search roots
+
+Executor finds a PR's local checkout under these folders, up to two levels deep, and clones into the first one only when you say yes.
+
+Read `~/.engineer-of-wealth/executor/config.md` (`EOW_HOME` overrides `~/.engineer-of-wealth`). Its roots are the `- ` lines of its `## Roots` section, in search order.
+
+- **Roots set:** show them in order and ask **KEEP** (write nothing, go to E4) or **CHANGE** (ask as below, with these as the default).
+- **No file, no `## Roots` section or an empty list:** ask, with `~/Projects` as the default.
+
+```
+SEARCH ROOTS — where Executor looks for a PR's local checkout
+Executor finds it under these folders, up to two levels deep, and clones
+into the first one only when you say yes.
+
+Folders, in search order?   Default: ~/Projects
+```
+
+An empty answer takes the default. Say which folders don't exist yet; never create them (E4 flags them too). Then show the file with the user's roots, for example:
+
+```markdown
+# Executor settings
+
+## Roots
+- ~/Projects
+- ~/code
+```
+
+and ask:
+
+```
+- YES — write it
+- FIX — tell me what to change
+```
+
+On YES write it. Paths go in as given, `~` unexpanded. When the file exists, replace only the `## Roots` list and keep everything else. Under a central setup the file joins its one approval (S4) instead.
+
+## E4: Check
 
 Run `bash <plugin root>/scripts/self-audit.sh` once, exactly that command with the absolute path and no quotes. Reply with its summary line and every `✗` and `⚠` line as it is: each one already says what to do.
 
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1 and the read-only detect in E2 are the only things that run without asking. The E2 write runs only on YES.
+- Ask before installing or configuring anything; the table in E1, the read-only detect in E2 and reading `config.md` in E3 are the only things that run without asking. The E2 and E3 writes run only on YES.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
 - Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
 - Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2.
