@@ -75,8 +75,9 @@ for s in build ship init; do
   check "skill $s asserts $pv" "version-check.sh $pv" "$(cat "$REPO/skills/$s/SKILL.md")"
 done
 
-# E. Nothing local.
-local_re='secondbrain|kaligo|mindskein|/Users/|~/work|\[\['
+# E. Nothing local: no home paths beyond the fake /home/you, no wikilinks.
+# Personal names are not spelled out here, since this file ships too.
+local_re='/Users/|/home/[^y/]|\[\['
 for f in skills/review/SKILL.md skills/help/SKILL.md README.md references/review-format.md; do
   hit=$(grep -niE "$local_re" "$REPO/$f" | head -1)
   [ -z "$hit" ] && ok "$f names nothing local" || bad "$f names nothing local" "$hit"
