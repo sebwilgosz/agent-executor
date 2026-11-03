@@ -10,7 +10,7 @@ Review once, verify every finding independently, then fix the confirmed bugs and
 
 ## 1. Target and mode
 
-**A PR named as `owner/repo#N` or `https://github.com/owner/repo/pull/N`** may belong to another repo, so first run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/find-checkout.sh <ref>`. Its first line, `PR:`, gives the PR's URL. Then:
+**A PR named as `owner/repo#N` or `https://github.com/owner/repo/pull/N`** may belong to another repo, so first run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/find-checkout.sh "<ref>"`. Its first line, `PR:`, gives the PR's URL. Then:
 
 - `HERE:` this folder is the PR's repo: go on below with the URL, as today.
 - `CHECKOUT:` the repo is checked out in that folder, fetched, its default branch brought up to date where that was safe. Never review it from here: hand it off.
@@ -18,7 +18,7 @@ Review once, verify every finding independently, then fix the confirmed bugs and
   - With a tool that starts a session in a folder, propose that session with it: the `CHECKOUT:` folder, that command as its prompt. Otherwise print the `RUN:` line as the one command to run, with that `--base` after the URL, inside the quotes, when it applies.
   - Above it, one line each, as printed: `ALSO:` (other folders with the same repo, not used), `NOTE:` (a clone made, a fetch that failed), and `BASE:` when it is `origin/<default>` (the local default branch was left alone, and why).
   - Then stop: this session reviews nothing.
-- `LOOKED:` and `CLONE:` no checkout under the search roots. List where it looked, show the `CLONE:` command and ask whether to clone. On no, stop: nothing is cloned. On yes, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/find-checkout.sh <ref> --clone` and read its lines as above.
+- `LOOKED:` and `CLONE:` no checkout under the search roots. List where it looked, show the `CLONE:` command and ask whether to clone. On no, stop: nothing is cloned. On yes, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/find-checkout.sh "<ref>" --clone` and read its lines as above.
 - `STOP:` give the user that line, which says what to do, and stop.
 
 A bare PR number or a branch name is in this repo: no lookup.

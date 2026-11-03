@@ -37,7 +37,7 @@ check "review sends github.com pull URLs to it" 'github.com/owner/repo/pull/N' "
 for t in PR HERE CHECKOUT ALSO NOTE BASE RUN LOOKED CLONE STOP; do
   check "review acts on $t:" "\`$t:" "$REVIEW"
 done
-check "review clones only with --clone, after asking" 'find-checkout.sh <ref> --clone' "$REVIEW"
+check "review clones only with --clone, after asking" 'find-checkout.sh "<ref>" --clone' "$REVIEW"
 check "a bare PR number keeps today's lookup" 'gh pr view <n> --json number,title,url,headRefName,headRefOid,baseRefName,isCrossRepository,body,files,additions,deletions,closingIssuesReferences' "$REVIEW"
 check "a branch name keeps today's target" '| a branch name' "$REVIEW"
 check "the hand-off runs the review on the URL" '/executor:review <url>' "$REVIEW"
