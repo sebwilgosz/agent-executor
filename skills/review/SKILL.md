@@ -1,6 +1,6 @@
 ---
 name: review
-description: "Executor: review a pull request or the current branch, verifying every finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR ('review #42', 'review github.com/…/pull/42')."
+description: "Executor: review a pull request or the current branch, verifying every finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR as #42, owner/repo#N or a pull URL ('review #42', 'let's review acme/api#7'), from any folder: another repo's PR is handed off to its local checkout."
 effort: high
 ---
 
@@ -10,6 +10,19 @@ Review once, verify every finding independently, then fix the confirmed bugs and
 
 ## 1. Target and mode
 
+**A PR named as `owner/repo#N` or `https://github.com/owner/repo/pull/N`** may belong to another repo, so first run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/find-checkout.sh <ref>`. Its first line, `PR:`, gives the PR's URL. Then:
+
+- `HERE:` this folder is the PR's repo: go on below with the URL, as today.
+- `CHECKOUT:` the repo is checked out in that folder, fetched, its default branch brought up to date where that was safe. Never review it from here: hand it off.
+  - The new session runs `/executor:review <url>`, with `--base origin/<default>` after the URL when `BASE:` is `origin/<default>`, so its summary can say what it worked from.
+  - With a tool that starts a session in a folder, propose that session with it: the `CHECKOUT:` folder, that command as its prompt. Otherwise print the `RUN:` line as the one command to run, with that `--base` after the URL, inside the quotes, when it applies.
+  - Above it, one line each, as printed: `ALSO:` (other folders with the same repo, not used), `NOTE:` (a clone made, a fetch that failed), and `BASE:` when it is `origin/<default>` (the local default branch was left alone, and why).
+  - Then stop: this session reviews nothing.
+- `LOOKED:` and `CLONE:` no checkout under the search roots. List where it looked, show the `CLONE:` command and ask whether to clone. On no, stop: nothing is cloned. On yes, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/find-checkout.sh <ref> --clone` and read its lines as above.
+- `STOP:` give the user that line, which says what to do, and stop.
+
+A bare PR number or a branch name is in this repo: no lookup.
+
 | User gave        | Target                                                                                                                                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | PR number or URL | that pull request (`gh pr view <n> --json number,title,url,headRefName,headRefOid,baseRefName,isCrossRepository,body,files,additions,deletions,closingIssuesReferences`) |
@@ -17,6 +30,8 @@ Review once, verify every finding independently, then fix the confirmed bugs and
 | nothing          | the current branch against its base, plus uncommitted changes                                                                                                            |
 
 **Mode.** Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-mode.sh pr <n|url>` for a PR, or `… branch [<name>]` for a branch, passing `--fix` or `--no-fix` if the user gave one. It prints one line, `MODE: fix · <why>` or `MODE: report-only · <why>`, and that is the mode for the whole review: fix only on your own PR or branch, never on a fork, where the push can't land; `--fix` and `--no-fix` override the rest. Keep `<why>` for the Rounds line.
+
+**`--base origin/<default>`** comes from a hand-off: the checkout's local default branch was left behind or holds local work. Read the rules and neighbouring files below from the PR's head or `origin/<default>`, never from the local default branch, and say so on the summary's Branch line.
 
 Load the rules the code must follow, all that exist: `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter and formatter configs, and two or three neighbouring files of each changed file, for its idiom.
 

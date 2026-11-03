@@ -28,7 +28,7 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 ```markdown
 # Executor review · [<owner>/<repo>#<PR>](PR URL) — <title>
 
-**Branch:** `<branch name>`
+**Branch:** `<branch name>`[ · from origin/<default>, not the local <default>]
 **Verdict:** <❌ Changes required | ⚠️ Mergeable | ✅ Ready>
 **Build:** <✅ passed · `<command>`> | <❌ failed · `<command>`> | <⚪ not run · <reason>>
 CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
@@ -51,5 +51,6 @@ CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 ```
 
 - **The header is the review's reference.** `[<owner>/<repo>#<PR>](PR URL)` is the GitHub shorthand that stays unambiguous when several reviews are printed together — one per repo or per PR — in a multi-repo build. Keep it an `#` heading so each review is its own self-contained, linkable section.
+- **The Branch line names the base** only after a hand-off with `--base origin/<default>`: the checkout's local default branch was dirty, diverged or not up to date, so the review worked from `origin/<default>`, e.g. `` **Branch:** `fix-login` · from origin/main, not the local main ``.
 - **A local diff has no PR**, so the header drops the link: `# Executor review · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
 - **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · fork PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings are all still open and the verdict rule applies to them unchanged.
