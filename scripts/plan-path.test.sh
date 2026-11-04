@@ -279,6 +279,8 @@ check "init: writes a Plans section"    '## Plans' "$INITDOC"
 check "init: moving moves nothing"      'moves nothing' "$INITDOC"
 check "init: prints the mv"             'mv ' "$INITDOC"
 check "init: the env var wins"          '$EXECUTOR_PLANS' "$INITDOC"
+check "init: no mv while the env var is set" 'With `$EXECUTOR_PLANS` set, print no `mv`' "$INITDOC"
+check "init: the config folder waits for the unset" 'once the variable is unset' "$INITDOC"
 
 check "help: runs the summary" 'plan-path.sh --summary' "$HELP"
 check "help mod: runs the summary" 'plan-path.sh' "$(cat hooks/register.ts)"

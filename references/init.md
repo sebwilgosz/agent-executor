@@ -132,7 +132,7 @@ and ask:
 
 On YES write it. The path goes in as given, `~` unexpanded. When the file exists, replace only the `## Plans` section and keep everything else; when it has no such section, add it at the end. Under a central setup the file joins its one approval (S4) instead.
 
-Moving the plans folder moves nothing. When the answer differs from the folder in use, say so and print the command to run yourself: `mkdir -p "<new folder>" && mv "<old folder>"/* "<new folder>"/`, with both paths absolute. Never run it. Before the first plan there is nothing to move: when the old folder doesn't exist, skip this.
+Moving the plans folder moves nothing. With `$EXECUTOR_PLANS` set, print no `mv`: that folder stays in use, so emptying it would hide its live plans from `/executor:build`. Say the folder written here takes effect once the variable is unset. Otherwise, when the answer differs from the folder in use, say so and print the command to run yourself: `mkdir -p "<new folder>" && mv "<old folder>"/* "<new folder>"/`, with both paths absolute. Never run it. Before the first plan there is nothing to move: when the old folder doesn't exist, skip this.
 
 ## E5: Check
 
