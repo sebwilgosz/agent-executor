@@ -31,3 +31,21 @@ test('a help skill without its "## HELP" block goes to the skill', async ($, on)
 
   expect(text).toBe(SKILL_RAN)
 })
+
+test('a bare /executor:help ends with where this repo\'s plans live', async ($, on) => {
+  on('fs.read', () => ({ value: SKILL }))
+  on('process.run', () => ({ value: { exitCode: 0, stdout: 'PLANS:\n  folder /plans (default)\n', stderr: '' } }))
+
+  const { text } = await $.command.run({ command: 'executor:help', args: '' })
+
+  expect(text).toBe('1. REVIEW → /executor:review\n\nPLANS:\n  folder /plans (default)')
+})
+
+test('the help still prints when the plans summary fails', async ($, on) => {
+  on('fs.read', () => ({ value: SKILL }))
+  on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: 'boom' } }))
+
+  const { text } = await $.command.run({ command: 'executor:help', args: '' })
+
+  expect(text).toBe('1. REVIEW → /executor:review')
+})
