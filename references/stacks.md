@@ -41,6 +41,7 @@ The stack stays rooted in live branches, never in merged ones. The ship and revi
 
 - **Use `gh stack` whenever it's available.** It keeps the chain's bases consistent; the manual `gh pr create --base <the branch below>` fallback is only for a repo without stacked PRs (exit 9).
 - **After any PR in the stack merges, run `gh stack sync --prune`.** It restacks every branch above the merged one onto the live base, up to the default branch, and drops the merged branch (see the Commands table).
+- **Then see whether a plan just finished.** For each plan `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --live` prints, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh --mark "<plan>"`. On `DONE`, the plan is now marked done; say so in one line.
 - **Never leave a branch based on a merged branch.** A branch whose base merged is restacked with `gh stack sync --prune` before any more work lands on it.
 - **Never merge in a way that bypasses the restack.** No manual merge that strands the branches above it; let the sync move them onto the live base.
 

@@ -141,6 +141,13 @@ e=$ERRS
   && ok "integrity: the plans resolver is present" \
   || err "integrity: scripts/plan-path.sh missing - /executor:build cannot find or name a plan → $REINSTALL"
 
+# -- finished plans: without plan-state.sh a merged plan stays live and the next
+#    build stops to ask about it; the sweep is what /executor:help lists.
+e=$ERRS
+[ -s "$ROOT/scripts/plan-state.sh" ] || err "integrity: scripts/plan-state.sh missing - /executor:build cannot tell a finished plan → $REINSTALL"
+[ -s "$ROOT/scripts/plan-sweep.sh" ] || err "integrity: scripts/plan-sweep.sh missing - the sweep /executor:help lists cannot run → $REINSTALL"
+[ "$e" = "$ERRS" ] && ok "integrity: finished plans can be told and marked"
+
 # -- finding a PR's checkout: without find-checkout.sh a review of another
 #    repo's PR has no way to its local checkout.
 [ -s "$ROOT/scripts/find-checkout.sh" ] \

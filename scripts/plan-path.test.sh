@@ -108,9 +108,34 @@ is "as written: case kept"   "$DEFAULT/Acme/Web" "$(slug git@github.com:Acme/Web
 is "a dot in the name"       "$DEFAULT/acme/web.app" "$(slug git@github.com:acme/web.app.git)"
 is "a deeper path: the last two parts" "$DEFAULT/team/web" "$(slug https://gitlab.example.org/acme/team/web.git)"
 
+# The origin's host, which the folder drops. A stub stands in for `ssh -G`.
+SSH_BIN="$TMP/ssh-stub"; mkdir -p "$SSH_BIN"
+cat > "$SSH_BIN/ssh" <<'STUB_EOF'
+#!/bin/sh
+[ "$1" = "-G" ] || exit 1
+case "$2" in work-alias) h=git.example.org ;; *) h=$2 ;; esac
+printf 'user git\nhostname %s\n' "$h"
+STUB_EOF
+chmod +x "$SSH_BIN/ssh"
+host_of() {
+  local r="$TMP/slug/$RANDOM$RANDOM"
+  new_repo "$r" "$1"
+  PATH="$SSH_BIN:$PATH" plan_path --host "$r"
+}
+is "host: SSH origin"          "git.example.org" "$(host_of git@git.example.org:acme/web.git)"
+is "host: HTTPS origin"        "github.com"      "$(host_of https://github.com/acme/web.git)"
+is "host: ssh:// with a port"  "git.example.org" "$(host_of ssh://git@git.example.org:2222/acme/web.git)"
+is "host: credentials stay out" "github.com"     "$(host_of https://user:secret@github.com/acme/web.git)"
+is "host: an SSH alias is read as its real host" "git.example.org" "$(host_of git@work-alias:acme/web.git)"
+is "host: an HTTPS name is not an SSH alias" "work-alias" "$(host_of https://work-alias/acme/web.git)"
+is "host: a path has none"     ""                "$(host_of /srv/git/acme/web.git)"
+is "host: a file URL has none" ""                "$(host_of file:///srv/git/acme/web.git)"
+is "host: an option is no host" ""               "$(host_of git@-oProxyCommand=x:acme/web.git)"
+
 NOPE="$TMP/src/no-remote"
 new_repo "$NOPE"
 is "no origin: local/<folder>" "$DEFAULT/local/no-remote" "$(plan_path "$NOPE")"
+is "host: no origin has none" "" "$(plan_path --host "$NOPE")"
 mkdir -p "$NOPE/deep/er"
 is "from a subfolder"          "$DEFAULT/local/no-remote" "$(plan_path "$NOPE/deep/er")"
 is "from the current folder"   "$DEFAULT/local/no-remote" "$(cd "$NOPE/deep" && "$SHELL_BIN" "$SCRIPT" 2>&1)"

@@ -87,7 +87,7 @@ Plans never go in your repository. Each is one dated file in a folder of its own
 ~/.engineer-of-wealth/executor/plans/<org>/<repo>/<YYYY-MM-DD> - <title>.md
 ```
 
-`<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan stays live until its header says `Status: done <date>`, and two live plans in one repository never share a file.
+`<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan stays live until its header says `Status: done <date>`, and two live plans in one repository never share a file. Executor adds that line itself once every item's PR is merged or closed, when a build runs in the repository or a stack syncs after a merge; `scripts/plan-sweep.sh` does it for every repository at once, and `--dry-run` only shows what it would mark.
 
 To put them elsewhere, run `/executor:init`, which writes a `## Plans` section in `~/.engineer-of-wealth/executor/config.md`. The `EXECUTOR_PLANS` environment variable wins over it. Moving the folder moves nothing: init prints the `mv` to run. `/executor:help` shows the folder in use, where the setting comes from and this repository's live plans.
 
