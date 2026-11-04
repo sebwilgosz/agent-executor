@@ -19,6 +19,11 @@
 #   plan-path.sh --new <title> [<repo>]  the path for a new plan, free right now
 #   plan-path.sh --live [<repo>]       live plans, newest first, one path per line
 #   plan-path.sh --summary [<repo>]    what /executor:help prints about plans
+#   plan-path.sh --root                the plans folder
+#   plan-path.sh --all-live            live plans of every <org>/<repo>, one per line
+#   plan-path.sh --slug <plan>         the plan's <org>/<repo>, nothing when it is
+#                                      not in a repo's folder of the plans folder
+#   plan-path.sh --is-done <plan>      done | live
 # A plan is live until a line before its first "## " heading says
 # "Status: done <YYYY-MM-DD>". <repo> defaults to the current folder.
 #
@@ -137,6 +142,34 @@ live_plans() {
   done
 }
 
+# Prints the live plans of every <org>/<repo>. Globs, so a linked-in folder counts.
+all_live() {
+  local dirs=() d
+  shopt -s nullglob
+  dirs=("$PLANS_ROOT"/*/*/)
+  shopt -u nullglob
+  [ "${#dirs[@]}" -gt 0 ] || return 0
+  for d in "${dirs[@]}"; do
+    REPO_FOLDER=${d%/}
+    live_plans
+  done
+}
+
+# Prints <org>/<repo> for a plan: its folder as written, then with links resolved.
+slug_of_plan() {
+  local dir root rel flag
+  for flag in -L -P; do
+    dir=$(cd "$flag" "$(dirname "$1")" 2>/dev/null && pwd "$flag") || return 0
+    root=$(cd "$flag" "$PLANS_ROOT" 2>/dev/null && pwd "$flag") || return 0
+    rel=${dir#"$root"/}
+    [ "$rel" != "$dir" ] || continue
+    case "$rel" in
+      */*/*) ;;
+      */*) printf '%s\n' "$rel"; return 0 ;;
+    esac
+  done
+}
+
 title_from_file() {
   local t=${1##*/}
   t=${t%.md}; t=${t#spec - }; t=${t% - spec}
@@ -200,6 +233,26 @@ case "${1:-}" in
     ;;
   --summary)
     summary "${2:-.}"
+    ;;
+  --root)
+    plans_root
+    root_is_absolute || stop "the plans folder must be absolute: $PLANS_ROOT"
+    printf '%s\n' "$PLANS_ROOT"
+    ;;
+  --all-live)
+    plans_root
+    root_is_absolute || stop "the plans folder must be absolute: $PLANS_ROOT"
+    all_live
+    ;;
+  --slug)
+    [ -n "${2:-}" ] || stop "usage: plan-path.sh --slug <plan>"
+    plans_root
+    root_is_absolute || stop "the plans folder must be absolute: $PLANS_ROOT"
+    slug_of_plan "$2"
+    ;;
+  --is-done)
+    [ -n "${2:-}" ] || stop "usage: plan-path.sh --is-done <plan>"
+    if is_done "$2"; then printf 'done\n'; else printf 'live\n'; fi
     ;;
   -*)
     stop "unknown option: $1"
