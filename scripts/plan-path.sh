@@ -4,7 +4,8 @@
 #   <plans folder>/<org>/<repo>/<YYYY-MM-DD> - <title>.md
 # Plans folder: $EXECUTOR_PLANS, else the first "- <path>" line of "## Plans" in
 # $EOW_HOME/executor/config.md (read by scripts/roots.sh), else
-# $EOW_HOME/executor/plans. EOW_HOME defaults to ~/.engineer-of-wealth.
+# $EOW_HOME/executor/plans. EOW_HOME defaults to ~/.engineer-of-wealth. It must be
+# absolute once ~ is expanded: a relative one is a STOP.
 # <org>/<repo> is the last two parts of the origin URL, as written there, without
 # .git. No usable origin: local/<name>, the folder holding the git common dir, so
 # every worktree of a repo shares one folder.
@@ -102,8 +103,13 @@ repo_folder() {
   REPO_FOLDER="$PLANS_ROOT/$slug"
 }
 
+root_is_absolute() {
+  case "$PLANS_ROOT" in /*) return 0 ;; *) return 1 ;; esac
+}
+
 require_repo() {
   repo_folder "$1" || stop "not a git repository: $1"
+  root_is_absolute || stop "the plans folder must be absolute: $PLANS_ROOT"
 }
 
 is_done() {
@@ -155,7 +161,9 @@ summary() {
   local live first=1 l
   plans_root
   printf 'PLANS:\n  folder     %s (%s)\n' "$PLANS_ROOT" "$PLANS_SOURCE"
-  if repo_folder "$1"; then
+  if ! root_is_absolute; then
+    printf '  this repo  the plans folder must be absolute\n'
+  elif repo_folder "$1"; then
     printf '  this repo  %s\n' "$REPO_FOLDER"
     live=$(live_plans)
     if [ -z "$live" ]; then

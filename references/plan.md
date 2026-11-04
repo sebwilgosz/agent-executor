@@ -12,7 +12,7 @@ The file stays on your machine and the repository is never touched. Because it i
 <plans folder>/<org>/<repo>/<YYYY-MM-DD> - <title>.md
 ```
 
-- **The plans folder:** `$EXECUTOR_PLANS`, else the `## Plans` line in `~/.engineer-of-wealth/executor/config.md` (`/executor:init` writes it), else `~/.engineer-of-wealth/executor/plans`. `plan-path.sh --where` says which.
+- **The plans folder:** `$EXECUTOR_PLANS`, else the `## Plans` line in `~/.engineer-of-wealth/executor/config.md` (`/executor:init` writes it), else `~/.engineer-of-wealth/executor/plans`. `plan-path.sh --where` says which. It must be absolute once `~` is expanded; anything else is a `STOP:`.
 - **`<org>/<repo>`:** from the `origin` URL, or `local/<name>` without an origin. Every worktree of a repo shares the folder, which `plan-path.sh` prints. A missing folder is created on the first write, never on a read.
 - **A plan's name:** `plan-path.sh --new "<title>"` prints it: today's date and the title, with a numeric suffix when the name is taken. The title of a local spec is its file name without `.md`, a leading `spec - ` or a trailing ` - spec` (`plan-path.sh --title "<file>"`). The title of an issue, a URL or text is its H1 or title without a leading `Spec:`.
 

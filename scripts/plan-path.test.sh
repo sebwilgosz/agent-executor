@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Spec tests for where build plans live: scripts/plan-path.sh, the one script
 # that knows the layout, and the skills and docs that go through it.
-#   A. the plans folder's order (env, config, default) and --where;
+#   A. the plans folder's order (env, config, default), --where, and that it
+#      must be absolute;
 #   B. the repo's folder: SSH, HTTPS, any host, no origin, a bare repo's worktree;
 #   C. a new plan's name and a title from a file name;
 #   D. which plans are live;
@@ -67,6 +68,26 @@ is "env beats config: --where"      "env"              "$(EXECUTOR_PLANS=/srv/en
 is "env beats config: the folder"   "/srv/env-plans/acme/web" "$(EXECUTOR_PLANS=/srv/env-plans "$SHELL_BIN" "$SCRIPT" "$WEB" 2>&1)"
 is "env: ~ expanded"                "$HOME/env/acme/web" "$(EXECUTOR_PLANS='~/env' "$SHELL_BIN" "$SCRIPT" "$WEB" 2>&1)"
 is "empty env: not set"             "config"           "$(EXECUTOR_PLANS= "$SHELL_BIN" "$SCRIPT" --where 2>&1)"
+rm -f "$CFG"
+
+# A relative plans folder would put plans inside whatever folder the call runs in.
+RELATIVE="STOP: the plans folder must be absolute: plans"
+env_plans() { EXECUTOR_PLANS=plans "$SHELL_BIN" "$SCRIPT" "$@" 2>&1; }
+is "relative env: the repo's folder stops" "$RELATIVE" "$(env_plans "$WEB")"
+is "relative env: --new stops"       "$RELATIVE"        "$(env_plans --new "A title" "$WEB")"
+is "relative env: --live stops"      "$RELATIVE"        "$(env_plans --live "$WEB")"
+is "relative env: still exit 0"      "0"                "$(env_plans "$WEB" >/dev/null; echo $?)"
+is "relative env: --where names it"  "env"              "$(env_plans --where)"
+OUT=$(env_plans --summary "$WEB")
+check "relative env: summary shows it" "plans (env)"    "$OUT"
+check "relative env: summary says why" "must be absolute" "$OUT"
+refute "relative env: summary no STOP" "STOP:"          "$OUT"
+refute "relative env: summary no path" "plans/acme/web" "$OUT"
+config "## Plans" "- plans"
+is "relative config: the repo's folder stops" "$RELATIVE" "$(plan_path "$WEB")"
+is "relative config: --new stops"    "$RELATIVE"        "$(plan_path --new "A title" "$WEB")"
+is "relative config: --live stops"   "$RELATIVE"        "$(plan_path --live "$WEB")"
+is "relative config: --where names it" "config"         "$(plan_path --where)"
 rm -f "$CFG"
 
 # B. The repo's folder.
