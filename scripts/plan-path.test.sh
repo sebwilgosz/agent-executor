@@ -269,7 +269,7 @@ check "README: the config file" '~/.engineer-of-wealth/executor/config.md' "$REA
 check "README: the env var"     'EXECUTOR_PLANS' "$README"
 check "README: a symlink"       'ln -s' "$README"
 
-local_refs=$(grep -nE '/Users/|\[\[' scripts/plan-path.sh references/plan.md skills/build/SKILL.md)
+local_refs=$(grep -nE '/Users/|\[\[[A-Za-z]' scripts/plan-path.sh references/plan.md skills/build/SKILL.md)
 is "nothing local in what ships" "" "$local_refs"
 
 echo
