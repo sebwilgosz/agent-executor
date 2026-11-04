@@ -13,7 +13,7 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
+Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)) and where your build plans live (see [Where plans live](#where-plans-live)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
 
 ## What it does today: review
 
@@ -47,7 +47,7 @@ Name a pull request of another repository as `owner/repo#N` or by its URL, in an
 
 5. **No checkout.** It lists where it looked and asks before cloning into the first root (`gh repo clone acme/api ~/Projects/api`). On no, nothing is cloned.
 
-The search roots are Executor's one setting, in `~/.engineer-of-wealth/executor/config.md`, searched in order. `/executor:init` asks for them, `~/Projects` by default, and the setup check warns about a root that doesn't exist:
+The search roots are a setting in `~/.engineer-of-wealth/executor/config.md`, searched in order. `/executor:init` asks for them, `~/Projects` by default, and the setup check warns about a root that doesn't exist:
 
 ```markdown
 ## Roots
@@ -65,19 +65,33 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch; another repo's PR opens in its checkout |
 | `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
-| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable and the search roots. You type it |
+| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable, the search roots and the plans folder. You type it |
 
 ## Build from a spec
 
 Type `/executor:build` with a spec (a path, a URL, an issue, or the text itself), or ask in plain words ("build docs/rfc-12.md"). You write the spec; a thin one gets questions, each with a suggested answer, before anything is built.
 
-1. **Plan.** Executor splits the spec into features and stacks and writes the plan as a checklist in `.executor/plan.md`: one item per feature, linked to its part of the spec. The file stays on your machine (it goes in `.git/info/exclude`). You approve it before anything is built.
+1. **Plan.** Executor splits the spec into features and stacks and writes the plan as a checklist: one item per feature, linked to its part of the spec. The file stays on your machine, outside the repository (see [Where plans live](#where-plans-live)). You approve it before anything is built.
 2. **Foundation.** Shared groundwork (schema, auth, skeleton) is built alone first. Executor stops after its PR; merge it and run `/executor:build` again.
 3. **Build.** One `executor:builder` agent per stack, all in parallel, each in its own worktree. A builder gets only its own feature's requirements. It starts by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds in the repo's own patterns with a commit per finished step, and opens a draft PR.
 4. **Review.** Every PR is reviewed as above. A ✅ or ⚠️ marks it ready and starts the next feature of its stack. A builder that stops on a question stops only its own stack.
 5. **Report.** The checklist as it stands, the open questions in one message, and what is yours to merge, bottom of each stack first. Run `/executor:build` again to carry on.
 
 A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. A refactor the feature needs gets its own PR below it. The rules are in `references/implementation.md`, `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
+
+## Where plans live
+
+Plans never go in your repository. Each is one dated file in a folder of its own for that repository, shared by all its worktrees:
+
+```
+~/.engineer-of-wealth/executor/plans/<org>/<repo>/<YYYY-MM-DD> - <title>.md
+```
+
+`<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan stays live until its header says `Status: done <date>`, and two live plans in one repository never share a file.
+
+To put them elsewhere, run `/executor:init`, which writes a `## Plans` section in `~/.engineer-of-wealth/executor/config.md`. The `EXECUTOR_PLANS` environment variable wins over it. Moving the folder moves nothing: init prints the `mv` to run. `/executor:help` shows the folder in use, where the setting comes from and this repository's live plans.
+
+To keep plans in a notes app, link the folder in: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.
 
 ## Requirements
 
