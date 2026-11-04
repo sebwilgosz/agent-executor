@@ -3,7 +3,8 @@
 # An item is a "- [ ]" or "- [x]" line. It is finished when its PR ("PR #n" in the
 # text after its spec link) is merged or closed, or, with no PR number, when its
 # branch ("branch <name>" there) is an ancestor of the default branch. A blocked
-# item (a stop sign) is unfinished: any PR it mentions is part of its question.
+# item (a stop sign) is unfinished: any PR it mentions is part of its question. So
+# is one being built (a hammer): its new branch sits at the default branch's tip.
 #
 # The PR is looked up in the plan's own repo, from its folder, so this works from
 # anywhere. A branch needs a checkout: the current folder has to be in the plan's
@@ -170,7 +171,7 @@ note_open() { OPEN_COUNT=$((OPEN_COUNT+1)); [ -n "$FIRST_OPEN" ] || FIRST_OPEN=$
 for item in "${items[@]}"; do
   text=$(state_text "$item")
   case "$text" in
-    *⛔*) note_open "$item"; continue ;;
+    *⛔*|*🔨*) note_open "$item"; continue ;;
   esac
   if [[ $text =~ $PR_RE ]]; then
     n=${BASH_REMATCH[2]}

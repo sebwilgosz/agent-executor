@@ -182,6 +182,10 @@ is "the plan's folder is the one plan-path prints" "$LOCALF" "$(dirname "$P")"
 is "branch only: gh is not asked about a PR" "" "$(grep -F 'pr view' "$GH_CALLS")"
 P=$(plan "local/scratch" branch-open "$(item x Login 'branch plans/merged ✅ ready')" "$(item ' ' Export 'branch plans/unmerged ⏳')")
 is "branch not merged: OPEN" "OPEN 1 of 2: Export" "$(in_local "$P")"
+gitl branch plans/building
+P=$(plan "local/scratch" branch-building "$(item ' ' Login 'branch plans/building 🔨 building')")
+is "a branch still at the default branch's tip, being built: OPEN" "OPEN 1 of 1: Login" "$(in_local "$P")"
+is "being built: not marked" "0" "$(in_local --mark "$P" >/dev/null; marks "$P")"
 P=$(plan "local/scratch" branch-gone "$(item x Login 'branch plans/deleted ✅ ready')")
 OUT=$(in_local "$P")
 check "branch gone: can't tell, UNKNOWN" "UNKNOWN: " "$OUT"
