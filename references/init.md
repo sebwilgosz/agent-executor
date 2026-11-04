@@ -37,7 +37,7 @@ On YES run exactly `gh extension install github/gh-stack`, then `gh stack --vers
 - Stacked PRs must be enabled on each GitHub repository. Where they are not, `gh stack submit` fails and Executor falls back to plain PRs on its own.
 - In each repository Executor builds in, two settings keep `gh stack` from stopping at a prompt: `git config rerere.enabled true` and `git config remote.pushDefault origin`. If the current folder is a git repository and either is unset, offer to set them here (YES / NO); never set them globally.
 
-**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails.
+**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3, and the plans folder, E4), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails.
 
 ## E2: Enable Executor in this repository
 
@@ -82,7 +82,7 @@ into the first one only when you say yes.
 Folders, in search order?   Default: ~/Projects
 ```
 
-An empty answer takes the default. Say which folders don't exist yet; never create them (E4 flags them too). Then show the file with the user's roots, for example:
+An empty answer takes the default. Say which folders don't exist yet; never create them (E5 flags them too). Then show the file with the user's roots, for example:
 
 ```markdown
 # Executor settings
@@ -101,13 +101,46 @@ and ask:
 
 On YES write it. Paths go in as given, `~` unexpanded. When the file exists, replace only the `## Roots` list and keep everything else. Under a central setup the file joins its one approval (S4) instead.
 
-## E4: Check
+## E4: Plans folder
+
+Where `/executor:build` keeps its plans, one folder per repository inside it. Nothing goes in the repository itself.
+
+Read the same file. The plans folder is the first `- ` line of its `## Plans` section. With `$EXECUTOR_PLANS` set, say first: "`$EXECUTOR_PLANS` is set to <value> and wins over what is written here."
+
+- **Folder set:** show it and ask **KEEP** (write nothing, go to E5) or **CHANGE** (ask as below, with it as the default).
+- **No file, no `## Plans` section or an empty list:** ask, with `~/.engineer-of-wealth/executor/plans` as the default.
+
+```
+PLANS FOLDER — where Executor keeps its build plans
+
+Folder?   Default: ~/.engineer-of-wealth/executor/plans
+```
+
+An empty answer takes the default. The answer is an absolute path or starts with `~`. Never create the folder: the first plan does. Then show the section, for example:
+
+```markdown
+## Plans
+- ~/.engineer-of-wealth/executor/plans
+```
+
+and ask:
+
+```
+- YES — write it
+- FIX — tell me what to change
+```
+
+On YES write it. The path goes in as given, `~` unexpanded. When the file exists, replace only the `## Plans` section and keep everything else; when it has no such section, add it at the end. Under a central setup the file joins its one approval (S4) instead.
+
+Moving the plans folder moves nothing. When the answer differs from the folder in use, say so and print the command to run yourself: `mkdir -p "<new folder>" && mv "<old folder>"/* "<new folder>"/`, with both paths absolute. Never run it. Before the first plan there is nothing to move: when the old folder doesn't exist, skip this.
+
+## E5: Check
 
 Run `bash <plugin root>/scripts/self-audit.sh` once, exactly that command with the absolute path and no quotes. Reply with its summary line and every `✗` and `⚠` line as it is: each one already says what to do.
 
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1, the read-only detect in E2 and reading `config.md` in E3 are the only things that run without asking. The E2 and E3 writes run only on YES.
+- Ask before installing or configuring anything; the table in E1, the read-only detect in E2 and reading `config.md` in E3 and E4 are the only things that run without asking. The E2, E3 and E4 writes run only on YES.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
 - Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
 - Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2.
