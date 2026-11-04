@@ -25,7 +25,7 @@ The folder is the state: there is no pointer file. A plan stays live until its h
 `scripts/plan-state.sh <plan>` reads the plan and prints one line, and it never fails:
 
 - `NONE`: there is no plan.
-- `DONE <n> items`: every item is finished. An item is finished when its PR is merged or closed without merging (named in the line), or, with no PR number, when its branch is an ancestor of the default branch.
+- `DONE <n> items`: every item is finished. An item is finished when its PR is merged or closed without merging (named in the line), or, with no PR number, when its branch is an ancestor of the default branch. An item being built or blocked is never finished, and neither is an unticked one whose branch doesn't exist yet.
 - `OPEN <k> of <n>: <first unfinished item>`: `<k>` items aren't finished.
 - `UNKNOWN: <why>`: it can't tell, for example no network, gh not signed in, or a branch item read outside its repo's checkout. It never marks anything.
 

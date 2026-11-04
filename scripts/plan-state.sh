@@ -5,6 +5,8 @@
 # branch ("branch <name>" there) is an ancestor of the default branch. A blocked
 # item (a stop sign) is unfinished: any PR it mentions is part of its question. So
 # is one being built (a hammer): its new branch sits at the default branch's tip.
+# An unticked item whose branch doesn't exist yet is not started, so unfinished; a
+# ticked item's missing branch can't be told apart from a deleted one: UNKNOWN.
 #
 # The PR is looked up in the plan's own repo, from its folder, so this works from
 # anywhere. A branch needs a checkout: the current folder has to be in the plan's
@@ -54,6 +56,7 @@ PLAN="${1:-}"
 [ -r "$PLAN" ] || unknown "cannot read $PLAN"
 
 ITEM_RE='^[[:space:]]*- \[[ xX]\] '
+UNTICKED_RE='^[[:space:]]*- \[ \] '
 PR_RE='(^|[^[:alnum:]])PR #([0-9]+)'
 BRANCH_RE='(^|[[:space:]])branch `?([^[:space:]`]+)'
 TEXT_RE='[^[:space:]]'
@@ -144,15 +147,18 @@ need_checkout() {
   CHECKOUT_OK=1
 }
 
-# Returns 0 when the branch is an ancestor of the default branch, 1 when it isn't;
-# ends with UNKNOWN when git can't tell.
+# Returns 0 when the branch is an ancestor of the default branch, 1 when it isn't
+# or, on an unticked item ($2), doesn't exist yet; ends with UNKNOWN when git can't
+# tell.
 branch_merged() {
   local rc
   need_checkout "$1"
   git check-ref-format --branch "$1" >/dev/null 2>&1 \
     || unknown "not a branch name: $1"
-  git rev-parse --verify --quiet "refs/heads/$1^{commit}" >/dev/null 2>&1 \
-    || unknown "branch $1 not found, so it cannot be read"
+  if ! git rev-parse --verify --quiet "refs/heads/$1^{commit}" >/dev/null 2>&1; then
+    [[ $2 =~ $UNTICKED_RE ]] && return 1
+    unknown "branch $1 not found, so it cannot be read"
+  fi
   git merge-base --is-ancestor "refs/heads/$1" "$CMP" 2>"$ERR"
   rc=$?
   case "$rc" in
@@ -182,7 +188,7 @@ for item in "${items[@]}"; do
       *) note_open "$item" ;;
     esac
   elif [[ $text =~ $BRANCH_RE ]]; then
-    branch_merged "${BASH_REMATCH[2]}" || note_open "$item"
+    branch_merged "${BASH_REMATCH[2]}" "$item" || note_open "$item"
   else
     note_open "$item"
   fi

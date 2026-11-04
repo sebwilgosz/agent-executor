@@ -190,6 +190,10 @@ P=$(plan "local/scratch" branch-gone "$(item x Login 'branch plans/deleted ✅ r
 OUT=$(in_local "$P")
 check "branch gone: can't tell, UNKNOWN" "UNKNOWN: " "$OUT"
 check "branch gone: names it" "plans/deleted" "$OUT"
+P=$(plan "local/scratch" branch-not-yet "$(item x Login 'branch plans/merged ✅ ready')" "$(item ' ' Export 'branch plans/next off plans/merged')")
+is "a branch not made yet, on an unticked item: OPEN" "OPEN 1 of 2: Export" "$(in_local "$P")"
+OUT=$(cd "$TMP" && "$SHELL_BIN" "$STATE" "$P" 2>&1)
+check "a branch not made yet, outside a repo: still UNKNOWN" "UNKNOWN: " "$OUT"
 P=$(plan "local/scratch" branch-dash "$(item x Login 'branch --help ✅ ready')")
 check "a branch name that reads as an option: UNKNOWN" "UNKNOWN: " "$(in_local "$P")"
 P=$(plan "local/scratch" branch-away "$(item x Login 'branch plans/merged ✅ ready')")
