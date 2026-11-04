@@ -111,7 +111,7 @@ Read the same file. The plans folder is the first `- ` line of its `## Plans` se
 - **No file, no `## Plans` section or an empty list:** ask, with `~/.engineer-of-wealth/executor/plans` as the default.
 
 ```
-PLANS FOLDER — where Executor keeps its build plans
+PLANS FOLDER - where Executor keeps its build plans
 
 Folder?   Default: ~/.engineer-of-wealth/executor/plans
 ```
@@ -126,8 +126,8 @@ An empty answer takes the default. The answer is an absolute path or starts with
 and ask:
 
 ```
-- YES — write it
-- FIX — tell me what to change
+- YES - write it
+- FIX - tell me what to change
 ```
 
 On YES write it. The path goes in as given, `~` unexpanded. When the file exists, replace only the `## Plans` section and keep everything else; when it has no such section, add it at the end. Under a central setup the file joins its one approval (S4) instead.

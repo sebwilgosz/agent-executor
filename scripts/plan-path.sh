@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# plan-path.sh — where build plans live, and which are live. No AI. The only
+# plan-path.sh - where build plans live, and which are live. No AI. The only
 # code that knows the layout:
 #   <plans folder>/<org>/<repo>/<YYYY-MM-DD> - <title>.md
 # Plans folder: $EXECUTOR_PLANS, else the first "- <path>" line of "## Plans" in

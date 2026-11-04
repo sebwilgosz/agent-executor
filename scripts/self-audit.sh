@@ -139,7 +139,7 @@ e=$ERRS
 #    name or carry on a plan.
 [ -s "$ROOT/scripts/plan-path.sh" ] \
   && ok "integrity: the plans resolver is present" \
-  || err "integrity: scripts/plan-path.sh missing — /executor:build cannot find or name a plan → $REINSTALL"
+  || err "integrity: scripts/plan-path.sh missing - /executor:build cannot find or name a plan → $REINSTALL"
 
 # -- finding a PR's checkout: without find-checkout.sh a review of another
 #    repo's PR has no way to its local checkout.
