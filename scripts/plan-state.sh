@@ -9,7 +9,9 @@
 # ticked item's missing branch can't be told apart from a deleted one: UNKNOWN.
 #
 # The PR is looked up in the plan's own repo, from its folder, so this works from
-# anywhere. A branch needs a checkout: the current folder has to be in the plan's
+# anywhere. The folder drops the host: it comes from this folder's origin when this
+# is a checkout of the plan's repo, then the plan's "Host: <host>" line, then gh's
+# default host. A branch needs a checkout: the current folder has to be in the plan's
 # repo. Every gh and git call is wrapped; a failure is logged to
 # ~/.engineer-of-wealth/executor/plan-state.log (EOW_HOME overrides the root) and
 # is an UNKNOWN, which never marks anything. One failed item makes the whole plan
@@ -57,6 +59,7 @@ PLAN="${1:-}"
 
 ITEM_RE='^[[:space:]]*- \[[ xX]\] '
 UNTICKED_RE='^[[:space:]]*- \[ \] '
+HOST_RE='^[[:alnum:]][[:alnum:].-]*$'
 PR_RE='(^|[^[:alnum:]])PR #([0-9]+)'
 BRANCH_RE='(^|[[:space:]])branch `?([^[:space:]`]+)'
 TEXT_RE='[^[:space:]]'
@@ -115,6 +118,38 @@ ERR=$(mktemp) || unknown "cannot make a temp file"
 TMP_PLAN=""
 trap 'rm -f "$ERR" "$TMP_PLAN"' EXIT
 
+# Is this folder a checkout of the plan's repo?
+in_plan_checkout() {
+  local here plan_dir
+  here=$(plan_path "$PWD")
+  case "$here" in STOP:*) return 1 ;; esac
+  plan_dir=$(cd "$(dirname "$PLAN")" 2>/dev/null && pwd)
+  [ "$here" = "$plan_dir" ]
+}
+
+# Prints the value of the plan's "Host:" header line, nothing without one.
+plan_host() {
+  local l
+  while IFS= read -r l || [ -n "$l" ]; do
+    l=${l%$'\r'}
+    case "$l" in
+      "## "*) return 0 ;;
+      "Host: "*) printf '%s' "${l#Host: }"; return 0 ;;
+    esac
+  done < "$PLAN"
+}
+
+# Sets REPO_ARG once, what gh gets as --repo: [<host>/]<org>/<repo>.
+REPO_ARG=""
+set_repo_arg() {
+  [ -z "$REPO_ARG" ] || return 0
+  local host=""
+  if in_plan_checkout; then host=$(plan_path --host "$PWD"); fi
+  [ -n "$host" ] || host=$(plan_host)
+  [ -z "$host" ] || [[ $host =~ $HOST_RE ]] || unknown "not a host: $host, in $PLAN"
+  REPO_ARG="${host:+$host/}$SLUG"
+}
+
 # Sets PR_STATE to MERGED, CLOSED or OPEN, or ends with UNKNOWN.
 pr_state() {
   local s
@@ -122,7 +157,8 @@ pr_state() {
     ""|local/*) unknown "PR #$1 on a plan with no GitHub repo: $PLAN" ;;
   esac
   command -v gh >/dev/null 2>&1 || unknown "gh is not installed, so PR #$1 cannot be read"
-  s=$(GH_PROMPT_DISABLED=1 gh pr view "$1" --repo "$SLUG" --json state --jq .state 2>"$ERR" </dev/null) \
+  set_repo_arg
+  s=$(GH_PROMPT_DISABLED=1 gh pr view "$1" --repo "$REPO_ARG" --json state --jq .state 2>"$ERR" </dev/null) \
     || unknown "gh pr view $1 failed: $(head -1 "$ERR")"
   case "$s" in
     MERGED|CLOSED|OPEN) PR_STATE=$s ;;
@@ -136,12 +172,7 @@ CHECKOUT_OK=""
 CMP=""
 need_checkout() {
   [ -z "$CHECKOUT_OK" ] || return 0
-  local here plan_dir
-  here=$(plan_path "$PWD")
-  case "$here" in STOP:*) unknown "no checkout of this plan's repo here, to read branch $1: $PWD" ;; esac
-  plan_dir=$(cd "$(dirname "$PLAN")" 2>/dev/null && pwd)
-  [ "$here" = "$plan_dir" ] \
-    || unknown "no checkout of this plan's repo here, to read branch $1: $PWD"
+  in_plan_checkout || unknown "no checkout of this plan's repo here, to read branch $1: $PWD"
   . "$SELF_DIR/default-branch.sh" </dev/null
   CMP=$cmp
   CHECKOUT_OK=1

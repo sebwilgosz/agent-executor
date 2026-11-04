@@ -57,6 +57,14 @@ s=$(awk -v r="$repo" -v n="$n" '$1==r && $2==n {print $3}' "$GH_TABLE")
 echo "$s"
 STUB_EOF
 chmod +x "$STUB/gh"
+# The stub reads an SSH alias the way `ssh -G` prints it.
+cat > "$STUB/ssh" <<'STUB_EOF'
+#!/bin/sh
+[ "$1" = "-G" ] || exit 1
+case "$2" in work-alias) h=ghe.example.com ;; *) h=$2 ;; esac
+printf 'user git\nhostname %s\n' "$h"
+STUB_EOF
+chmod +x "$STUB/ssh"
 export PATH="$STUB:$PATH"
 
 state()  { "$SHELL_BIN" "$STATE" "$@" 2>&1; }
@@ -162,6 +170,41 @@ is "nothing to look up: gh not called" "" "$(cat "$GH_CALLS")"
 is "a relative plans folder: its STOP is passed on" \
   "STOP: the plans folder must be absolute: rel/plans" \
   "$(EXECUTOR_PLANS=rel/plans state "$P")"
+
+# The host of a PR: the plans folder drops it, so it comes from elsewhere.
+origin_repo() {
+  git init -q -b main "$1"
+  git -C "$1" remote add origin "$2"
+}
+in_dir() { local d=$1; shift; (cd "$d" && "$SHELL_BIN" "$STATE" "$@" 2>&1); }
+add_host() { local c; c=$(cat "$2"); printf 'Host: %s\n%s\n' "$1" "$c" > "$2"; }
+GHE="$TMP/src/ghe"; origin_repo "$GHE" git@ghe.example.com:acme/web.git
+GHE_HTTPS="$TMP/src/ghe-https"; origin_repo "$GHE_HTTPS" https://user:secret@ghe.example.com:8443/acme/web.git
+ALIAS="$TMP/src/alias"; origin_repo "$ALIAS" git@work-alias:acme/web.git
+DOTCOM="$TMP/src/dotcom"; origin_repo "$DOTCOM" git@github.com:acme/web.git
+
+prs "acme/web 12 MERGED" "ghe.example.com/acme/web 12 OPEN"
+P=$(plan acme/web host-checkout "$(item x Login 'PR #12 ✅ ready')")
+is "from its checkout on another host: that host's PR" "OPEN 1 of 1: Login" "$(in_dir "$GHE" --mark "$P")"
+is "the same number on the default host marks nothing" "0" "$(marks "$P")"
+is "an HTTPS origin with a port and credentials" "OPEN 1 of 1: Login" "$(in_dir "$GHE_HTTPS" "$P")"
+is "an SSH alias is read as its real host" "OPEN 1 of 1: Login" "$(in_dir "$ALIAS" "$P")"
+prs "acme/web 12 OPEN" "github.com/acme/web 12 MERGED"
+is "from a github.com checkout: asks github.com" "DONE 1 items" "$(in_dir "$DOTCOM" "$P")"
+
+prs "acme/web 12 MERGED" "ghe.example.com/acme/web 12 OPEN"
+add_host ghe.example.com "$P"
+is "elsewhere: the plan's Host line" "OPEN 1 of 1: Login" "$(in_dir "$TMP" --mark "$P")"
+is "elsewhere: the same number on the default host marks nothing" "0" "$(marks "$P")"
+P=$(plan acme/web host-wins "$(item x Login 'PR #12 ✅ ready')")
+add_host other.example.com "$P"
+is "in a checkout its origin wins over the Host line" "OPEN 1 of 1: Login" "$(in_dir "$GHE" "$P")"
+P=$(plan acme/web host-bad "$(item x Login 'PR #12 ✅ ready')")
+add_host 'not a host' "$P"
+check "a Host line that is no host: UNKNOWN" "UNKNOWN: " "$(in_dir "$TMP" "$P")"
+P=$(plan acme/web host-below "$(item x Login 'PR #12 ✅ ready')")
+printf 'Host: ghe.example.com\n' >> "$P"
+is "a Host line under a heading doesn't count" "DONE 1 items" "$(in_dir "$TMP" "$P")"
 
 # B. An item with only a branch: an ancestor of the default branch, or not.
 LOCAL="$TMP/src/scratch"
@@ -342,6 +385,8 @@ STACKS=$(sed -n '/^## Keeping a stack healthy/,/^## Titles/p' references/stacks.
 check "stacks: after the sync" 'plan-state.sh --mark' "$STACKS"
 check "plan.md: how a plan is marked" 'plan-state.sh --mark' "$(cat references/plan.md)"
 check "plan.md: names the sweep" 'plan-sweep.sh' "$(cat references/plan.md)"
+check "plan.md: the Host line" 'Host: <host>' "$(cat references/plan.md)"
+check "build step 2: records a host other than github.com" 'plan-path.sh --host' "$(sed -n '/^## 2\./,/^## 3\./p' skills/build/SKILL.md)"
 check "plan.md: an item with only a branch" 'branch <name>' "$(cat references/plan.md)"
 HELPBLOCK=$(awk '/^## HELP$/{h=1} h' skills/help/SKILL.md | awk '/^```$/{f++; next} f==1')
 is "help: lists the sweep in one line" "1" "$(printf '%s\n' "$HELPBLOCK" | grep -c 'plan-sweep.sh')"

@@ -29,6 +29,8 @@ The folder is the state: there is no pointer file. A plan stays live until its h
 - `OPEN <k> of <n>: <first unfinished item>`: `<k>` items aren't finished.
 - `UNKNOWN: <why>`: it can't tell, for example no network, gh not signed in, or a branch item read outside its repo's checkout. It never marks anything.
 
+The plans folder holds `<org>/<repo>` and no host. A PR is looked up on the host of the origin when this runs from a checkout of the plan's repo, then on the plan's `Host: <host>` line, then on gh's default host.
+
 `plan-state.sh --mark <plan>` does the same and, on `DONE`, adds `Status: done <today>` to the header, once. The plan stays in its folder; the dated names keep the history in order. Build step 0, build step 5 and the `gh stack sync --prune` after a merge all run it. `scripts/plan-sweep.sh` runs it on every live plan of the plans folder, for the repos no build is touching; `--dry-run` changes nothing.
 
 ## Shape
@@ -49,6 +51,7 @@ Spec: [<spec title>](<path or URL of the spec>)
 - [ ] <feature> — [<spec part>](<link>)
 ```
 
+- **`Host: <host>`**, under the `Spec:` line, only when `plan-path.sh --host` prints a host other than `github.com`, so the plan can be read from outside a checkout.
 - **One item per feature**: a checkbox, the feature's name, a link to the part of the spec it owns, then its PR and state once there is one.
 - **Grouped by stack**, as `references/stacks.md` maps a spec: the foundation alone first, a chain of dependent features in one stack bottom-up, independent features in stacks of their own. Stacks are what runs in parallel; the items inside one run in order.
 - **Every requirement of the spec belongs to exactly one item.** None is left out, none is built twice.

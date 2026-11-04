@@ -49,7 +49,7 @@ Run the spec check of `references/implementation.md`, step 0, on the whole spec.
 
 Split the spec into features and stacks as `references/stacks.md` maps them, each feature small enough to be one readable PR. Every requirement belongs to exactly one feature.
 
-Name the plan with the spec's title: for a spec that is a local file, `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --title "<spec file>"`; for an issue, a URL or text, its H1 or title. Then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --new "<title>"` prints the plan's path. Write the plan there in the shape of `references/plan.md`, creating the folder if it is missing. Nothing goes in the repository. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
+Name the plan with the spec's title: for a spec that is a local file, `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --title "<spec file>"`; for an issue, a URL or text, its H1 or title. Then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --new "<title>"` prints the plan's path. Write the plan there in the shape of `references/plan.md`, creating the folder if it is missing. If `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --host` prints a host other than `github.com`, its header gets the `Host: <host>` line. Nothing goes in the repository. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
 
 ## 3. Build
 

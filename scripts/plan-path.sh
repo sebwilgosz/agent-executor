@@ -24,6 +24,9 @@
 #   plan-path.sh --slug <plan>         the plan's <org>/<repo>, nothing when it is
 #                                      not in a repo's folder of the plans folder
 #   plan-path.sh --is-done <plan>      done | live
+#   plan-path.sh --host [<repo>]       the origin's host, nothing when it names none;
+#                                      the folder drops it, so a plan records any
+#                                      but github.com in a "Host: <host>" line
 # A plan is live until a line before its first "## " heading says
 # "Status: done <YYYY-MM-DD>". <repo> defaults to the current folder.
 #
@@ -84,6 +87,25 @@ slug_from_url() {
   case "$owner" in ""|.|..) return 0 ;; esac
   case "$name" in ""|.|..) return 0 ;; esac
   printf '%s/%s' "$owner" "$name"
+}
+
+# Prints the host of a remote URL, nothing when it names none. An SSH one may name
+# an alias: ssh -G reads the real host from the ssh config, with no network.
+host_from_url() {
+  local h real via_ssh=1
+  case "$1" in
+    ssh://*|git+ssh://*) h=${1#*://} ;;
+    *://*) h=${1#*://}; via_ssh=0 ;;
+    *:*) h=${1%%:*} ;;
+    *) return 0 ;;
+  esac
+  h=${h%%/*}; h=${h##*@}; h=${h%%:*}
+  case "$h" in [[:alnum:]]*) ;; *) return 0 ;; esac
+  if [ "$via_ssh" -eq 1 ]; then
+    real=$(ssh -G "$h" 2>/dev/null </dev/null | awk '$1 == "hostname" { print $2; exit }')
+    h=${real:-$h}
+  fi
+  printf '%s\n' "$h"
 }
 
 # Prints local/<name> from the absolute git common dir.
@@ -253,6 +275,10 @@ case "${1:-}" in
   --is-done)
     [ -n "${2:-}" ] || stop "usage: plan-path.sh --is-done <plan>"
     if is_done "$2"; then printf 'done\n'; else printf 'live\n'; fi
+    ;;
+  --host)
+    require_repo "${2:-.}"
+    host_from_url "$(git -C "${2:-.}" config --get remote.origin.url 2>/dev/null)"
     ;;
   -*)
     stop "unknown option: $1"
