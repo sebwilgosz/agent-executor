@@ -1,7 +1,7 @@
 ---
 name: build
 description: "Executor: build a spec (an RFC, a feature spec, an issue) into a stack of reviewed pull requests. Checks the spec, plans it as a checklist of features you approve, builds each feature with its own builder agent in parallel worktrees, reviews and fixes every PR, and leaves the merging to you. Use when the user asks to build or implement a spec ('build this', 'executor, build docs/rfc-12.md', 'implement this RFC')."
-allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*)
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
 ---
 
 # EXECUTOR · BUILD
@@ -13,6 +13,8 @@ Read before you start, from the plugin root: `references/implementation.md` (ste
 **First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.4.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
 
 ## 0. Carry on, or start
+
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh .`, which moves a legacy `.executor/` this repo still holds to its plans folder. On `No legacy .executor/ under ...`, say nothing. Otherwise say in one line that it moved the legacy `.executor/`, naming any `clash:`, `left:`, `failed:` or `STOP:` line, and go on: what it reports stays where it is.
 
 Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --live`: this repo's live plans, newest first, one path per line. On a `STOP:` line, give the user that line and stop.
 

@@ -122,6 +122,14 @@ is "done: already marked keeps its own date, once" 'Status: done 2026-10-29' "$(
 check "done: no date in the name, its modification time" 'Status: done 2026-08-08' "$(cat "$PLANS/acme/web/undated.md" 2>/dev/null)"
 there "done: what isn't a plan goes to legacy/" "$PLANS/acme/web/legacy/done/notes.txt"
 
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+write "$WEB/.executor/done/2026-10-30 - b.md" '# Build: B\n\n- [x] send - PR #1'
+migrate "$SRC" >/dev/null
+is "done: no heading below, the line still goes above the first item" \
+  "$(printf '# Build: B\nStatus: done 2026-10-30\n\n- [x] send - PR #1')" \
+  "$(cat "$PLANS/acme/web/2026-10-30 - b.md" 2>/dev/null)"
+
 # C. Anything else.
 reset
 new_repo "$WEB" "git@github.com:acme/web.git"
@@ -324,6 +332,9 @@ is "host: already there, once" 1 "$(grep -c '^Host:' "$PLANS/acme/web/2026-10-15
 host_plan "https://git.acme.test/acme/web.git" '# Build: A\n\n## Stack\n- [ ] x'
 migrate "$SRC" >/dev/null
 is "host: no Spec line, under the header's text" "$(printf '# Build: A\nHost: git.acme.test\n\n## Stack\n- [ ] x')" "$(cat "$PLANS/acme/web/2026-10-15 - A.md")"
+host_plan "https://git.acme.test/acme/web.git" '# Build: A\nSpecs: [a](/a.md), [b](/b.md)\nNote\n\n## Stack'
+migrate "$SRC" >/dev/null
+is "host: under a Specs line too" "$(printf '# Build: A\nSpecs: [a](/a.md), [b](/b.md)\nHost: git.acme.test\nNote\n\n## Stack')" "$(cat "$PLANS/acme/web/2026-10-15 - A.md")"
 host_plan "https://git.acme.test/acme/web.git" "$PLAN_BODY"
 migrate --dry-run "$SRC" > "$TMP/dry.out"
 check "host: dry run says so" "(Host: git.acme.test)" "$(cat "$TMP/dry.out")"

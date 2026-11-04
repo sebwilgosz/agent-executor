@@ -24,6 +24,7 @@
 # Nothing found: No legacy .executor/ under <root>
 set -u
 unset CDPATH GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR
+export LC_ALL=C
 
 SELF_DIR=$(cd -P "$(dirname "$0")" && pwd)
 NL=$'\n'
@@ -156,6 +157,10 @@ place() {
       LEFT=$((LEFT+1)); return 0
     fi
     rm -f "$src" 2>/dev/null
+    if [ -e "$src" ]; then
+      printf 'failed: %s stays: cannot remove it, a copy is at %s\n' "$src" "$dest"
+      LEFT=$((LEFT+1)); return 0
+    fi
   else
     mv -n "$src" "$dest" 2>/dev/null </dev/null
     if [ ! -e "$dest" ] || [ -e "$src" ]; then
@@ -262,7 +267,7 @@ migrate_folder() {
     printf 'left: %s: tracked by git\n' "$dir"; return 0
   fi
   LEFT=0
-  files=$(find "$dir" -mindepth 1 ! -type d 2>/dev/null | LC_ALL=C sort)
+  files=$(find "$dir" -mindepth 1 ! -type d 2>/dev/null | sort)
   if [ -n "$files" ]; then
     while IFS= read -r f; do
       move_file "$f" "$dir" "$repo" "$folder"
@@ -281,7 +286,7 @@ migrate_folder() {
 }
 
 FOUND=$(find "$ROOT" -maxdepth 4 \( -name node_modules -o -name .git \) -prune \
-  -o -name .executor -print -prune 2>/dev/null | LC_ALL=C sort)
+  -o -name .executor -print -prune 2>/dev/null | sort)
 if [ -z "$FOUND" ]; then
   printf 'No legacy .executor/ under %s\n' "$ROOT"
   exit 0
