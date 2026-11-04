@@ -101,6 +101,17 @@ check "reader missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" 
 [ "$rc" -eq 0 ] && ok "reader missing: exit 0" || bad "reader missing: exit 0" "exit $rc"
 summary_last "reader missing: summary line last" "$out"
 
+# 6. INTEGRITY: the plans resolver is checked like the other scripts.
+PLUG="$TMP/plugin2"; mkdir -p "$PLUG"
+for d in .claude-plugin agents hooks references scripts skills; do cp -R "$REPO/$d" "$PLUG/"; done
+out=$(ROOT="$PLUG" audit)
+refute "resolver present: no integrity error" "scripts/plan-path.sh" "$out"
+rm -f "$PLUG/scripts/plan-path.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "resolver missing: integrity error" "✗ integrity: scripts/plan-path.sh missing" "$out"
+check "resolver missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F 'scripts/plan-path.sh')"
+[ "$rc" -eq 0 ] && ok "resolver missing: exit 0" || bad "resolver missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
