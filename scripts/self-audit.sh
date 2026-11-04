@@ -135,6 +135,12 @@ e=$ERRS
   && ok "integrity: the search roots reader is present" \
   || err "integrity: scripts/roots.sh missing — Executor cannot read where to look for local checkouts → $REINSTALL"
 
+# -- where plans live: without plan-path.sh /executor:build has no way to find,
+#    name or carry on a plan.
+[ -s "$ROOT/scripts/plan-path.sh" ] \
+  && ok "integrity: the plans resolver is present" \
+  || err "integrity: scripts/plan-path.sh missing — /executor:build cannot find or name a plan → $REINSTALL"
+
 # -- finding a PR's checkout: without find-checkout.sh a review of another
 #    repo's PR has no way to its local checkout.
 [ -s "$ROOT/scripts/find-checkout.sh" ] \
