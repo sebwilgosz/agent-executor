@@ -13,6 +13,13 @@ export const register: Register = on => {
     const skill = await $.fs.read(`${$.plugin.root}/skills/help/SKILL.md`)
     const help = typeof skill === 'string' ? helpFrom(skill) : undefined
 
-    return help ? { text: help } : next(e)
+    if (!help) return next(e)
+
+    const plans = await $.process
+      .run(['bash', `${$.plugin.root}/scripts/plan-path.sh`, '--summary'], { timeoutMs: 5000 })
+      .then(({ exitCode, stdout }) => (exitCode === 0 ? stdout.trimEnd() : ''))
+      .catch(() => '')
+
+    return { text: plans ? `${help}\n\n${plans}` : help }
   }).catch(($, e, next) => next(e))
 }

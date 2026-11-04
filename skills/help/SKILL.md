@@ -2,6 +2,7 @@
 name: help
 description: "Executor front door: shows what Executor does and routes to the right skill. Today that is code review of a pull request, from any folder, or of the current branch, plus setup and its check."
 disable-model-invocation: true
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*)
 ---
 # EXECUTOR (front door)
 
@@ -30,8 +31,10 @@ INCLUDES:
 SETUP:
   /executor:init                   checks gh and its sign-in, offers gh stack
                                    and the per-repo enable, asks where your
-                                   checkouts live
+                                   checkouts and your plans live
 ```
+
+Below the block, print what `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --summary` prints: the plans folder and where it comes from, this repo's folder and its live plans.
 
 ## Routing Table
 
