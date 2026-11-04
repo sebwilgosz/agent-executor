@@ -199,7 +199,8 @@ is "worktree: both emptied, the line goes" "# keep me" "$(cat "$EX")"
 worktrees
 write "$SRC/wt-web/.executor/spec.md" 'in the other worktree'
 mkdir -p "$WEB/.executor"
-migrate "$WEB" >/dev/null
+out=$(migrate "$WEB")
+check "worktree: says why the line stays" "kept .executor/ in $EX: $SRC/wt-web still holds one" "$out"
 check "worktree: the line stays while another worktree holds a .executor/" ".executor/" "$(cat "$EX")"
 there "worktree: the other one is untouched" "$SRC/wt-web/.executor/spec.md"
 migrate "$SRC" >/dev/null

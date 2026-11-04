@@ -20,7 +20,8 @@
 #   failed: <file> stays: <why>
 #   STOP: <.executor>: <why>                    nothing moves for that repo
 # Then per folder: removed: <folder> | would remove: <folder>, and
-#   removed .executor/ from <file> | would remove .executor/ from <file>
+#   removed .executor/ from <file> | would remove .executor/ from <file> |
+#   kept .executor/ in <file>: <worktree> still holds one
 # Nothing found: No legacy .executor/ under <root>
 set -u
 unset CDPATH GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR
@@ -232,6 +233,7 @@ drop_exclude_line() {
   while IFS= read -r wt; do
     case "$wt" in "worktree "*) wt=${wt#worktree } ;; *) continue ;; esac
     if { [ -e "$wt/.executor" ] || [ -L "$wt/.executor" ]; } && ! listed "$GONE" "$wt/.executor"; then
+      printf 'kept .executor/ in %s: %s still holds one\n' "$file" "$wt"
       return 0
     fi
   done <<< "$(git -C "$repo" worktree list --porcelain 2>/dev/null </dev/null)"
