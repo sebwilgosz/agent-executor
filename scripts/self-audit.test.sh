@@ -112,6 +112,19 @@ check "resolver missing: integrity error" "✗ integrity: scripts/plan-path.sh m
 check "resolver missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F 'scripts/plan-path.sh')"
 [ "$rc" -eq 0 ] && ok "resolver missing: exit 0" || bad "resolver missing: exit 0" "exit $rc"
 
+# 7. INTEGRITY: so are the scripts that tell and mark a finished plan.
+for s in plan-state plan-sweep; do
+  cp "$REPO/scripts/plan-path.sh" "$PLUG/scripts/"
+  cp "$REPO/scripts/plan-state.sh" "$REPO/scripts/plan-sweep.sh" "$PLUG/scripts/"
+  out=$(ROOT="$PLUG" audit)
+  refute "$s present: no integrity error" "scripts/$s.sh" "$out"
+  rm -f "$PLUG/scripts/$s.sh"
+  out=$(ROOT="$PLUG" audit); rc=$?
+  check "$s missing: integrity error" "✗ integrity: scripts/$s.sh missing" "$out"
+  check "$s missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/$s.sh")"
+  [ "$rc" -eq 0 ] && ok "$s missing: exit 0" || bad "$s missing: exit 0" "exit $rc"
+done
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

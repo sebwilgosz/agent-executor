@@ -1,7 +1,7 @@
 ---
 name: build
 description: "Executor: build a spec (an RFC, a feature spec, an issue) into a stack of reviewed pull requests. Checks the spec, plans it as a checklist of features you approve, builds each feature with its own builder agent in parallel worktrees, reviews and fixes every PR, and leaves the merging to you. Use when the user asks to build or implement a spec ('build this', 'executor, build docs/rfc-12.md', 'implement this RFC')."
-allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*)
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*)
 ---
 
 # EXECUTOR · BUILD
@@ -15,6 +15,13 @@ Read before you start, from the plugin root: `references/implementation.md` (ste
 ## 0. Carry on, or start
 
 Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --live`: this repo's live plans, newest first, one path per line. On a `STOP:` line, give the user that line and stop.
+
+For each one, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh --mark "<plan>"`:
+
+- **`DONE`:** the script has marked it done. Say so in one line. It no longer counts as a live plan below, so with none left this starts at step 1 as if there were no plan, with no question.
+- **`OPEN`:** it stays live, as below.
+- **`UNKNOWN`:** it stays live, as below; name the reason when you carry it on or ask about it.
+- **`STOP:`:** give the user that line and stop.
 
 **With a spec:**
 
@@ -75,4 +82,5 @@ When no builder is running and no review is left:
 
 1. Remove the worktrees still left from builders that stopped (`git worktree remove`), once their branches are pushed.
 2. If any item is `⛔` or `❌`: ask everything that is open in one message, each question with a suggested answer, and a wrong spec test with its proposed change. With the answers, a run of `/executor:build` carries on from the first unticked item.
-3. Print the plan's checklist as it now stands, then one line: what is yours to merge, bottom of each stack first.
+3. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh --mark "<the plan>"`: everything may have been merged while this ran. On `DONE`, say in one line that the plan is marked done.
+4. Print the plan's checklist as it now stands, then one line: what is yours to merge, bottom of each stack first.

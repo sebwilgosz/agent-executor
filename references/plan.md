@@ -20,6 +20,17 @@ The file stays on your machine and the repository is never touched. Because it i
 
 The folder is the state: there is no pointer file. A plan stays live until its header says `Status: done <date>`, the date as `YYYY-MM-DD`. The header is the lines before the first `## ` heading. `plan-path.sh --live` prints the live plans, newest first. It reads only the `*.md` files directly in the repo's folder, so a subfolder never holds a plan. Two live plans in one repo are allowed; they never share a file.
 
+## When a plan is finished
+
+`scripts/plan-state.sh <plan>` reads the plan and prints one line, and it never fails:
+
+- `NONE`: there is no plan.
+- `DONE <n> items`: every item is finished. An item is finished when its PR is merged or closed without merging (named in the line), or, with no PR number, when its branch is an ancestor of the default branch.
+- `OPEN <k> of <n>: <first unfinished item>`: `<k>` items aren't finished.
+- `UNKNOWN: <why>`: it can't tell, for example no network, gh not signed in, or a branch item read outside its repo's checkout. It never marks anything.
+
+`plan-state.sh --mark <plan>` does the same and, on `DONE`, adds `Status: done <today>` to the header, once. The plan stays in its folder; the dated names keep the history in order. Build step 0, build step 5 and the `gh stack sync --prune` after a merge all run it. `scripts/plan-sweep.sh` runs it on every live plan of the plans folder, for the repos no build is touching; `--dry-run` changes nothing.
+
 ## Shape
 
 ```markdown
@@ -56,5 +67,7 @@ The text after the link says where the item is. One state at a time:
 | `PR #n ✅ merged` | merged (the foundation, before the stacks start) | `[x]` |
 | `PR #n ❌ <what is open>` | the review left Critical findings; stays a draft | `[ ]` |
 | `⛔ <question or blocker>` | the builder stopped: a spec question, a red build, a spec test it thinks is wrong | `[ ]` |
+
+A local-only build with no remote has no PR number: its item says `branch <name>` where the others say `PR #n`, in the same states.
 
 A box is ticked only when its PR is ready or merged. An item at ❌ or ⛔ stops its stack: nothing above it starts until it is resolved.
