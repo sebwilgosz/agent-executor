@@ -185,6 +185,16 @@ is "new: taken, a suffix"    "$F/$TODAY - Taken 2.md" "$(plan_path --new 'Taken'
 is "new: taken twice, the next suffix" "$F/$TODAY - Taken 3.md" "$(plan_path --new 'Taken' "$WEB")"
 rm -rf "$DEFAULT"
 
+# C2. A plan of a given date, for moving an old one in.
+is "dated: the date and title given" "$DEFAULT/acme/web/2026-01-02 - Invites.md" "$(plan_path --dated 2026-01-02 "Invites" "$WEB")"
+is "dated: the same characters turned into -" "$DEFAULT/acme/web/2026-01-02 - a- b-c.md" "$(plan_path --dated 2026-01-02 "Spec: a: b/c" "$WEB")"
+plan "$DEFAULT/acme/web/2026-01-02 - Taken.md" "# x"
+is "dated: taken, no suffix" "$DEFAULT/acme/web/2026-01-02 - Taken.md" "$(plan_path --dated 2026-01-02 "Taken" "$WEB")"
+rm -rf "$DEFAULT"
+check "dated: a bad date" "STOP: not a date" "$(plan_path --dated nope "x" "$WEB")"
+check "dated: no title" "STOP: usage" "$(plan_path --dated 2026-01-02)"
+check "dated: an empty title" "STOP: a new plan needs a title" "$(plan_path --dated 2026-01-02 " " "$WEB")"
+
 # D. Live plans.
 L="$DEFAULT/acme/web"
 is "live: the folder is missing" "" "$(plan_path --live "$WEB")"

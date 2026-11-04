@@ -17,6 +17,8 @@
 #   plan-path.sh --where               env | config | default
 #   plan-path.sh --title <spec file>   the plan title a file name gives
 #   plan-path.sh --new <title> [<repo>]  the path for a new plan, free right now
+#   plan-path.sh --dated <YYYY-MM-DD> <title> [<repo>]  where a plan of that date
+#                                      and title goes, whether or not it is taken
 #   plan-path.sh --live [<repo>]       live plans, newest first, one path per line
 #   plan-path.sh --summary [<repo>]    what /executor:help prints about plans
 #   plan-path.sh --root                the plans folder
@@ -199,12 +201,18 @@ title_from_file() {
   printf '%s\n' "$t"
 }
 
-new_plan() {
-  local t base path n=2
+# Sets FILE_TITLE to the title as a file name can hold it.
+file_title() {
+  local t
   t=$(trim "$1"); t=${t#Spec:}; t=$(trim "$t")
   [ -n "$t" ] || stop "a new plan needs a title"
-  t=${t//[\/:[:cntrl:]]/-}
-  base="$REPO_FOLDER/$(date +%F) - $t"
+  FILE_TITLE=${t//[\/:[:cntrl:]]/-}
+}
+
+new_plan() {
+  local base path n=2
+  file_title "$1"
+  base="$REPO_FOLDER/$(date +%F) - $FILE_TITLE"
   path="$base.md"
   while [ -e "$path" ] || [ -L "$path" ]; do
     path="$base $n.md"; n=$((n+1))
@@ -248,6 +256,13 @@ case "${1:-}" in
     [ "$#" -ge 2 ] || stop "usage: plan-path.sh --new <title> [<repo>]"
     require_repo "${3:-.}"
     new_plan "$2"
+    ;;
+  --dated)
+    [ "$#" -ge 3 ] || stop "usage: plan-path.sh --dated <YYYY-MM-DD> <title> [<repo>]"
+    [[ $2 =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || stop "not a date: $2"
+    require_repo "${4:-.}"
+    file_title "$3"
+    printf '%s/%s - %s.md\n' "$REPO_FOLDER" "$2" "$FILE_TITLE"
     ;;
   --live)
     require_repo "${2:-.}"

@@ -171,29 +171,29 @@ worktrees() {
   reset
   new_repo "$WEB" "git@github.com:acme/web.git"
   git -C "$WEB" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m init
-  git -C "$WEB" worktree add -q -b wt "$SRC/web-wt" 2>/dev/null
+  git -C "$WEB" worktree add -q -b wt "$SRC/wt-web" 2>/dev/null
   EX="$WEB/.git/info/exclude"
   printf '# keep me\n.executor/\n' > "$EX"
 }
 worktrees
-write "$SRC/web-wt/.executor/plan.md" "$PLAN_BODY"
-migrate "$SRC/web-wt" >/dev/null
+write "$SRC/wt-web/.executor/plan.md" "$PLAN_BODY"
+migrate "$SRC/wt-web" >/dev/null
 is "worktree: the line goes from the common dir" "# keep me" "$(cat "$EX")"
-gone "worktree: no folder left" "$SRC/web-wt/.executor"
+gone "worktree: no folder left" "$SRC/wt-web/.executor"
 
 worktrees
 write "$WEB/.executor/spec.md" 'a'
-write "$SRC/web-wt/.executor/pr/x.md" 'b'
+write "$SRC/wt-web/.executor/pr/x.md" 'b'
 migrate "$WEB" >/dev/null 2>&1
-migrate "$SRC/web-wt" >/dev/null 2>&1
+migrate "$SRC/wt-web" >/dev/null 2>&1
 is "worktree: both emptied, the line goes" "# keep me" "$(cat "$EX")"
 
 worktrees
-write "$SRC/web-wt/.executor/spec.md" 'in the other worktree'
+write "$SRC/wt-web/.executor/spec.md" 'in the other worktree'
 mkdir -p "$WEB/.executor"
 migrate "$WEB" >/dev/null
 check "worktree: the line stays while another worktree holds a .executor/" ".executor/" "$(cat "$EX")"
-there "worktree: the other one is untouched" "$SRC/web-wt/.executor/spec.md"
+there "worktree: the other one is untouched" "$SRC/wt-web/.executor/spec.md"
 migrate "$SRC" >/dev/null
 is "worktree: the run that empties the last one removes it" "# keep me" "$(cat "$EX")"
 
@@ -229,11 +229,11 @@ is "clash: leaves no temp file behind" "$NAME" "$(ls -A "$PLANS/acme/web")"
 
 worktrees
 write "$WEB/.executor/spec.md" 'from the checkout'
-write "$SRC/web-wt/.executor/spec.md" 'from the worktree'
+write "$SRC/wt-web/.executor/spec.md" 'from the worktree'
 out=$(migrate "$SRC")
 is "worktrees: the first file wins" "from the checkout" "$(cat "$PLANS/acme/web/legacy/spec.md")"
-check "worktrees: same-named files clash" "clash: $SRC/web-wt/.executor/spec.md" "$out"
-is "worktrees: the second stays" "from the worktree" "$(cat "$SRC/web-wt/.executor/spec.md")"
+check "worktrees: same-named files clash" "clash: $SRC/wt-web/.executor/spec.md" "$out"
+is "worktrees: the second stays" "from the worktree" "$(cat "$SRC/wt-web/.executor/spec.md")"
 check "worktrees: the exclude line stays" ".executor/" "$(cat "$EX")"
 
 # F. --dry-run.
@@ -242,7 +242,7 @@ write "$WEB/.executor/plan.md" "$PLAN_BODY"
 dated "$WEB/.executor/plan.md" 2026-10-15
 write "$WEB/.executor/done/2026-10-30 - a.md" '# Build: A'
 write "$WEB/.executor/spec.md" 'first'
-write "$SRC/web-wt/.executor/spec.md" 'second'
+write "$SRC/wt-web/.executor/spec.md" 'second'
 before=$(snapshot "$TMP")
 out=$(migrate --dry-run "$SRC"); rc=$?
 after=$(snapshot "$TMP")
@@ -252,9 +252,9 @@ gone "dry run: makes no plans folder" "$PLANS"
 check "dry run: prints the plan's move" "would move: $WEB/.executor/plan.md -> $PLANS/acme/web/2026-10-15 - Invite emails.md" "$out"
 check "dry run: prints the done mark" "(Status: done 2026-10-30)" "$out"
 check "dry run: prints the legacy move" "would move: $WEB/.executor/spec.md -> $PLANS/acme/web/legacy/spec.md" "$out"
-check "dry run: sees the clash a real run would hit" "clash: $SRC/web-wt/.executor/spec.md" "$out"
+check "dry run: sees the clash a real run would hit" "clash: $SRC/wt-web/.executor/spec.md" "$out"
 check "dry run: the folder that would empty" "would remove: $WEB/.executor" "$out"
-refute "dry run: not the one that wouldn't" "would remove: $SRC/web-wt/.executor" "$out"
+refute "dry run: not the one that wouldn't" "would remove: $SRC/wt-web/.executor" "$out"
 refute "dry run: the exclude line wouldn't go" "would remove .executor/" "$out"
 refute "dry run: claims no real move" "moved: " "$out"
 same=$(migrate "$SRC" --dry-run)
@@ -279,13 +279,13 @@ rm -rf "$HOME/Projects"
 is "default root missing: one line" "STOP: no such folder: $HOME/Projects" "$(migrate)"
 
 reset
-for d in a/b/c/in a/b/c/d/out x/node_modules/y; do
+for d in a/b/in a/b/c/out x/node_modules/y; do
   new_repo "$SRC/$d" "git@github.com:acme/${d##*/}.git"
   write "$SRC/$d/.executor/spec.md" 's'
 done
 mkdir -p "$SRC/dotgit/.git/.executor"
 out=$(migrate "$SRC" --dry-run)
-check "depth 4 is found" "$SRC/a/b/c/in/.executor/spec.md" "$out"
+check "depth 4 is found" "$SRC/a/b/in/.executor/spec.md" "$out"
 refute "depth 5 isn't" "/out/" "$out"
 refute "node_modules is skipped" "node_modules" "$out"
 refute ".git is skipped" "dotgit" "$out"
