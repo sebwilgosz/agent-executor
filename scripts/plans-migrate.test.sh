@@ -309,6 +309,59 @@ write "$WEB/.executor/spec.md" 's'
 (cd "$WEB" && "$SHELL_BIN" "$SCRIPT" . >/dev/null 2>&1)
 there "a relative root works" "$PLANS/acme/web/legacy/spec.md"
 
+# A root inside a repository means that repository.
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+write "$WEB/.executor/spec.md" 's'
+mkdir -p "$WEB/packages/ui"
+(cd "$WEB/packages/ui" && "$SHELL_BIN" "$SCRIPT" . >/dev/null 2>&1)
+there "a subfolder of a repo: the top folder's .executor/ moves" "$PLANS/acme/web/legacy/spec.md"
+gone "a subfolder of a repo: it left" "$WEB/.executor"
+
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+write "$WEB/.executor/spec.md" 's'
+new_repo "$WEB/vendor/inner" "git@github.com:other/inner.git"
+write "$WEB/vendor/inner/.executor/spec.md" 'i'
+out=$(migrate "$WEB")
+there "a repo root: its own moves" "$PLANS/acme/web/legacy/spec.md"
+there "a repo root: a repo nested in it stays" "$WEB/vendor/inner/.executor/spec.md"
+gone "a repo root: nothing arrives for the nested one" "$PLANS/other"
+refute "a repo root: no line about the nested one" "vendor/inner" "$out"
+
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+new_repo "$WEB/vendor/inner" "git@github.com:other/inner.git"
+write "$WEB/vendor/inner/.executor/spec.md" 'i'
+is "a repo root: only a nested repo holds one, nothing to move" "No legacy .executor/ under $WEB" "$(migrate "$WEB")"
+
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+git -C "$WEB" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m init
+git -C "$WEB" worktree add -q -b wt "$WEB/.claude/wt" 2>/dev/null
+write "$WEB/.claude/wt/.executor/spec.md" 'w'
+migrate "$WEB" >/dev/null
+there "a repo root: its own worktree inside it is the same repo" "$PLANS/acme/web/legacy/spec.md"
+
+reset
+git init -q --bare "$SRC/metrics/.bare" 2>/dev/null
+printf 'gitdir: ./.bare\n' > "$SRC/metrics/.git"
+git -C "$SRC/metrics" -c user.name=t -c user.email=t@example.com worktree add -q -b main "$SRC/metrics/main" 2>/dev/null
+write "$SRC/metrics/main/.executor/spec.md" 's'
+new_repo "$SRC/metrics/other" "git@github.com:other/inner.git"
+write "$SRC/metrics/other/.executor/spec.md" 'i'
+migrate "$SRC/metrics" >/dev/null
+there "a bare repo's folder: its worktree moves" "$PLANS/local/metrics/legacy/spec.md"
+there "a bare repo's folder: another repo in it stays" "$SRC/metrics/other/.executor/spec.md"
+
+reset
+new_repo "$HOME/Projects"
+new_repo "$HOME/Projects/shallow" "git@github.com:acme/shallow.git"
+write "$HOME/Projects/shallow/.executor/spec.md" 's'
+migrate >/dev/null
+there "the default root stays a folder of repos, even as a repo itself" "$PLANS/acme/shallow/legacy/spec.md"
+rm -rf "$HOME/Projects"
+
 # H. A plan on another host gets a Host line.
 host_plan() {
   reset; new_repo "$WEB" "$1"
@@ -468,6 +521,9 @@ first_step=$(printf '%s\n' "$step0" | grep -n 'plans-migrate.sh' | head -1 | cut
 first_live=$(printf '%s\n' "$step0" | grep -n 'plan-path.sh --live' | head -1 | cut -d: -f1)
 [ "${first_step:-99}" -lt "${first_live:-0}" ] && ok "build: migrates before it looks for live plans" \
   || bad "build: migrates before it looks for live plans" "$first_step vs $first_live"
+first_guard=$(printf '%s\n' "$step0" | grep -n 'scripts/plan-path.sh`' | head -1 | cut -d: -f1)
+[ "${first_guard:-99}" -lt "${first_step:-0}" ] && ok "build: outside a repo it stops before anything moves" \
+  || bad "build: outside a repo it stops before anything moves" "$first_guard vs $first_step"
 check "help: lists it" 'scripts/plans-migrate.sh [--dry-run] [<root>]' "$HELP"
 check "plan doc: says it" 'scripts/plans-migrate.sh' "$(cat references/plan.md)"
 check "README: says it" 'scripts/plans-migrate.sh' "$(cat README.md)"

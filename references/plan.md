@@ -18,7 +18,7 @@ The file stays on your machine and the repository is never touched. Because it i
 
 ## Moving legacy plans
 
-Before plans moved out of the repository, build kept them in a legacy `.executor/` folder there. `scripts/plans-migrate.sh [--dry-run] [<root>]` moves every legacy `.executor/` under `<root>` (`~/Projects` by default, four levels deep, skipping `node_modules`) to its repo's folder, one line per file:
+Before plans moved out of the repository, build kept them in a legacy `.executor/` folder there. `scripts/plans-migrate.sh [--dry-run] [<root>]` moves every legacy `.executor/` under `<root>` (`~/Projects` by default, four levels deep, skipping `node_modules`) to its repo's folder. A `<root>` inside a repository means that repository: from its top folder, and not a repository nested in it. One line per file:
 
 - **`plan.md`, `plan-*.md`:** `<YYYY-MM-DD> - <title>.md`, the date from the file's modification time. The title is the plan's heading without `Build:` or `Spec:`, else its `Spec:` line's link text or file name, else the file's own name. A host other than `github.com` adds the `Host:` line.
 - **`done/*.md`:** the name kept, `Status: done <date>` added from that name.

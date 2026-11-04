@@ -2,7 +2,8 @@
 # plans-migrate.sh - moves legacy .executor/ folders to the plans folder. No AI.
 # Finds every .executor/ under <root> (default ~/Projects, depth 4, skipping
 # node_modules and .git) and moves its contents to the repo's folder, which only
-# scripts/plan-path.sh knows:
+# scripts/plan-path.sh knows. A <root> inside a repository means that repository:
+# from its top folder, and not a repository nested in it. Where each file goes:
 #   plan.md, plan-*.md  <YYYY-MM-DD> - <title>.md, the date from the modification
 #                       time, the title from the plan's heading or Spec line. A
 #                       host other than github.com adds a "Host: <host>" line.
@@ -52,6 +53,19 @@ if [ ! -d "$ROOT" ]; then
   printf 'STOP: no such folder: %s\n' "$ROOT"; exit 0
 fi
 ROOT=$(cd -P "$ROOT" && pwd)
+
+common_dir() {
+  local common
+  common=$(git -C "$1" rev-parse --git-common-dir 2>/dev/null </dev/null) || return 1
+  case "$common" in /*) ;; *) common="$1/$common" ;; esac
+  (cd -P "$common" 2>/dev/null && pwd)
+}
+
+# The default root is a folder of repositories, even when it is a repository too.
+SCOPE=""
+if [ "$ROOT_SET" -eq 1 ] && SCOPE=$(common_dir "$ROOT"); then
+  TOP=$(git -C "$ROOT" rev-parse --show-toplevel 2>/dev/null </dev/null) && [ -n "$TOP" ] && ROOT=$TOP
+fi
 
 CLAIMED=""
 GONE=""
@@ -225,9 +239,7 @@ move_file() {
 # Removes the .executor/ line once no worktree of the repo holds a .executor/.
 drop_exclude_line() {
   local repo=$1 common file wt tmp
-  common=$(git -C "$repo" rev-parse --git-common-dir 2>/dev/null </dev/null) || return 0
-  case "$common" in /*) ;; *) common="$repo/$common" ;; esac
-  common=$(cd -P "$common" 2>/dev/null && pwd) || return 0
+  common=$(common_dir "$repo") || return 0
   file="$common/info/exclude"
   grep -qxF '.executor/' "$file" 2>/dev/null || return 0
   while IFS= read -r wt; do
@@ -289,11 +301,12 @@ migrate_folder() {
 
 FOUND=$(find "$ROOT" -maxdepth 4 \( -name node_modules -o -name .git \) -prune \
   -o -name .executor -print -prune 2>/dev/null | sort)
-if [ -z "$FOUND" ]; then
-  printf 'No legacy .executor/ under %s\n' "$ROOT"
-  exit 0
-fi
+ANY=0
 while IFS= read -r d; do
+  [ -n "$d" ] || continue
+  if [ -n "$SCOPE" ] && [ "$(common_dir "${d%/*}")" != "$SCOPE" ]; then continue; fi
+  ANY=1
   migrate_folder "$d"
 done <<< "$FOUND"
+[ "$ANY" -eq 1 ] || printf 'No legacy .executor/ under %s\n' "$ROOT"
 exit 0

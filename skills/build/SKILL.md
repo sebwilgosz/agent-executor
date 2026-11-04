@@ -14,7 +14,9 @@ Read before you start, from the plugin root: `references/implementation.md` (ste
 
 ## 0. Carry on, or start
 
-Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh .`, which moves a legacy `.executor/` this repo still holds to its plans folder. On `No legacy .executor/ under ...`, say nothing. Otherwise say in one line that it moved the legacy `.executor/`, naming any `clash:`, `left:`, `failed:` or `STOP:` line, and go on: what it reports stays where it is.
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh`: this repo's plans folder. On a `STOP:` line, give the user that line and stop, so nothing moves outside a repository.
+
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh .`, which moves a legacy `.executor/` this repo still holds to its plans folder, from the repo's top folder and not a repository nested in it. On `No legacy .executor/ under ...`, say nothing. Otherwise say in one line that it moved the legacy `.executor/`, naming any `clash:`, `left:`, `failed:` or `STOP:` line, and go on: what it reports stays where it is.
 
 Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --live`: this repo's live plans, newest first, one path per line. On a `STOP:` line, give the user that line and stop.
 
