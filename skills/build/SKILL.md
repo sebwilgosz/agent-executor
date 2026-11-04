@@ -1,6 +1,7 @@
 ---
 name: build
 description: "Executor: build a spec (an RFC, a feature spec, an issue) into a stack of reviewed pull requests. Checks the spec, plans it as a checklist of features you approve, builds each feature with its own builder agent in parallel worktrees, reviews and fixes every PR, and leaves the merging to you. Use when the user asks to build or implement a spec ('build this', 'executor, build docs/rfc-12.md', 'implement this RFC')."
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*)
 ---
 
 # EXECUTOR · BUILD
@@ -13,12 +14,23 @@ Read before you start, from the plugin root: `references/implementation.md` (ste
 
 ## 0. Carry on, or start
 
-If `.executor/plan.md` exists:
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --live`: this repo's live plans, newest first, one path per line. On a `STOP:` line, give the user that line and stop.
 
-- **Same spec** (its `Spec:` line names what the user gave, or the user gave nothing): carry on. Run `gh stack sync --prune` if a stack exists, update each item's state from its PR (`gh pr view <n> --json state,isDraft`), then go to step 3 with the first item that isn't ticked.
-- **Another spec:** ask in one line whether to replace the plan. Never overwrite it without a yes.
+**With a spec:**
 
-Otherwise start at step 1.
+- **A live plan whose `Spec:` line names it:** carry that plan on.
+- **Only other live plans:** ask in one line whether to start a new plan beside them. On yes, go to step 1; on no, stop. Nothing is ever replaced.
+- **No live plan:** step 1.
+
+**With no argument:**
+
+- **One live plan:** carry it on.
+- **Several:** ask in one line which to carry on.
+- **None:** step 1.
+
+**Carrying a plan on:** run `gh stack sync --prune` if a stack exists, update each item's state from its PR (`gh pr view <n> --json state,isDraft`), then go to step 3 with the first item that isn't ticked.
+
+From here on, "the plan" is that one file. Two live plans in one repo are allowed; they never share a file.
 
 ## 1. The spec
 
@@ -30,7 +42,7 @@ Run the spec check of `references/implementation.md`, step 0, on the whole spec.
 
 Split the spec into features and stacks as `references/stacks.md` maps them, each feature small enough to be one readable PR. Every requirement belongs to exactly one feature.
 
-Write `.executor/plan.md` in the shape of `references/plan.md`, and add `.executor/` to `.git/info/exclude` if it isn't there. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
+Name the plan with the spec's title: for a spec that is a local file, `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --title "<spec file>"`; for an issue, a URL or text, its H1 or title. Then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --new "<title>"` prints the plan's path. Write the plan there in the shape of `references/plan.md`, creating the folder if it is missing. Nothing goes in the repository. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
 
 ## 3. Build
 
@@ -63,4 +75,4 @@ When no builder is running and no review is left:
 
 1. Remove the worktrees still left from builders that stopped (`git worktree remove`), once their branches are pushed.
 2. If any item is `⛔` or `❌`: ask everything that is open in one message, each question with a suggested answer, and a wrong spec test with its proposed change. With the answers, a run of `/executor:build` carries on from the first unticked item.
-3. Print the checklist from `.executor/plan.md` as it now stands, then one line: what is yours to merge, bottom of each stack first.
+3. Print the plan's checklist as it now stands, then one line: what is yours to merge, bottom of each stack first.
