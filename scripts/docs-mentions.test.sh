@@ -142,14 +142,14 @@ is "renamed file still linked in docs/" 'MENTION: scripts/old.sh docs/guide.md:2
 # The bare name counts only in docs in that same folder.
 fresh
 put src/old.py 'print("a long enough body for rename detection to see it")'
-put src/NOTES.md "$(lines 'See old.py.' 'See ./old.py.' 'See src/old.py.' 'See sub/old.py.' 'See ../old.py.' 'See bold.py.')"
+put src/NOTES.md "$(lines 'See old.py.' './old.py runs.' 'See src/old.py.' 'See sub/old.py.' 'See ../old.py.' 'See bold.py.' 'See ./old.py.' '../old.py runs.')"
 put src/sub/NOTES.md 'See old.py.'
 put other/NOTES.md 'See old.py.'
 put README.md 'See src/old.py and old.py.'
 branch
 git mv src/old.py src/new.py; save 'rename'
 is "full path everywhere, bare name beside it" \
-  "$(lines 'MENTION: src/old.py README.md:1' 'MENTION: src/old.py src/NOTES.md:3' 'MENTION: old.py src/NOTES.md:1' 'MENTION: old.py src/NOTES.md:2')" \
+  "$(lines 'MENTION: src/old.py README.md:1' 'MENTION: src/old.py src/NOTES.md:3' 'MENTION: old.py src/NOTES.md:1' 'MENTION: old.py src/NOTES.md:2' 'MENTION: old.py src/NOTES.md:7')" \
   "$(run main)"
 
 # Deleted files too; at the top of the repo the path is the bare name: one hit.
