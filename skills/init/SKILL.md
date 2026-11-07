@@ -10,7 +10,7 @@ model: sonnet
 
 You type this; Claude never triggers it (`disable-model-invocation`). Run it again any time. The plugin root is `${CLAUDE_PLUGIN_ROOT}`.
 
-0. **Assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.6.3`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session). `OK:` or `STOP:` (the check could not read the manifest): carry on.
+0. **Assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.6.4`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session). `OK:` or `STOP:` (the check could not read the manifest): carry on.
 1. Read `${CLAUDE_PLUGIN_ROOT}/references/shared-setup.md` and `${CLAUDE_PLUGIN_ROOT}/references/init.md`.
 2. **Shared part:** shared-setup S1. If `shared.md` exists, that is a KEEP or CHANGE. If it is missing, ask in one line: "The shared setup is used by the other Engineer of Wealth plugins, not by Executor. Set it up now, or skip?" Default **skip**. Only on "set it up" run S2–S4.
 3. **Executor's part:** init E1, then E2 (enable Executor in this repository — it reads `.claude/settings.json` and offers to add the enable, asking before it writes and before any commit), then E3 (the search roots: the folders where Executor looks for a PR's local checkout, written to `executor/config.md` only on YES), then E4 (the plans folder, written the same way; moving it moves nothing).

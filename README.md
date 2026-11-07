@@ -22,11 +22,11 @@ Type `/executor:review` with a PR number, a PR URL, a branch, or nothing for the
 - whenever Claude creates a pull request in your session (a hook watches for `gh pr create`, `gh stack submit` and `gh stack link`), and
 - whenever you ask Claude for a code review or name a pull request.
 
-A review runs in five steps:
+A review runs on Opus, in five steps:
 
 1. **Build.** Install, build, lint and tests, with the commands your repo already defines. The build must pass. A PR is built in a throwaway worktree, never over your working tree.
 2. **Review** the diff in six dimensions: duplication, correctness against your spec, test coverage, security, best practices (including inline comments that can go or be shorter) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around the change, and for a PR its description). It also checks your docs against the diff (`scripts/docs-mentions.sh`, no AI): a doc that now states something false, like a removed flag still documented, is Critical and gets corrected.
-3. **Verify.** Every finding goes to its own `executor:verifier` agent, which tries to disprove it. Each comes back confirmed, debunked or reclassified. Debunked findings are dropped from the report.
+3. **Verify.** Every finding goes to its own `executor:verifier` agent, on Sonnet, which tries to disprove it. Each comes back confirmed, debunked or reclassified. Debunked findings are dropped from the report.
 4. **Fix**, on your own PRs. Every confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits it on the PR's branch and reviews again, at most three rounds and without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports: nothing is committed or pushed. `--fix` and `--no-fix` override that, and a fork stays report-only either way.
 5. **Report**, always in the same shape: verdict, build, CI, spec, which mode ran and how many bugs were fixed, then what is still Critical and the Suggestions. Each finding links to the file and line and says when it fails and how to fix it.
 
@@ -76,7 +76,7 @@ Type `/executor:build` with a spec (a path, a URL, an issue, or the text itself)
 
 1. **Plan.** Executor splits the spec into features and stacks and writes the plan as a checklist: one item per feature, linked to its part of the spec. The file stays on your machine, outside the repository (see [Where plans live](#where-plans-live)). You approve it before anything is built.
 2. **Foundation.** Shared groundwork (schema, auth, skeleton) is built alone first. Executor stops after its PR; merge it and run `/executor:build` again.
-3. **Build.** One `executor:builder` agent per stack, all in parallel, each in its own worktree. A builder gets only its own feature's requirements. It starts by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds in the repo's own patterns with a commit per finished step, and opens a draft PR.
+3. **Build.** One `executor:builder` agent per stack, on Sonnet, all in parallel, each in its own worktree. A builder gets only its own feature's requirements. It starts by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds in the repo's own patterns with a commit per finished step, and opens a draft PR.
 4. **Review.** Every PR is reviewed as above. A ✅ or ⚠️ marks it ready and starts the next feature of its stack. A builder that stops on a question stops only its own stack.
 5. **Report.** The checklist as it stands, the open questions in one message, and what is yours to merge, bottom of each stack first. Run `/executor:build` again to carry on.
 

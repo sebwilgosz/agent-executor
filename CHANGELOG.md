@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.4 — 2026-11-07
+
+- Each role now names its model. The `executor:builder` agent runs on Sonnet, `/executor:review` on Opus, including its fixes and re-review, and the `executor:verifier` agent on Sonnet. Before, all three followed the session's model, so a session on Opus built everything on Opus, and a session on Sonnet reviewed on Sonnet. Planning still runs on the session's model. A review started in a session on another model switches to Opus for that turn, which reads the conversation again instead of from its cache.
+
 ## 0.6.3 — 2026-11-07
 
 - The stack hooks read the URL `gh stack` prints for each new PR, instead of working it out from the command's `cd` and the repo's remote. That URL names the right repo from any folder and needs no local lookup, so about 300 lines of command parsing are gone, along with the hooks' `git` and `ssh -G` calls. A line with no URL means the repo is unknown: nothing is assigned, one line goes in `assign.log`, and the review is told to find the repo.

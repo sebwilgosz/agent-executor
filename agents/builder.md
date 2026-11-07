@@ -2,7 +2,7 @@
 name: builder
 description: "Executor: implements ONE feature of a spec on its own branch: spec tests first, then the code in the repo's own patterns, a commit per finished step, each graded, ending in a draft PR. Spawned by /executor:build, one agent per feature."
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: inherit
+model: sonnet
 effort: medium
 ---
 
