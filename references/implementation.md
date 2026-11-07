@@ -4,7 +4,7 @@ How Executor builds one feature, from its first test to its last commit. We do h
 
 ## 0. Is there a spec?
 
-Before anything else, find the spec: what the user wrote in the request, a linked issue or URL, then `SPEC.md`, `specs/`, `docs/specs/` in the repo. A spec doesn't need to be long. It needs to say, for what is being built:
+Before anything else, find the spec: what the user wrote in the request, a linked issue or URL, the spec home (`references/spec-home.md`), then `SPEC.md`, `specs/`, `docs/specs/` in the repo. A spec doesn't need to be long. It needs to say, for what is being built:
 
 - **What it does**, as the user or the caller sees it
 - **Inputs and outputs**: what goes in, what comes out, where it shows

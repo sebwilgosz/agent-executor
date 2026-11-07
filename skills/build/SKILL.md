@@ -1,7 +1,7 @@
 ---
 name: build
 description: "Executor: build a spec (an RFC, a feature spec, an issue) into a stack of reviewed pull requests. Checks the spec, plans it as a checklist of features you approve, builds each feature with its own builder agent in parallel worktrees, reviews and fixes every PR, and leaves the merging to you. Use when the user asks to build or implement a spec ('build this', 'executor, build docs/rfc-12.md', 'implement this RFC')."
-allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
 ---
 
 # EXECUTOR · BUILD
@@ -45,7 +45,7 @@ From here on, "the plan" is that one file. Two live plans in one repo are allowe
 
 ## 1. The spec
 
-Find it: what the user gave (a path, a URL, an issue, text in the message), then `SPEC.md`, `specs/`, `docs/specs/` in the repo. Read it whole.
+Find it: what the user gave (a path, a URL, an issue, text in the message), then the spec home (`bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh --repo <repo>`, with `references/spec-home.md` for how to pick the spec and read it), then `SPEC.md`, `specs/`, `docs/specs/` in the repo. Read it whole.
 
 Run the spec check of `references/implementation.md`, step 0, on the whole spec. Open points are asked in one message, each with a suggested answer, and nothing is planned until they are answered. The answers are part of the spec from now on: the plan's `Spec:` line keeps the link, and the answers go under it as a short list.
 

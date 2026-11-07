@@ -37,10 +37,11 @@ Load the rules the code must follow, all that exist: `CLAUDE.md`, `AGENTS.md`, `
 
 Find the spec, in this order: 
 1. links in the PR body (Executor's own PRs carry it under `## Spec`, see `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md`), 
-2. the issues it closes, 
-3. then `SPEC.md`, 
-4. `specs/`, 
-5. `docs/specs/`. 
+2. the issues it closes (a linked issue is read as the spec), 
+3. the spec home: `bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh --repo <repo>`, then pick the spec as `${CLAUDE_PLUGIN_ROOT}/references/spec-home.md` says, 
+4. then `SPEC.md`, 
+5. `specs/`, 
+6. `docs/specs/`. 
 
 If No spec found: correctness is judged against the PR description, and the summary says so.
 

@@ -35,6 +35,16 @@ Other examples:
 - **GitHub issues in a public repo:** say once, before writing, that the spec will be public.
 - **A spec is intent; the repo's docs are the result.** The README and `docs/` change with the code (`references/implementation.md`, step 5). They are a source for a spec, never its destination. No spec, RFC or roadmap is committed to the repo unless the instructions say so.
 
+## Read a spec from the home
+
+Build and review look here after what they were given (and, for review, the PR's own links and the issues it closes) and before the repo paths. Resolve the home above, then pick the spec:
+
+- **The spec is a Notion page, a GitHub issue, a Jira epic or a vault note**, depending on the home. A vault note is named `<Name> - spec.md`, so "build the scheduled releases spec" finds `Scheduled Releases - spec.md`. Read it whole.
+- **Several specs in the home:** match by what the user named, the branch name or the PR title. A single match is the spec.
+- **None matches, or several do:** ask which, listing them. Never guess.
+- **A home that can't be read** (the connector is off, `gh` is signed out, the folder is missing): say so, list the home as unread and carry on to the repo paths.
+- The spec is never written back. A spec the user asks to update goes through `/executor:spec`.
+
 ## Nothing names a home: ask once, then write it down
 
 The first skill that needs a home (`/executor:spec`, `/executor:build` or `/executor:init`) asks, so the question comes up once per place:
