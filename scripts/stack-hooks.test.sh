@@ -73,7 +73,7 @@ chmod +x "$BIN"/*
 
 # A PATH holding every tool the hooks use, but no jq.
 NOJQ="$ROOT/nojq"; mkdir -p "$NOJQ"
-for t in bash cat cut date dirname grep head mkdir mktemp nohup rm sed awk; do
+for t in bash cat cut date dirname grep head mkdir mktemp nohup rm sed tail awk; do
   ln -s "$(command -v "$t")" "$NOJQ/$t"
 done
 for t in gh git ssh; do ln -s "$BIN/$t" "$NOJQ/$t"; done
@@ -173,6 +173,35 @@ is "a cd in a command substitution doesn't count" "$URL_B" \
   "$(prs_of "X=\$(cd $REPO_A && pwd) && gh stack submit" "$SUB" "$REPO_B")"
 is "gh stack under bash -c" "$URL_B" "$(prs_of "bash -c 'cd $REPO_B && gh stack submit'" "$SUB" "$NOREPO")"
 is "gh stack link"    "$URL_B" "$(prs_of "cd $REPO_B && gh stack link" "$SUB" "$REPO_A")"
+
+# A commit message before gh stack: whatever it holds, the cd after it is still read.
+HEREDOC="git commit -m \"\$(cat <<'EOF'
+Fix it :) don't cd $REPO_A
+gh stack submit (unbalanced
+EOF
+)\" && cd $REPO_B && gh stack submit --auto"
+is "a here-document message" "$URL_B" "$(prs_of "$HEREDOC" "$SUB" "$NOREPO")"
+is "a here-document on the gh stack line" "$URL_B" \
+  "$(prs_of "cd $REPO_B && cat <<EOF && gh stack submit
+it's :)
+EOF" "$SUB" "$NOREPO")"
+is "an apostrophe in a comment" "$URL_B" "$(prs_of "# don't stop
+cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
+BIGMSG=$(printf 'fix the thing in the place, (it is long) and "quoted"\n%.0s' $(seq 1 2000))
+fresh
+started=$SECONDS
+is "a 100 KB here-document" "$URL_B" "$(prs_of "git commit -m \"\$(cat <<'EOF'
+$BIGMSG
+EOF
+)\" && cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
+elapsed=$((SECONDS-started))
+[ "$elapsed" -lt 5 ] && ok "a 100 KB here-document: inside the hook's limit" || bad "a 100 KB here-document: inside the hook's limit" "took ${elapsed}s"
+fresh
+started=$SECONDS
+BIGQUOTED=$(printf 'fix the thing in the place, (it is long) and more of it\n%.0s' $(seq 1 2000))
+is "a 100 KB quoted message" "$URL_B" "$(prs_of "git commit -m \"$BIGQUOTED\" && cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
+elapsed=$((SECONDS-started))
+[ "$elapsed" -lt 5 ] && ok "a 100 KB quoted message: inside the hook's limit" || bad "a 100 KB quoted message: inside the hook's limit" "took ${elapsed}s"
 
 # --remote names the remote to read.
 REMOTES="$ROOT/remotes"; mkrepo "$REMOTES" https://github.com/acme/origin-one.git
@@ -297,7 +326,7 @@ assign "gh pr create --fill" "$PR_URL" "$NOREPO"
 wait_lines "$CALLS" '^pr edit' 1
 is "gh pr create: assigned by URL" "pr edit $PR_URL --add-assignee @me" "$(edits)"
 refute "gh pr create: no lookup" "pr view" "$(cat "$CALLS")"
-is "gh pr create: no git" "" "$(cat "$TOOLS")"
+is "gh pr create: no git or ssh" "" "$(grep -E '^(git|ssh) ' "$TOOLS")"
 fresh
 out=$(review "gh pr create --fill" "$PR_URL" "$NOREPO")
 check "gh pr create: the review context names it" "$PR_URL" "$(context "$out")"
