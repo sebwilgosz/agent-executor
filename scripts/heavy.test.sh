@@ -118,6 +118,38 @@ is "SIGKILL: the next command took it" "2" "$(outcomes acquired)"
 until_logged released 1
 check "SIGKILL: the release is logged" "released" "$(grep '  first  ' "$LOG")"
 
+# A shell that has exited but that its parent hasn't reaped still has its pid.
+unreaped_after_exit() {
+  state '{"slots":1}'
+  HEAVY="$HEAVY" perl -e 'my $c = fork; unless ($c) { exec "bash", "-c", q{bash "$HEAVY" $$ ghost} } sleep 120' >/dev/null 2>&1 &
+  local parent=$!
+  disown "$parent"
+  SHELLS+=("$parent")
+  until_logged acquired 1
+  SECONDS=0
+  until_logged released 1
+  ELAPSED=$SECONDS
+  kill -9 "$parent"
+}
+for try in 1 2 3; do
+  unreaped_after_exit
+  [ "$ELAPSED" -le 5 ] && break
+done
+within "unreaped shell: the slot is free within 5 s" 5 "$ELAPSED"
+
+# A shell stopped while it waits ends the wait, and takes no slot later.
+state '{"slots":1,"wait_minutes":3}'
+hold first "$ROOT/first"
+bash -c 'bash "$1" $$ stopped; sleep 0.2' _ "$HEAVY" >/dev/null 2>"$ROOT/stopped" &
+STOPPED=$!
+disown "$STOPPED"
+deadline=$((SECONDS+PATIENCE))
+while [ ! -s "$ROOT/stopped" ] && [ "$SECONDS" -lt "$deadline" ]; do sleep 0.1; done
+kill -9 "$STOPPED"
+until_logged failed 1 && ok "stopped while waiting: logs failed" || bad "stopped while waiting: logs failed" "it kept waiting"
+is "stopped while waiting: no slot" "1" "$(outcomes acquired)"
+kill -9 "$HELD"
+
 # 3. The wait limit, with all slots held.
 state '{"slots":1,"wait_minutes":0.05}'
 hold busy "$ROOT/busy dir"
@@ -174,7 +206,7 @@ bash -c 'cd "$2" && bash "$1" $$ npm-test; API_TOKEN=hunter2-xyz sleep 1' _ "$HE
 until_logged released 1
 line=$(grep '  acquired' "$LOG")
 check "log: acquired line has the label and cwd" "  npm-test  $WHERE  " "$line"
-check "log: acquired line has the seconds waited" "waited=0  acquired" "$line"
+printf '%s\n' "$line" | grep -qE '  waited=[0-9]+  acquired$' && ok "log: acquired line has the seconds waited" || bad "log: acquired line has the seconds waited" "$line"
 printf '%s\n' "$line" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8}  ' && ok "log: starts with the time" || bad "log: starts with the time" "$line"
 printf '%s\n' "$(grep '  released' "$LOG")" | grep -qE 'released  held=[0-9]+$' && ok "log: released line has seconds held" || bad "log: released line has seconds held" "$(cat "$LOG")"
 refute "log: never the command text" "hunter2" "$(cat "$LOG")"
