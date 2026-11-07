@@ -15,12 +15,12 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 
 - **Number.** Continuous `#1 … #n` over the whole review, assigned in print order (every Critical, then every Suggestion). It is how a finding is referred to afterwards; in a multi-repo build, as `<owner>/<repo>#<PR> · #4`.
 - **Link.** For a pull request: `https://github.com/<owner>/<repo>/blob/<head-sha>/<path>#L<line>`, pinned to the head commit so it never drifts. For a local diff: the repo-relative path, `path/to/file.rb:42`.
-- **Category** is one of: Duplication · Correctness · Test coverage · Security · Best practice · Convention · Build.
+- **Category** is one of: Duplication · Correctness · Test coverage · Security · Best practice · Convention · Docs · Build.
 - **Fails when** names inputs or state, not a feeling. A finding that can't fill it in is a suggestion at most.
 
 ## Severity
 
-- **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, leaves a spec requirement unmet or untested, or adds a performance trap whose cost is real on a path the diff touches. Critical findings are bugs: in fix mode the review fixes them, in report-only mode they stay open.
+- **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, leaves a spec requirement unmet or untested, adds a performance trap whose cost is real on a path the diff touches, or leaves docs stating something false (a removed flag still documented). Critical findings are bugs: in fix mode the review fixes them, a false doc by correcting the doc, in report-only mode they stay open.
 - **Suggestion**: everything else worth changing. Suggestions are listed, never fixed by the review.
 
 ## The summary
@@ -34,6 +34,7 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 **Spec:** <link to the spec> | none found, PR description
 **Rounds:** fix · <why> · <n> · <f> bugs auto-fixed | fix · <why> · no fixes needed | report-only · <why>
+[**Docs:** ⚪ not checked · <why>]
 
 ### Critical (<n>)
 
@@ -53,4 +54,5 @@ CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 - **The header is the review's reference.** `[<owner>/<repo>#<PR>](PR URL)` is the GitHub shorthand that stays unambiguous when several reviews are printed together — one per repo or per PR — in a multi-repo build. Keep it an `#` heading so each review is its own self-contained, linkable section.
 - **The Branch line names the base** only after a hand-off with `--base origin/<default>`: the checkout's local default branch was dirty, diverged or not up to date, so the review worked from `origin/<default>`, e.g. `` **Branch:** `fix-login` · from origin/main, not the local main ``.
 - **A local diff has no PR**, so the header drops the link: `# Executor review · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
+- **The Docs line prints only when the docs check was skipped**, `<why>` as `docs-mentions.sh` printed it after `UNKNOWN:`.
 - **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · fork PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings are all still open and the verdict rule applies to them unchanged.

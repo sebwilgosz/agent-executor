@@ -143,6 +143,14 @@ check "plan-items missing: integrity error" "✗ integrity: scripts/plan-items.s
 check "plan-items missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/plan-items.sh")"
 [ "$rc" -eq 0 ] && ok "plan-items missing: exit 0" || bad "plan-items missing: exit 0" "exit $rc"
 
+# 10. INTEGRITY: and the review's docs check.
+refute "docs-mentions present: no integrity error" "scripts/docs-mentions.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/docs-mentions.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "docs-mentions missing: integrity error" "✗ integrity: scripts/docs-mentions.sh missing" "$out"
+check "docs-mentions missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/docs-mentions.sh")"
+[ "$rc" -eq 0 ] && ok "docs-mentions missing: exit 0" || bad "docs-mentions missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

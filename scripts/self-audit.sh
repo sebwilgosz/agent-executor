@@ -121,6 +121,12 @@ done
   && ok "integrity: the review's fix/report-only engine is present" \
   || err "integrity: scripts/review-mode.sh missing — /executor:review cannot decide whether to fix → $REINSTALL"
 
+# -- the review's docs check: without docs-mentions.sh a review can't tell which
+#    docs still name what the diff removed.
+[ -s "$ROOT/scripts/docs-mentions.sh" ] \
+  && ok "integrity: the review's docs check is present" \
+  || err "integrity: scripts/docs-mentions.sh missing - /executor:review cannot check the docs against the diff → $REINSTALL"
+
 # -- ship: the skill and its engine. ship.sh does the guard/push/PR math; the
 #    skill opens the draft PR so the PR hooks above take over.
 e=$ERRS
