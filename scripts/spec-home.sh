@@ -24,14 +24,18 @@
 #       neither, an AGENTS.md plus a CLAUDE.md that imports it. One
 #       "wrote <file>" line per file. It never commits.
 #   spec-home.sh --local [<dir>]
-#       The local fallback: creates .executor/specs under <dir>'s repo (or
-#       <dir> outside one), keeps it out of git, and prints its path.
+#       The local fallback: creates and prints
+#       ~/.engineer-of-wealth/executor/specs/<org>/<repo> (EOW_HOME overrides
+#       the root; local/<name> without an origin), beside the plans folder and
+#       never inside the repository.
 #
 # Instructions name a home in a short section:
 #   ## Specs
 #   Specs: Notion, the "RFCs" database. Tickets: Jira project TRAV.
 
 exec 2>/dev/null
+
+. "$(cd -P "$(dirname "$0")" && pwd)/remote-slug.sh"
 
 trim() { local s=$1; s="${s#"${s%%[![:space:]]*}"}"; printf '%s' "${s%"${s##*[![:space:]]}"}"; }
 
@@ -202,22 +206,16 @@ write_home() {
 }
 
 local_home() {
-  local d top exclude
+  local d top slug
   d=${1:-$PWD}
   [ -d "$d" ] || { echo "STOP: $d is not a folder"; return; }
   d=$(cd -P "$d" && pwd)
-  top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || top=
-  if [ -n "$top" ]; then
-    top=$(cd -P "$top" && pwd)
-    exclude=$(git -C "$top" rev-parse --git-path info/exclude 2>/dev/null)
-    case "$exclude" in /*) ;; *) exclude="$top/$exclude" ;; esac
-    mkdir -p "$(dirname "$exclude")" 2>/dev/null
-    grep -qxF '/.executor/specs/' "$exclude" 2>/dev/null || printf '/.executor/specs/\n' >> "$exclude"
-  else
-    top=$d
-  fi
-  mkdir -p "$top/.executor/specs" || { echo "STOP: could not create $top/.executor/specs"; return; }
-  echo "$top/.executor/specs"
+  top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || top=$d
+  slug=$(slug_from_url "$(git -C "$d" config --get remote.origin.url 2>/dev/null)")
+  [ -n "$slug" ] || slug=local/$(basename "$top")
+  d="${EOW_HOME:-$HOME/.engineer-of-wealth}/executor/specs/$slug"
+  mkdir -p "$d" || { echo "STOP: could not create $d"; return; }
+  echo "$d"
 }
 
 case "${1:-}" in

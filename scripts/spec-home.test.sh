@@ -174,18 +174,23 @@ fresh
 check "write: a missing folder is refused" "STOP:" "$(bash "$SH" --write "$D/nope" "Specs: Notion.")"
 check "write: an empty section is refused" "STOP:" "$(bash "$SH" --write "$D")"
 
-# 10. The local fallback, kept out of git inside a repo.
+# 10. The local fallback lives outside the repository, per repo.
 fresh
+export EOW_HOME="$TMP/eow"
 git init -q "$D/repo"; mkdir -p "$D/repo/sub"
+git -C "$D/repo" remote add origin git@github.com:acme/api.git
 out=$(bash "$SH" --local "$D/repo/sub")
-is "local: path" "$D/repo/.executor/specs" "$out"
-[ -d "$D/repo/.executor/specs" ] && ok "local: folder created" || bad "local: folder created" "missing"
-touch "$D/repo/.executor/specs/a - spec.md"
-(cd "$D/repo" && git status --porcelain | grep -q executor) && bad "local: kept out of git" "shows in status" || ok "local: kept out of git"
-bash "$SH" --local "$D/repo" >/dev/null
-is "local: exclude written once" "1" "$(grep -c '^/.executor/specs/$' "$D/repo/.git/info/exclude")"
+is "local: path by the origin's owner and name" "$EOW_HOME/executor/specs/acme/api" "$out"
+[ -d "$out" ] && ok "local: folder created" || bad "local: folder created" "missing"
+is "local: nothing in the repo" "" "$(git -C "$D/repo" status --porcelain; ls -A "$D/repo/sub")"
+is "local: the same path again" "$out" "$(bash "$SH" --local "$D/repo")"
 fresh
-is "local, no repo: path" "$D/.executor/specs" "$(bash "$SH" --local "$D")"
+git init -q "$D/mine"
+is "local, no origin: local/<name>" "$EOW_HOME/executor/specs/local/mine" "$(bash "$SH" --local "$D/mine")"
+fresh
+mkdir "$D/plain"
+is "local, no repo: local/<name>" "$EOW_HOME/executor/specs/local/plain" "$(bash "$SH" --local "$D/plain")"
+unset EOW_HOME
 
 echo
 echo "$PASS passed, $FAIL failed"

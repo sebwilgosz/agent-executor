@@ -308,7 +308,8 @@ is "init: the plans step follows the roots, the check follows it" "E1: Tools
 E2: Enable Executor in this repository
 E3: Search roots
 E4: Plans folder
-E5: Check" "$heads"
+E5: Spec home
+E6: Check" "$heads"
 check "init: suggests the default"      '~/.engineer-of-wealth/executor/plans' "$INITDOC"
 check "init: writes a Plans section"    '## Plans' "$INITDOC"
 check "init: moving moves nothing"      'moves nothing' "$INITDOC"

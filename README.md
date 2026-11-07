@@ -13,7 +13,7 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)) and where your build plans live (see [Where plans live](#where-plans-live)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
+Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)) where your build plans live (see [Where plans live](#where-plans-live)) and where your specs live (see [Where specs live](#where-specs-live)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
 
 ## What it does today: review
 
@@ -68,7 +68,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch; another repo's PR opens in its checkout |
 | `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
 | `/executor:status` | Across every repo, what to merge now, what waits on you, what is still moving. You type it |
-| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable, the search roots and the plans folder. You type it |
+| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable, the search roots, the plans folder and the spec home. You type it |
 
 ## Build from a spec
 
@@ -116,6 +116,17 @@ Plans from an older version sit in a legacy `.executor/` folder in the repositor
 To put them elsewhere, run `/executor:init`, which writes a `## Plans` section in `~/.engineer-of-wealth/executor/config.md`. The `EXECUTOR_PLANS` environment variable wins over it. Moving the folder moves nothing: init prints the `mv` to run. `/executor:help` shows the folder in use, where the setting comes from and this repository's live plans.
 
 To keep plans in a notes app, link the folder in: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.
+
+## Where specs live
+
+A spec is rarely kept in the repo: it may be a Notion RFC, a note in a vault, a GitHub parent issue. Executor never decides where. It reads a short section from the nearest `AGENTS.md` or `CLAUDE.md`, from the folder you work in upwards and then the target repo's own:
+
+```markdown
+## Specs
+Specs: Notion, the "RFCs" database. Tickets: Jira project TRAV.
+```
+
+Other examples: `Specs: GitHub, a parent issue in this repo, one sub-issue per feature.` and `Specs: docs/specs/ in this repo.`, the only case where a spec is committed. The nearest file that names a home wins, so each folder keeps its own. Where nothing names one, `/executor:init` asks once, shows the section and the files it goes into, and writes it only on a yes, left uncommitted. Declined, specs stay in `~/.engineer-of-wealth/executor/specs/<org>/<repo>/`. `scripts/spec-home.sh` does the finding and the writing; `scripts/self-audit.sh -v` reports the file that names the home for the current folder.
 
 ## Requirements
 

@@ -198,6 +198,19 @@ e=$ERRS
   && ok "integrity: init's per-repo enable engine is present" \
   || err "integrity: scripts/init-plugin-enable.sh missing — /executor:init cannot offer the per-repo enable → $REINSTALL"
 
+# -- the spec home: without spec-home.sh no skill can tell where specs are kept.
+#    Reports the file that names the home for this folder; it never writes and
+#    an unnamed home is no fault, so it is not a warning.
+if [ -s "$ROOT/scripts/spec-home.sh" ]; then
+  ok "integrity: the spec home resolver is present"
+  sh=$(bash "$ROOT/scripts/spec-home.sh" 2>/dev/null)
+  sf=$(printf '%s\n' "$sh" | sed -n 's/^file=//p')
+  if [ -n "$sf" ]; then info "spec home: named in $sf"
+  else info "spec home: no spec home named; run /executor:init"; fi
+else
+  err "integrity: scripts/spec-home.sh missing — Executor cannot tell where specs are kept → $REINSTALL"
+fi
+
 # -- user-only skills. Claude must never trigger init (it installs and
 #    configures) and has no reason to start help or status (you type them; the
 #    help runs status.sh itself); disable-model-invocation keeps them yours and
