@@ -52,10 +52,10 @@ fi
 case "$tool" in
   Bash)
     # A gh stack right after a quote is a mention, such as a grep's pattern, unless
-    # the quote opens a script for eval or a -c.
+    # the quote opens a script for eval or a -c. gh may be called by its path.
     if printf '%s' "$command" | grep -qE -- '--help|--dry-run'; then
       kind=
-    elif printf '%s' "$command" | grep -qE '(^|[;&|(`[:space:]]|(eval|-[[:alpha:]]*c) +\\?["'\''])gh +stack +(submit|link)'; then
+    elif printf '%s' "$command" | grep -qE '(^|[;&|(`[:space:]]|(eval|-[[:alpha:]]*c) +\\?["'\''])([^[:space:];&|(`"'\'']*/)?gh +stack +(submit|link)'; then
       kind=stack
     elif printf '%s' "$command" | grep -qE '(^|[;&|("[:space:]])gh +pr +create'; then
       kind=pr
