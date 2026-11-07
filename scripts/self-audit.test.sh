@@ -143,7 +143,15 @@ check "plan-items missing: integrity error" "✗ integrity: scripts/plan-items.s
 check "plan-items missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/plan-items.sh")"
 [ "$rc" -eq 0 ] && ok "plan-items missing: exit 0" || bad "plan-items missing: exit 0" "exit $rc"
 
-# 10. INTEGRITY: and the script behind /executor:status.
+# 10. INTEGRITY: and the review's docs check.
+refute "docs-mentions present: no integrity error" "scripts/docs-mentions.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/docs-mentions.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "docs-mentions missing: integrity error" "✗ integrity: scripts/docs-mentions.sh missing" "$out"
+check "docs-mentions missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/docs-mentions.sh")"
+[ "$rc" -eq 0 ] && ok "docs-mentions missing: exit 0" || bad "docs-mentions missing: exit 0" "exit $rc"
+
+# 11. INTEGRITY: and the script behind /executor:status.
 cp "$REPO/scripts/status.sh" "$PLUG/scripts/"
 refute "status present: no integrity error" "scripts/status.sh" "$(ROOT="$PLUG" audit)"
 rm -f "$PLUG/scripts/status.sh"
@@ -152,7 +160,7 @@ check "status missing: integrity error" "✗ integrity: scripts/status.sh missin
 check "status missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/status.sh")"
 [ "$rc" -eq 0 ] && ok "status missing: exit 0" || bad "status missing: exit 0" "exit $rc"
 
-# 11. /executor:status is a user-only skill the help lists, and the audit says so.
+# 12. /executor:status is a user-only skill the help lists, and the audit says so.
 PLUG="$TMP/plugin3"; mkdir -p "$PLUG"
 for d in .claude-plugin agents hooks references scripts skills; do cp -R "$REPO/$d" "$PLUG/"; done
 out=$(ROOT="$PLUG" audit -v)
@@ -163,7 +171,7 @@ out=$(ROOT="$PLUG" audit -v)
 check  "status skill model-invocable: integrity error" "✗ integrity: status lost disable-model-invocation" "$out"
 refute "status skill model-invocable: the ok line is gone" "run only when you type them" "$out"
 
-# 12. The skill and the help may run the script, and the help routes to it.
+# 13. The skill and the help may run the script, and the help routes to it.
 HELP="$REPO/skills/help/SKILL.md"
 for f in "$REPO/skills/status/SKILL.md" "$HELP"; do
   check "${f#"$REPO"/}: allowed-tools runs status.sh" 'Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh)' "$(grep '^allowed-tools:' "$f")"

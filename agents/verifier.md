@@ -15,7 +15,7 @@ You get one finding from a code review. Your job is to **disprove it**. There is
 1. Read the code at the finding's location at the head commit, and enough around it to follow the data: callers, callees, the guards in front of it.
 2. Walk the "Fails when" scenario through the code. Look for whatever stops it: validation upstream, a type that rules the input out, a framework default, a test that already covers it, a spec line that asks for exactly this behaviour.
 3. When it's cheap, prove it: run the one relevant test, or a few lines that reproduce the failure. Write scratch files only under `$TMPDIR`.
-4. Re-judge the severity with the rule: **Critical** if merging causes wrong behaviour, data loss or a security hole, breaks the build, leaves a spec requirement unmet or untested, or adds a performance trap whose cost is real on a path the diff touches; **Suggestion** otherwise.
+4. Re-judge the severity with the rule: **Critical** if merging causes wrong behaviour, data loss or a security hole, breaks the build, leaves a spec requirement unmet or untested, adds a performance trap whose cost is real on a path the diff touches, or leaves docs stating something false (a removed flag still documented); **Suggestion** otherwise.
 
 Never edit, stage or commit tracked files, never push, never switch branches. Reading git history and `gh pr view`/`gh pr diff` is fine.
 

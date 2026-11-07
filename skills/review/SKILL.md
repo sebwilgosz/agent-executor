@@ -64,6 +64,7 @@ Go through the diff once per dimension:
 5. **Best practices**: error handling, naming, dead code, needless complexity, resource leaks. **Performance traps**: N+1 and other queries in a loop, unbounded queries or loops, O(n²) over user-sized data, a new query with no index. Critical only when the cost is real on a path the diff touches (an unbounded query on a request path, an N+1 over user data); otherwise a Suggestion. **Inline comments**: say which can be removed or cut shorter. A comment that explains *why* stays. One finding per file, a Suggestion.
 6. **Repo conventions**: whatever the files loaded in step 1 require, and the idiom of the surrounding code. For a PR, also its description against `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md`: a wall of text, a missing Testing section, a missing diagram where the change has a shape. One finding for the whole description, a Suggestion, linked to the PR. A refactor mixed into a feature PR large enough to belong in its own PR is a Suggestion too.
    **References to local material** anywhere in the diff, the commit messages or the PR description: local file paths outside the repo, numbered items of a local spec, brainstorming sections.
+   **Docs**, category `Docs`: run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/docs-mentions.sh <base> [<identifier>...]` where you build, with the changed function, route or config names you judge public; `<base>` as `origin/<branch>` for a PR. Docs that now state something false (a removed flag still documented): Critical. Behaviour, flags, config, CLI or API changed without touching the docs that describe them: Suggestion. `UNKNOWN`: skip this check, say so on the summary's Docs line, and go on.
 
 Write each finding as the format file says. Merge findings with one root cause into one. Keep the ten most valuable Suggestions; Critical findings are never cut.
 ## 4. Draft the two sections
@@ -96,7 +97,7 @@ Apply each verdict:
 Every Critical finding left after step 5 is a bug, and Executor fixes it. Suggestions are never fixed here.
 
 1. **Where.** On top of the PR's head commit
-2. **Fix.** The smallest change that removes the failure. A bug with no test gets the failing test first, then the fix. Never edit a test to make it pass. A spec test that looks wrong stays as it is: leave the finding open, say why and what you would change; it changes only with the user's approval.
+2. **Fix.** The smallest change that removes the failure. A bug with no test gets the failing test first, then the fix; a false doc is simply corrected. Never edit a test to make it pass. A spec test that looks wrong stays as it is: leave the finding open, say why and what you would change; it changes only with the user's approval.
 3. **Commit.** One commit per finding, the message naming the defect. Never amend or rewrite commits already on the branch unless explicitly asked.
 4. **Review again, without spawning agents.** In this context: rerun the build; check that each fix removes its "Fails when" scenario; review only the fix commits against the six dimensions.
 5. **Repeat** step 6 while Critical findings remain, at most **3 rounds**.
