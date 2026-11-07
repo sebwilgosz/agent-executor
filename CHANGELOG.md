@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.2 — 2026-11-07
+
+- After `gh stack submit` or `gh stack link`, the hooks act on the PR's own repo. Before, they resolved a bare PR number from the session's folder, so from another folder `gh` failed, or the wrong PR of that number got assigned and reviewed. They now read the folder from the command's `cd` and the repo from its remote, whichever folder the session is in.
+- A stack PR is assigned only once its head branch matches the branch `gh stack` reported. A mismatch, a failed lookup or an unknown repo assigns nothing and logs one line in `assign.log`. The review is given each URL with its branch and told to compare them, or told the repo is unknown and to find it first.
+- The hooks cost a session less. An event that only mentions `gh stack submit` exits before `jq` or `grep`, about 150 ms down to 40 ms per hook, and a large event is matched by bytes, 5 MB from about 2500 ms down to 630 ms. `ssh -G` runs only for an SSH host that isn't literally `github.com`, since it can run a `Match exec` from your ssh config.
+- The review hook's output stays valid JSON for any branch name, with or without `jq`.
+- The self-audit checks `scripts/remote-url.sh` is present.
+
 ## 0.6.1 — 2026-11-07
 
 - `/executor:review` marks your own draft PR ready on ✅ or ⚠️. Before, only `/executor:build` did, so a PR from `/executor:ship` or a plain `gh pr create` stayed a draft after a passing review until you flipped it by hand. It now applies to every review of your own PR, a draft you opened by hand included. A review by branch does so only when it saw exactly what the PR holds: its head commit, nothing uncommitted. A teammate's draft stays a draft, even under `--fix`, and `--no-fix` leaves yours alone. `scripts/review-ready.sh` does it, no AI, and the summary says when a PR was marked or could not be.
