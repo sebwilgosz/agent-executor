@@ -134,13 +134,21 @@ On YES write it. The path goes in as given, `~` unexpanded. When the file exists
 
 Moving the plans folder moves nothing. With `$EXECUTOR_PLANS` set, print no `mv`: that folder stays in use, so emptying it would hide its live plans from `/executor:build`. Say the folder written here takes effect once the variable is unset. Otherwise, when the answer differs from the folder in use, say so and print the command to run yourself: `mkdir -p "<new folder>" && mv "<old folder>"/* "<new folder>"/`, with both paths absolute. Never run it. Before the first plan there is nothing to move: when the old folder doesn't exist, skip this.
 
-## E5: Check
+## E5: Spec home
+
+Where specs are kept for the folder you run init in. Run `bash <plugin root>/scripts/spec-home.sh`; it only reads. `references/spec-home.md` says how to read its output and what to ask.
+
+- **It names a home:** show the kind, the location and the file that names it, and ask **KEEP** (write nothing, go to E6) or **CHANGE** (ask as below).
+- **`NONE:`, or CHANGE:** ask the one question of "Nothing names a home" in `references/spec-home.md`, with the folder it applies to, and write the `## Specs` section only on YES, with `spec-home.sh --write`. Declined, write nothing; a later `/executor:spec` or `/executor:build` asks again.
+- **`AMBIGUOUS:`:** show the line, ask which home is meant, then offer to write it as above.
+
+## E6: Check
 
 Run `bash <plugin root>/scripts/self-audit.sh` once, exactly that command with the absolute path and no quotes. Reply with its summary line and every `✗` and `⚠` line as it is: each one already says what to do.
 
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1, the read-only detect in E2 and reading `config.md` in E3 and E4 are the only things that run without asking. The E2, E3 and E4 writes run only on YES.
+- Ask before installing or configuring anything; the table in E1, the read-only detect in E2 and reading `config.md` in E3 and E4 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E3, E4 and E5 writes run only on YES.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
 - Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
-- Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2.
+- Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2 and, in the folder you name, the `## Specs` section in E5. That file is left uncommitted.

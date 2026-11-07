@@ -211,6 +211,23 @@ out=$(ROOT="$PLUG" audit)
 check "heavy hook unwired: integrity error" "✗ integrity: hooks/hooks.json no longer runs heavy-hook.sh" "$out"
 check "heavy hook unwired: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "no longer runs heavy-hook.sh")"
 
+# 17. INTEGRITY: and the spec home resolver. It reports the file that names the
+#     home for the current folder, or says none is named; it never warns.
+mkdir -p "$TMP/named/sub" "$TMP/unnamed"
+printf '## Specs\nSpecs: Notion.\n' > "$TMP/named/AGENTS.md"
+out=$(cd "$TMP/named/sub" && ROOT="$PLUG" audit -v)
+check  "spec home present: ok line" "✓ integrity: the spec home resolver is present" "$out"
+check  "spec home named: prints the file" "spec home: named in " "$out"
+check  "spec home named: it is the AGENTS.md" "/named/AGENTS.md" "$out"
+out=$(cd "$TMP/unnamed" && ROOT="$PLUG" audit -v)
+check  "spec home unnamed: says to run init" "no spec home named; run /executor:init" "$out"
+refute "spec home unnamed: no warning for it" "⚠ spec home" "$out"
+rm -f "$PLUG/scripts/spec-home.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "spec home missing: integrity error" "✗ integrity: scripts/spec-home.sh missing" "$out"
+check "spec home missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/spec-home.sh")"
+[ "$rc" -eq 0 ] && ok "spec home missing: exit 0" || bad "spec home missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
