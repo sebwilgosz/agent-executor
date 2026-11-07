@@ -2,7 +2,7 @@
 name: verifier
 description: "Executor: verifies ONE code-review finding by trying to disprove it, then confirms, debunks or reclassifies it. Spawned by executor:review, one agent per finding."
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: sonnet
 effort: high
 ---
 

@@ -8,6 +8,10 @@
 - Build and review read the spec from its home. Build looks after what you gave it, review after the PR's own links and the issues it closes, both before `SPEC.md`, `specs/` and `docs/specs/`. With several specs in the home, the one you named, the branch or the PR title wins; none or several matching: it asks. A spec is never written back.
 - Tickets from the plan. When the spec home names a tracker, build offers once per run, after you approve the plan, one ticket per plan item: a sub-issue of the spec's parent issue on GitHub (`scripts/ticket-github.sh`), or an issue or ticket through your Linear or Jira connector. The ticket holds the builder's brief and a link to the spec, the PR closes it, and the plan records it so a rerun never creates one twice. An unreachable tracker never stops the build.
 
+## 0.6.4 — 2026-11-07
+
+- Each role now names its model. The `executor:builder` agent runs on Sonnet, `/executor:review` on Opus, including its fixes and re-review, and the `executor:verifier` agent on Sonnet. Before, all three followed the session's model, so a session on Opus built everything on Opus, and a session on Sonnet reviewed on Sonnet. Planning still runs on the session's model. A review started in a session on another model switches to Opus for that turn, which reads the conversation again instead of from its cache.
+
 ## 0.6.3 — 2026-11-07
 
 - The stack hooks read the URL `gh stack` prints for each new PR, instead of working it out from the command's `cd` and the repo's remote. That URL names the right repo from any folder and needs no local lookup, so about 300 lines of command parsing are gone, along with the hooks' `git` and `ssh -G` calls. A line with no URL means the repo is unknown: nothing is assigned, one line goes in `assign.log`, and the review is told to find the repo.
