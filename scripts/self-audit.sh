@@ -136,6 +136,10 @@ done
 [ -s "$ROOT/scripts/heavy.sh" ] \
   && ok "integrity: the heavy command queue's slot script is present" \
   || err "integrity: scripts/heavy.sh missing - heavy commands cannot take turns → $REINSTALL"
+e=$ERRS
+grep -qF "scripts/heavy-hook.sh" "$ROOT/hooks/hooks.json" || err "integrity: hooks/hooks.json no longer runs heavy-hook.sh - heavy commands are never queued → $REINSTALL"
+[ -s "$ROOT/scripts/heavy-hook.sh" ] || err "integrity: scripts/heavy-hook.sh missing - heavy commands are never queued → $REINSTALL"
+[ "$e" = "$ERRS" ] && ok "integrity: the heavy command queue's hook is wired"
 
 # -- ship: the skill and its engine. ship.sh does the guard/push/PR math; the
 #    skill opens the draft PR so the PR hooks above take over.
