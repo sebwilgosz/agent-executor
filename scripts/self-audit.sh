@@ -98,7 +98,7 @@ done
 for s in $(grep -oE '/executor:[a-z-]+' "$door" | sed 's#/executor:##' | sort -u); do
   [ -f "$SK/$s/SKILL.md" ] || err "integrity: the help routes to /executor:$s, which does not exist → $REINSTALL"
 done
-for r in shared-setup init review-format implementation feature-done pull-request stacks plan; do
+for r in shared-setup init review-format implementation feature-done pull-request stacks plan spec spec-home; do
   [ -s "$ROOT/references/$r.md" ] || err "integrity: references/$r.md missing → $REINSTALL"
 done
 # hooks/register.ts prints the fenced block under "## HELP" without the model.
