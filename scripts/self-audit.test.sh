@@ -190,6 +190,12 @@ check "review-ready missing: integrity error" "✗ integrity: scripts/review-rea
 check "review-ready missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/review-ready.sh")"
 [ "$rc" -eq 0 ] && ok "review-ready missing: exit 0" || bad "review-ready missing: exit 0" "exit $rc"
 
+# 15. INTEGRITY: and the remote parsing both the hooks and the plans rely on.
+refute "remote-url present: no integrity error" "scripts/remote-url.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/remote-url.sh"
+out=$(ROOT="$PLUG" audit)
+check "remote-url missing: integrity error" "✗ integrity: scripts/remote-url.sh missing" "$out"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
