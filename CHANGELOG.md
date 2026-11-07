@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.3 — 2026-11-07
+
+- The stack hooks read the URL `gh stack` prints for each new PR, instead of working it out from the command's `cd` and the repo's remote. That URL names the right repo from any folder and needs no local lookup, so about 300 lines of command parsing are gone, along with the hooks' `git` and `ssh -G` calls. A line with no URL means the repo is unknown: nothing is assigned, one line goes in `assign.log`, and the review is told to find the repo.
+- Fixes two bugs from 0.6.2. A command holding a carriage return, form feed or vertical tab hung both hooks until their 5 second limit, and that PR got no assignment or review. And `gh stack` run inside `$(...)` or `eval` was skipped with no log line. `$(...)` and `eval` count again, and backticks and `gh` called by its path, like `/opt/homebrew/bin/gh`, now count too.
+- `scripts/remote-url.sh` is gone, its parsing back in `scripts/plan-path.sh`, which is the only script that still needs it.
+
 ## 0.6.2 — 2026-11-07
 
 - After `gh stack submit` or `gh stack link`, the hooks act on the PR's own repo. Before, they resolved a bare PR number from the session's folder, so from another folder `gh` failed, or the wrong PR of that number got assigned and reviewed. They now read the folder from the command's `cd` and the repo from its remote, whichever folder the session is in.
