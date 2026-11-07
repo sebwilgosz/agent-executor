@@ -126,7 +126,6 @@ bucket() {
     /^    [A-Z]/ || /^  [^ ]/ || /^[^ ]/ { on = 0 }
     on { print }'
 }
-squeeze() { printf '%s' "$1" | tr -s ' '; }
 
 echo "status.sh spec tests"
 
@@ -183,7 +182,7 @@ plan acme/web "2026-01-01 - merge" \
 OUT=$(status)
 M=$(bucket "MERGE NOW" "$OUT")
 check "merge now: everything below merged or closed" "#3   Three" "$M"
-check "merge now: merged and closed count in the position" "Stack A 3/3   CI green   review ready" "$M"
+check "merge now: merged and closed count in the position" "Stack A 3/3   CI green     review ready" "$M"
 check "merge now: CI running is not red" "#4   Four" "$M"
 check "CI running" "Stack B 1/1   CI running" "$M"
 check "CI none" "Stack C 1/1   CI none" "$M"
@@ -208,7 +207,7 @@ check "a draft at ❌: open findings" "#3   Finding                    Stack B 1
 check "a draft at ❌: what is open" "        2 Critical: the login-leak" "$W"
 check "a ready PR at ❌: GitHub can't overrule the verdict" "#4   ReadyFinding" "$W"
 check "a ready PR at ❌: what is open" "still open" "$W"
-check "a ready PR with red CI" "#5   Red                        Stack D 1/1   CI red   review ready" "$(squeeze "$W" | sed 's/^/x/' >/dev/null; printf '%s' "$W")"
+check "a ready PR with red CI" "#5   Red                        Stack D 1/1   CI red     review ready" "$W"
 refute "a question's PR is not looked up" "pr view 9" "$(cat "$GH_CALLS")"
 
 reset
@@ -223,7 +222,7 @@ OUT=$(status)
 V=$(bucket "MOVING" "$OUT")
 check "a draft at ⏳" "#1   Reviewing                  Stack A 1/2   CI green   review in review" "$V"
 check "a ready PR waiting on the one below" "#2   Above                      Stack A 2/2   CI green   review ready" "$V"
-check "a hammer, no PR" "      -    Builds                     Stack B 1/3   CI none   review none" "$V"
+check "a hammer, no PR" "      -    Builds                     Stack B 1/3   CI none    review none" "$V"
 check "not started: a count per stack" "      Stack B: 2 not started" "$V"
 check "a draft saying ✅ ready is moving" "#3   StaleDraft" "$V"
 check "a ready PR over a blocked item waits" "#4   OverBlocked" "$V"
@@ -266,7 +265,7 @@ prs "acme/web 1 OPEN false run:SUCCESS" "acme/web 2 OPEN false ctx:SUCCESS" "acm
     "acme/web 5 OPEN false ctx:PENDING" "acme/web 6 OPEN false run:SUCCESS,now:QUEUED" "acme/web 7 OPEN false now:IN_PROGRESS,run:FAILURE" \
     "acme/web 8 OPEN false run:NEUTRAL,run:SKIPPED" "acme/web 10 OPEN false run:TIMED_OUT" "acme/web 11 OPEN false run:CANCELLED" \
     "acme/web 12 OPEN false run:ACTION_REQUIRED" "acme/web 13 OPEN false run:STARTUP_FAILURE"
-i=0; LINES=()
+LINES=()
 for n in 1 2 3 4 5 6 7 8 10 11 12 13; do
   LINES[${#LINES[@]}]="## Stack $n: s"
   LINES[${#LINES[@]}]=$(item x "Pr$n" "PR #$n ✅ ready")
@@ -368,7 +367,7 @@ OUT=$(GH_STUB_FAIL="error connecting to api.github.com" status)
 is "offline: one line per repo, its plans still named" "EXECUTOR STATUS
 
 acme/web
-  UNKNOWN: gh pr view 1 failed: error connecting to api.github.com
+  UNKNOWN: gh pr view 2 failed: error connecting to api.github.com
   2026-01-02 - two
   2026-01-01 - one
 
@@ -378,7 +377,7 @@ zeta/app
 GH_STUB_FAIL="x" "$SHELL_BIN" "$STATUS" >/dev/null 2>&1; is "offline: exit 0" "0" "$?"
 check "offline: logged" "error connecting to api.github.com" "$(cat "$LOG")"
 OUT=$(GH_STUB_FAIL="To get started with GitHub CLI, please run:  gh auth login" status)
-check "not signed in: says so" "UNKNOWN: gh pr view 1 failed: To get started with GitHub CLI" "$OUT"
+check "not signed in: says so" "UNKNOWN: gh pr view 2 failed: To get started with GitHub CLI" "$OUT"
 
 OUT=$(GH_STUB_FAIL_REPO="acme/web" status)
 check "one repo's lookups all failing: its line" "UNKNOWN: gh pr view" "$(printf '%s\n' "$OUT" | sed -n '/^acme/,/^$/p')"
