@@ -228,6 +228,13 @@ check "spec home missing: integrity error" "✗ integrity: scripts/spec-home.sh 
 check "spec home missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/spec-home.sh")"
 [ "$rc" -eq 0 ] && ok "spec home missing: exit 0" || bad "spec home missing: exit 0" "exit $rc"
 
+# 18. INTEGRITY: and the ticket script.
+refute "ticket script present: no integrity error" "ticket-github.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/ticket-github.sh"
+out=$(ROOT="$PLUG" audit)
+check "ticket script missing: integrity error" "✗ integrity: scripts/ticket-github.sh missing" "$out"
+check "ticket script missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/ticket-github.sh")"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

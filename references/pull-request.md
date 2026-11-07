@@ -12,6 +12,7 @@ Always these sections, in this order. A section with nothing to say is left out,
 
 ```markdown
 ## Spec
+<`Closes #n` when the feature has a ticket, or its Jira or Linear key>
 <link to the spec, only when the reader can open it: an issue, a URL, a file in this repo> | <the requirements this PR meets, in a few words>
 
 ## What changes

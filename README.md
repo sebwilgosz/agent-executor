@@ -101,6 +101,10 @@ acme/api
 
 The bare command prints this with no model turn. Text after it ("what blocks acme/api?") gets an answer from the same output. It only reads: it never marks a plan, pushes or posts. A plan whose items are all merged or closed but which isn't marked yet ends with `finished, not marked: run scripts/plan-sweep.sh`. Finished plans stay in their folder: there is no archive step.
 
+### Tickets
+
+When the spec home names a tracker (`Tickets: GitHub`, `Jira project TRAV`, `Linear`), build offers, once per run and after you approve the plan, one ticket per plan item: a sub-issue of the spec's parent issue on GitHub, an issue or ticket through your Linear or Jira connector. The ticket holds what that item's builder is given plus a link to the spec, and the PR closes it (`Closes #n`, or the key). The plan records each ticket, so a rerun never creates one twice. An unreachable tracker never stops the build; `scripts/ticket-github.sh` logs to `~/.engineer-of-wealth/executor/tickets.log`.
+
 ## Where plans live
 
 Plans never go in your repository. Each is one dated file in a folder of its own for that repository, shared by all its worktrees:
