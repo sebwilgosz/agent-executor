@@ -59,6 +59,6 @@ When the feature needs a refactor that would make its PR big, the refactor is a 
 - **Project docs live in the repo:** the README and dedicated Markdown files (for example `docs/`). When a change alters what users or other developers see, update them in the same PR.
 - **Never refer to local material.** Code, tests, comments, commits, docs and PRs never mention local file paths outside the repo, notes from a personal notes app (Obsidian notes or `[[wikilinks]]`), numbered items of a local spec ("requirement 3.2"), or sections of local brainstorming. A reader of the repo can't follow them. Say the thing itself.
 
-## Effort
+## Model and effort
 
-Implementation runs at medium reasoning effort: the `executor:builder` agent sets `effort: medium`. Planning and review keep their own.
+Implementation runs on Sonnet at medium reasoning effort: the `executor:builder` agent sets `model: sonnet` and `effort: medium`. Planning stays on the session's model. Review runs on Opus and its verifiers on Sonnet, both at high effort.

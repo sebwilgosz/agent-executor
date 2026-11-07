@@ -1,6 +1,7 @@
 ---
 name: review
 description: "Executor: review a pull request or the current branch, verifying every finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR as #42, owner/repo#N or a pull URL ('review #42', 'let's review acme/api#7'), from any folder: another repo's PR is handed off to its local checkout."
+model: opus
 effort: high
 ---
 
