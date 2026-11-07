@@ -27,7 +27,7 @@ cleanup() {
 trap cleanup EXIT
 cd "$ROOT" || exit 1
 
-BASH_BIN=$(command -v bash)
+BASH_BIN=$BASH
 REAL_JQ=$(command -v jq)
 PATIENCE=60
 
@@ -204,6 +204,18 @@ expansions
 deny
 EOF
 
+# A long heredoc fits within the hook's 5 seconds. An overrun gets two more tries,
+# so a loaded machine can't fail it and only a truly slow hook can.
+LONG=$(perl -e 'print "npm test <<EOF\n"; print "const x$_ = \"a value; here\";\n" for 1..3000; print "EOF\n"')
+for try in 1 2 3; do
+  started=$SECONDS
+  run "$LONG"
+  took=$((SECONDS-started))
+  [ "$took" -le 5 ] && break
+done
+[ "$took" -le 5 ] && ok "long heredoc: within the timeout" || bad "long heredoc: within the timeout" "took $took s"
+is "long heredoc: byte for byte" "$(prefix npm-test)$LONG" "$(new_command)"
+
 INPUT='{"command":"npm test","description":"D","timeout":12345,"run_in_background":true,"extra":{"a":[1,"b"]}}'
 OUT=$(printf '{"tool_name":"Bash","tool_input":%s}' "$INPUT" | "$BASH_BIN" "$HOOK" 2>&1)
 is "fields: all others kept" "$(printf '%s' "$INPUT" | "$REAL_JQ" -cS 'del(.command)')" \
@@ -215,6 +227,10 @@ is "output: only hookEventName and updatedInput, no permissionDecision" \
 
 OUT=$(printf '%s' '{"tool_input":{"command":"npm test \ud83d"}}' | "$BASH_BIN" "$HOOK" 2>&1)
 is "a command jq can't carry unchanged is left alone" "" "$OUT"
+OUT=$(printf '%s' '{"tool_input":{"command":"npm test \u0000 x"}}' | "$BASH_BIN" "$HOOK" 2>&1)
+is "a command with a NUL is left alone" "" "$OUT"
+OUT=$(printf '%s' '{"tool_input":{"command":["npm test"]}}' | "$BASH_BIN" "$HOOK" 2>&1)
+is "a command that isn't a string is left alone" "" "$OUT"
 
 # Already prefixed: never doubled, whatever the root, label or quoting.
 state '{}'

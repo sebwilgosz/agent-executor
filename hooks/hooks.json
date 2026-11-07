@@ -1,6 +1,18 @@
 {
-  "description": "Executor: whenever Claude creates a pull request, assign it to its author (plain shell, detached) and start a code review.",
+  "description": "Executor: whenever Claude creates a pull request, assign it to its author (plain shell, detached) and start a code review. With heavy.json in place, heavy Bash commands take turns for a machine-wide slot.",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/heavy-hook.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Bash|mcp__.*__create_pull_request",
