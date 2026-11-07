@@ -211,6 +211,11 @@ else
   err "integrity: scripts/spec-home.sh missing — Executor cannot tell where specs are kept → $REINSTALL"
 fi
 
+# -- tickets: without ticket-github.sh build cannot create a GitHub ticket.
+[ -s "$ROOT/scripts/ticket-github.sh" ] \
+  && ok "integrity: the ticket script is present" \
+  || err "integrity: scripts/ticket-github.sh missing — /executor:build cannot create tickets on GitHub → $REINSTALL"
+
 # -- user-only skills. Claude must never trigger init (it installs and
 #    configures) and has no reason to start help or status (you type them; the
 #    help runs status.sh itself); disable-model-invocation keeps them yours and

@@ -1,7 +1,7 @@
 ---
 name: build
 description: "Executor: build a spec (an RFC, a feature spec, an issue) into a stack of reviewed pull requests. Checks the spec, plans it as a checklist of features you approve, builds each feature with its own builder agent in parallel worktrees, reviews and fixes every PR, and leaves the merging to you. Use when the user asks to build or implement a spec ('build this', 'executor, build docs/rfc-12.md', 'implement this RFC')."
-allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-github.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
 ---
 
 # EXECUTOR · BUILD
@@ -55,6 +55,20 @@ Split the spec into features and stacks as `references/stacks.md` maps them, eac
 
 Name the plan with the spec's title: for a spec that is a local file, `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --title "<spec file>"`; for an issue, a URL or text, its H1 or title. Then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --new "<title>"` prints the plan's path. Write the plan there in the shape of `references/plan.md`, creating the folder if it is missing. If `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --host` prints a host other than `github.com`, its header gets the `Host: <host>` line. Nothing goes in the repository. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
 
+## 2b. Tickets
+
+Only when the spec home (`scripts/spec-home.sh`) names a tracker, and only once the plan is approved. Ask once per run, never on its own: "Create one ticket per plan item in <tracker>?" Creating tickets posts to an outside service, so a no is final for this run.
+
+On yes, create one ticket per plan item, skipping any item the plan already shows a ticket for: a rerun never creates a ticket twice, because the plan holds the link.
+
+- **Body:** exactly what that item's builder is given (step 3, point 2), the feature's name, the requirements it owns and the spec answers that touch them, plus a link to the spec. One text, two uses. Write it to a temporary file.
+- **GitHub:** `bash ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-github.sh <owner/repo> <the spec's issue number> "<feature name>" <body file>`; it creates the issue and links it as a sub-issue. Read its `TICKET:` and `NOTE:` lines.
+- **Linear, Jira:** create the issue or ticket through the connector the home names, with the same body.
+- **Record it:** add `ticket #<n>` (GitHub) or `ticket <KEY>` (Jira, Linear) to the item in the plan, after its spec link.
+- **The tracker is unreachable, or a ticket fails:** carry on without tickets, mark nothing, and say so in one line. Never stop the build for it.
+
+Updating a ticket's status is not build's job: the PR link and the tracker's GitHub integration do that.
+
 ## 3. Build
 
 Branch names: `<stack>/<feature>`, short and in kebab case (`invites/send-email`).
@@ -64,6 +78,7 @@ Branch names: `<stack>/<feature>`, short and in kebab case (`invites/send-email`
    - the feature's name and the full text of the requirements it owns, with the spec answers that touch them
    - the repo path, its branch name and the branch below it: the previous item's branch, or the default branch for the bottom of a stack
    - the spec's path or link, to read for context
+   - its ticket, when the plan records one: `Closes #<n>` on GitHub, the key on Jira and Linear
 
    Never give a builder the plan, other features' requirements or your reasoning. Mark each item `🔨 building` in the plan.
 3. **As each builder reports**, read its report block (`agents/builder.md`) and update its item:
