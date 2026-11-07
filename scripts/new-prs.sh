@@ -380,7 +380,8 @@ find_repo_url() {
   repo_url=https://$host/$slug
 }
 
-# "Created PR #N for <branch>", maybe with a " (base: x)" after it; existing PRs are
+# "Created PR #N for <branch>", maybe with " (<url>)" after the number, as gh stack
+# prints when it isn't on a terminal, or " (base: x)" at the end; existing PRs are
 # skipped. $response is JSON-encoded here, on both paths, so a branch ends at the
 # first space, closing quote or escape other than an escaped \, " or /. One grep picks
 # the lines, since a bash regex over a large output takes far longer than the hook has.
@@ -395,14 +396,14 @@ parse_created() {
       *" $n "*) continue ;;
     esac
     seen="$seen$n "
-    b=${line#Created PR #$n for }
+    b=${line#* for }
     b=${b//\\\\/$'\002'}
     b=${b//\\\"/\"}
     b=${b//\\\//\/}
     b=${b//$'\002'/\\}
     created_numbers=$created_numbers${created_numbers:+$nl}$n
     branches=$branches${branches:+$nl}$b
-  done <<< "$(printf '%s' "$response" | grep -aoE 'Created PR #[0-9]+ for ([^"\\[:space:]]|\\["\\/])+')"
+  done <<< "$(printf '%s' "$response" | grep -aoE 'Created PR #[0-9]+( \([^)[:space:]]*\))? for ([^"\\[:space:]]|\\["\\/])+')"
 }
 
 if [ "$kind" = stack ]; then

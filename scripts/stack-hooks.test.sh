@@ -265,6 +265,19 @@ assign "gh stack submit" "$BASED" "$REPO_B"
 wait_lines "$CALLS" '^pr edit' 1
 is "base suffix: the branch check passes" "pr edit $URL_B --add-assignee @me" "$(edits)"
 
+# The line as gh stack really prints it away from a terminal, URL and all.
+REAL_LINE="Checking stack state...
+Pushing to origin...
+✓ Created PR #27 (https://github.com/acme/b/pull/27) for feat-a
+✓ Pushed and synced 1 branches"
+is "real output line: number and branch" "stack|$URL_B|feat-a" "$(probe "gh stack submit --auto" "$REAL_LINE" "$REPO_B")"
+is "real output line, no jq" "stack|$URL_B|feat-a" \
+  "$(event "gh stack submit --auto" "$REAL_LINE" "$REPO_B" | PATH="$NOJQ" "$NOJQ/bash" -c '. "$1"; printf "%s\n" "$kind|$prs|$branches"' probe "$NEW_PRS")"
+fresh
+assign "gh stack submit --auto" "$REAL_LINE" "$REPO_B"
+wait_lines "$CALLS" '^pr edit' 1
+is "real output line: assigned" "pr edit $URL_B --add-assignee @me" "$(edits)"
+
 # 7. Remote forms give the real host's URL, and ssh -G runs only for an alias.
 remote_case(){
   fresh
