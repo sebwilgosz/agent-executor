@@ -32,7 +32,7 @@ WORK=""
 trap 'rm -rf "$WORK"; exit 0' EXIT
 
 MAX_LOOKUPS=8
-ROW_NAME_MAX=40
+ROW_CUT=40
 EM=$'\xe2\x80\x94'
 BUCKETS=("MERGE NOW" "WAITING ON YOU" "MOVING" "UNKNOWN")
 CHECKS_JQ='"\(.state) \(.isDraft) \([.statusCheckRollup[]? | if (.conclusion // "") != "" then .conclusion elif (.state // "") != "" then .state else (.status // "PENDING") end] | join(","))"'
@@ -292,7 +292,7 @@ start_section() {
     SECTION_SIZE=$((SECTION_SIZE+1)); j=$((j+1))
   done
   s=${s%%:*}; s=${s//$EM/-}
-  cut_chars "${s:-Plan}" "$ROW_NAME_MAX"
+  cut_chars "${s:-Plan}" "$ROW_CUT"
   SECTION_LABEL=$CUT
   SECTION_SPOT=0; BELOW_OPEN=0; BELOW_UNKNOWN=0
 }
@@ -309,7 +309,7 @@ sort_items() {
     PLACE="$SECTION_LABEL $SECTION_SPOT/$SECTION_SIZE"
     parse_item "${items[$i]}"
     NAME=$(item_full_name "${items[$i]}"); NAME=${NAME//$EM/-}
-    cut_chars "$NAME" "$ROW_NAME_MAX"; NAME=$CUT
+    cut_chars "$NAME" "$ROW_CUT"; NAME=$CUT
     sort_item
     i=$((i+1))
   done
