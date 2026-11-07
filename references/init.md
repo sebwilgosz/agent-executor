@@ -37,7 +37,7 @@ On YES run exactly `gh extension install github/gh-stack`, then `gh stack --vers
 - Stacked PRs must be enabled on each GitHub repository. Where they are not, `gh stack submit` fails and Executor falls back to plain PRs on its own.
 - In each repository Executor builds in, two settings keep `gh stack` from stopping at a prompt: `git config rerere.enabled true` and `git config remote.pushDefault origin`. If the current folder is a git repository and either is unset, offer to set them here (YES / NO); never set them globally.
 
-**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3, and the plans folder, E4), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails.
+**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3, and the plans folder, E4), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails or is refused.
 
 ## E2: Enable Executor in this repository
 

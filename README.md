@@ -59,7 +59,7 @@ The search roots are a setting in `~/.engineer-of-wealth/executor/config.md`, se
 
 A bare PR number or a branch name always means the current repository.
 
-Every PR Claude opens is also assigned to you, its author. That one is plain shell, not AI: a second hook runs `gh pr edit --add-assignee @me` in the background, so your session never waits on GitHub. If it fails, the reason is in `~/.engineer-of-wealth/executor/assign.log`.
+Every PR Claude opens is also assigned to you, its author. That one is plain shell, not AI: a second hook runs `gh pr edit --add-assignee @me` in the background, so your session never waits on GitHub. A stacked PR is assigned only once its head branch matches the branch `gh stack` reported. If it fails or is refused, the reason is in `~/.engineer-of-wealth/executor/assign.log`.
 
 | Skill | What it does |
 |---|---|
