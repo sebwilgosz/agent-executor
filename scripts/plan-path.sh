@@ -40,7 +40,6 @@ LC_ALL=C
 
 SELF_DIR=$(cd -P "$(dirname "$0")" && pwd)
 EOW="${EOW_HOME:-$HOME/.engineer-of-wealth}"
-. "$SELF_DIR/remote-url.sh"
 
 stop() { printf 'STOP: %s\n' "$1"; exit 0; }
 
@@ -72,6 +71,43 @@ plans_root() {
   while [ "$PLANS_ROOT" != "/" ] && [ "${PLANS_ROOT%/}" != "$PLANS_ROOT" ]; do
     PLANS_ROOT=${PLANS_ROOT%/}
   done
+}
+
+# Prints <owner>/<name> from a remote URL, nothing when it doesn't hold both.
+slug_from_url() {
+  local p owner name
+  case "$1" in
+    *://*/*) p=${1#*://}; p=${p#*/} ;;
+    *://*) return 0 ;;
+    *:*) p=${1#*:} ;;
+    *) p=$1 ;;
+  esac
+  while [ "${p%/}" != "$p" ]; do p=${p%/}; done
+  case "$p" in */*) ;; *) return 0 ;; esac
+  name=${p##*/}; name=${name%.git}
+  p=${p%/*}; owner=${p##*/}
+  case "$owner" in ""|.|..) return 0 ;; esac
+  case "$name" in ""|.|..) return 0 ;; esac
+  printf '%s/%s' "$owner" "$name"
+}
+
+# Prints the host of a remote URL, nothing when it names none. An SSH one may name
+# an alias: ssh -G reads the real host from the ssh config, with no network.
+host_from_url() {
+  local h real via_ssh=1
+  case "$1" in
+    ssh://*|git+ssh://*) h=${1#*://} ;;
+    *://*) h=${1#*://}; via_ssh=0 ;;
+    *:*) h=${1%%:*} ;;
+    *) return 0 ;;
+  esac
+  h=${h%%/*}; h=${h##*@}; h=${h%%:*}
+  case "$h" in [[:alnum:]]*) ;; *) return 0 ;; esac
+  if [ "$via_ssh" -eq 1 ]; then
+    real=$(ssh -G "$h" 2>/dev/null </dev/null | awk '$1 == "hostname" { print $2; exit }')
+    h=${real:-$h}
+  fi
+  printf '%s\n' "$h"
 }
 
 # Prints local/<name> from the absolute git common dir.

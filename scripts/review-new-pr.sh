@@ -17,12 +17,12 @@ if [ "$kind" = stack ]; then
     esac
     list="$list${list:+, }$pr (head branch: $branch)"
   done 3<<< "$prs" 4<<< "$branches"
-  case "$prs" in
-    https://*)
-      context="Executor: stacked pull requests were just created, bottom of the stack first: $list. Before anything else, check each PR's head branch matches the branch listed here (gh pr view <url> --json headRefName); if one doesn't, stop and say so, and leave that PR alone. Then give each one its title and body as references/feature-done.md says (gh pr edit <url>), run the executor:review skill on each by its URL, bottom of the stack first, and finish with each summary."
+  case $'\n'"$prs" in
+    *$'\n'[0-9]*)
+      context="Executor: stacked pull requests were just created, bottom of the stack first: $list. The repo could not be identified for each one listed by number. Find the repo before reviewing; do not resolve these numbers from the current folder. Then check each PR's head branch matches the branch listed here; if one doesn't, stop and say so, and leave that PR alone. Then give each one its title and body as references/feature-done.md says (gh pr edit <url>), run the executor:review skill on each by its URL, bottom of the stack first, and finish with each summary."
       ;;
     *)
-      context="Executor: stacked pull requests were just created, bottom of the stack first: $list. Their repo could not be identified. Find the repo before reviewing; do not resolve these numbers from the current folder. Then check each PR's head branch matches the branch listed here; if one doesn't, stop and say so, and leave that PR alone. Then give each one its title and body as references/feature-done.md says (gh pr edit <url>), run the executor:review skill on each by its URL, bottom of the stack first, and finish with each summary."
+      context="Executor: stacked pull requests were just created, bottom of the stack first: $list. Before anything else, check each PR's head branch matches the branch listed here (gh pr view <url> --json headRefName); if one doesn't, stop and say so, and leave that PR alone. Then give each one its title and body as references/feature-done.md says (gh pr edit <url>), run the executor:review skill on each by its URL, bottom of the stack first, and finish with each summary."
       ;;
   esac
 else
