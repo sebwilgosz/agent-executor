@@ -34,7 +34,6 @@ LC_ALL=C
 SELF_DIR=$(cd -P "$(dirname "$0")" && pwd)
 EOW="${EOW_HOME:-$HOME/.engineer-of-wealth}"
 LOG="$EOW/executor/plan-state.log"
-NAME_MAX=60
 
 say() { printf '%s\n' "$1"; exit 0; }
 
@@ -57,57 +56,13 @@ PLAN="${1:-}"
 [ -n "$PLAN" ] && [ -f "$PLAN" ] || say "NONE"
 [ -r "$PLAN" ] || unknown "cannot read $PLAN"
 
-ITEM_RE='^[[:space:]]*- \[[ xX]\] '
-UNTICKED_RE='^[[:space:]]*- \[ \] '
+. "$SELF_DIR/plan-items.sh" 2>/dev/null \
+  || unknown "scripts/plan-items.sh is missing, so $PLAN cannot be read"
+
 HOST_RE='^[[:alnum:]][[:alnum:].-]*$'
-PR_RE='(^|[^[:alnum:]])PR #([0-9]+)'
-BRANCH_RE='(^|[[:space:]])branch `?([^[:space:]`]+)'
 TEXT_RE='[^[:space:]]'
 
-# The text after the item's spec link, or the whole line without one: a PR number
-# in the feature's name is not its PR.
-state_text() {
-  local t=$1
-  case "$t" in
-    *"]("*) t=${t##*"]("}; t=${t#*\)} ;;
-  esac
-  printf '%s' "$t"
-}
-
-# The feature's name: the item line up to its link or state, cut to NAME_MAX.
-short_name() {
-  local s=$1 cut em=$'\xe2\x80\x94'
-  s=${s#"${s%%[![:space:]]*}"}; s=${s#- \[?\] }
-  case "$s" in
-    *" ["*) s=${s%%" ["*} ;;
-    *) for cut in ' PR #' ' branch ' ' ⛔' ' 🔨'; do s=${s%%"$cut"*}; done ;;
-  esac
-  while :; do
-    case "$s" in
-      *" "|*"-") s=${s%?} ;;
-      *" $em") s=${s%" $em"} ;;
-      *) break ;;
-    esac
-  done
-  if [ "${#s}" -gt "$NAME_MAX" ]; then
-    s=${s:0:$NAME_MAX}
-    # bytes here, under LC_ALL=C: don't leave half a character behind.
-    while :; do
-      case "${s: -1}" in
-        [$'\x80'-$'\xff']) s=${s%?} ;;
-        *) break ;;
-      esac
-    done
-    s="$s..."
-  fi
-  printf '%s' "$s"
-}
-
-items=()
-while IFS= read -r line || [ -n "$line" ]; do
-  line=${line%$'\r'}
-  [[ $line =~ $ITEM_RE ]] && items[${#items[@]}]=$line
-done < "$PLAN"
+read_items "$PLAN" || unknown "cannot read $PLAN"
 [ "${#items[@]}" -gt 0 ] || unknown "no items in $PLAN"
 
 # The plans folder's own STOP goes out as it is, before any lookup.
@@ -179,15 +134,15 @@ need_checkout() {
 }
 
 # Returns 0 when the branch is an ancestor of the default branch, 1 when it isn't
-# or, on an unticked item ($2), doesn't exist yet; ends with UNKNOWN when git can't
-# tell.
+# or, on an unticked item ($2 is 0), doesn't exist yet; ends with UNKNOWN when git
+# can't tell.
 branch_merged() {
   local rc
   need_checkout "$1"
   git check-ref-format --branch "$1" >/dev/null 2>&1 \
     || unknown "not a branch name: $1"
   if ! git rev-parse --verify --quiet "refs/heads/$1^{commit}" >/dev/null 2>&1; then
-    [[ $2 =~ $UNTICKED_RE ]] && return 1
+    [ "$2" -eq 0 ] && return 1
     unknown "branch $1 not found, so it cannot be read"
   fi
   git merge-base --is-ancestor "refs/heads/$1" "$CMP" 2>"$ERR"
@@ -203,23 +158,24 @@ TOTAL=${#items[@]}
 OPEN_COUNT=0
 FIRST_OPEN=""
 CLOSED=""
-note_open() { OPEN_COUNT=$((OPEN_COUNT+1)); [ -n "$FIRST_OPEN" ] || FIRST_OPEN=$(short_name "$1"); }
+note_open() { OPEN_COUNT=$((OPEN_COUNT+1)); [ -n "$FIRST_OPEN" ] || FIRST_OPEN=$(item_name "$1"); }
 
 for item in "${items[@]}"; do
-  text=$(state_text "$item")
-  case "$text" in
-    *⛔*|*🔨*) note_open "$item"; continue ;;
-  esac
-  if [[ $text =~ $PR_RE ]]; then
-    n=${BASH_REMATCH[2]}
+  parse_item "$item"
+  if [ "$ITEM_BLOCKED" -eq 1 ] || [ "$ITEM_BUILDING" -eq 1 ]; then
+    note_open "$item"
+    continue
+  fi
+  if [ -n "$ITEM_PR" ]; then
+    n=$ITEM_PR
     pr_state "$n"
     case "$PR_STATE" in
       MERGED) ;;
-      CLOSED) CLOSED="${CLOSED:+$CLOSED, }PR #$n $(short_name "$item")" ;;
+      CLOSED) CLOSED="${CLOSED:+$CLOSED, }PR #$n $(item_name "$item")" ;;
       *) note_open "$item" ;;
     esac
-  elif [[ $text =~ $BRANCH_RE ]]; then
-    branch_merged "${BASH_REMATCH[2]}" "$item" || note_open "$item"
+  elif [ -n "$ITEM_BRANCH" ]; then
+    branch_merged "$ITEM_BRANCH" "$ITEM_TICKED" || note_open "$item"
   else
     note_open "$item"
   fi
