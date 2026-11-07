@@ -151,6 +151,7 @@ e=$ERRS
 e=$ERRS
 [ -s "$ROOT/scripts/plan-state.sh" ] || err "integrity: scripts/plan-state.sh missing - /executor:build cannot tell a finished plan → $REINSTALL"
 [ -s "$ROOT/scripts/plan-sweep.sh" ] || err "integrity: scripts/plan-sweep.sh missing - the sweep /executor:help lists cannot run → $REINSTALL"
+[ -s "$ROOT/scripts/plan-items.sh" ] || err "integrity: scripts/plan-items.sh missing - plan-state.sh sources it to read a plan's items → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: finished plans can be told and marked"
 
 # -- finding a PR's checkout: without find-checkout.sh a review of another

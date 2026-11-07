@@ -134,6 +134,15 @@ check "plans-migrate missing: integrity error" "✗ integrity: scripts/plans-mig
 check "plans-migrate missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/plans-migrate.sh")"
 [ "$rc" -eq 0 ] && ok "plans-migrate missing: exit 0" || bad "plans-migrate missing: exit 0" "exit $rc"
 
+# 9. INTEGRITY: and the one reader of a plan's items.
+cp "$REPO/scripts/plan-items.sh" "$PLUG/scripts/"
+refute "plan-items present: no integrity error" "scripts/plan-items.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/plan-items.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "plan-items missing: integrity error" "✗ integrity: scripts/plan-items.sh missing" "$out"
+check "plan-items missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/plan-items.sh")"
+[ "$rc" -eq 0 ] && ok "plan-items missing: exit 0" || bad "plan-items missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
