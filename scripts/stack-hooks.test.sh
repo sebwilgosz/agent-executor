@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Spec tests for the PostToolUse hooks after `gh stack submit` and `gh stack link`:
-# they act on the PR's own repo, whatever folder the session is in, and they never
-# delay a session. No network: stub `gh` and `ssh` on PATH, a `git` that records its
-# calls, real temporary repos with a fake origin, HOME in a temporary folder.
+# they act on the PR whose URL gh stack printed, whatever folder the session is in,
+# and they never delay a session. No network: stub `gh`, plus `git`, `ssh` and `jq`
+# that record their calls, and HOME in a temporary folder.
 #
 # Run: bash scripts/stack-hooks.test.sh   (exit 0 = all pass)
 set -u
@@ -24,9 +24,10 @@ ROOT=$(cd -P "$ROOT" && pwd)
 trap 'rm -rf "$ROOT"' EXIT
 BIN="$ROOT/bin"; mkdir -p "$BIN"
 REAL_GIT=$(command -v git)
+REAL_JQ=$(command -v jq)
 REAL_PATH=$PATH
 export HEADS="$ROOT/heads"; : > "$HEADS"
-export REAL_GIT
+export REAL_GIT REAL_JQ
 
 # `gh pr view <url>` answers from $HEADS ("<url> <branch>" lines), or fails.
 cat > "$BIN/gh" <<'STUB'
@@ -34,7 +35,6 @@ cat > "$BIN/gh" <<'STUB'
 printf '%s\n' "$*" >> "$CALLS"
 case "$1 $2" in
   "pr view")
-    echo "A new release of gh is available" >&2
     head=$(grep -F "$3 " "$HEADS" | head -1 | cut -d' ' -f2-)
     [ -n "$head" ] || { echo "gh: no pull requests found" >&2; exit 1; }
     case "$*" in
@@ -52,15 +52,10 @@ printf 'git %s\n' "$*" >> "$TOOLS"
 exec "$REAL_GIT" "$@"
 STUB
 
-# The real ssh -G reads the user's config, not $HOME: an alias maps to the real host.
 cat > "$BIN/ssh" <<'STUB'
 #!/usr/bin/env bash
 printf 'ssh %s\n' "$*" >> "$TOOLS"
-[ "$1" = -G ] || exit 1
-case "$2" in
-  github.com-work) printf 'user git\nhostname github.com\n' ;;
-  *) printf 'user git\nhostname %s\n' "$2" ;;
-esac
+exit 1
 STUB
 
 cat > "$BIN/jq" <<'STUB'
@@ -68,7 +63,6 @@ cat > "$BIN/jq" <<'STUB'
 printf 'jq %s\n' "$*" >> "$TOOLS"
 exec "$REAL_JQ" "$@"
 STUB
-export REAL_JQ; REAL_JQ=$(command -v jq)
 chmod +x "$BIN"/*
 
 # A PATH holding every tool the hooks use, but no jq.
@@ -79,7 +73,6 @@ done
 for t in gh git ssh; do ln -s "$BIN/$t" "$NOJQ/$t"; done
 export PATH="$BIN:$REAL_PATH"
 
-mkrepo(){ mkdir -p "$1" && "$REAL_GIT" -C "$1" init -q && "$REAL_GIT" -C "$1" remote add origin "$2"; }
 head_of(){ printf '%s %s\n' "$1" "$2" >> "$HEADS"; }
 
 # Each run gets its own call files and HOME: a detached run can't leak into the next.
@@ -120,195 +113,185 @@ probe(){
 }
 prs_of(){ probe "$@" | cut -d'|' -f2; }
 
-SUB="Pushed 1 branch
-Created PR #27 for feat-a"
+# probe, with a limit: a command the hook can't get past must fail here, not hang.
+within_limit(){
+  local out="$ROOT/bounded.$$" i=0 pid
+  : > "$out"
+  probe "$@" > "$out" 2>/dev/null &
+  pid=$!
+  while [ "$i" -lt 60 ] && kill -0 "$pid" 2>/dev/null; do sleep 0.05; i=$((i+1)); done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null; pkill -P "$pid" 2>/dev/null; wait "$pid" 2>/dev/null
+    printf 'HUNG'
+    return
+  fi
+  wait "$pid" 2>/dev/null
+  cat "$out"
+}
+
+URL=https://github.com/acme/b/pull/27
+URL_OTHER=https://github.com/acme/a/pull/27
+head_of "$URL" feat-a
+head_of "$URL_OTHER" other-branch
+REAL="Checking stack state...
+Pushing to origin...
+✓ Created PR #27 ($URL) for feat-a
+✓ Pushed and synced 1 branches"
+BARE="Created PR #27 for feat-a"
 LOG_SHAPE='^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}  .+  .+  .+$'
+
+# A session folder that is a repo with a PR of that number, and one that is no repo.
+REPO_A="$ROOT/a"; mkdir -p "$REPO_A"; "$REAL_GIT" -C "$REPO_A" init -q
+"$REAL_GIT" -C "$REPO_A" remote add origin https://github.com/acme/a.git
+NOREPO="$ROOT/not a repo"; mkdir -p "$NOREPO"
 
 echo "stack hooks spec tests"
 
-# Repos used across the tests.
-NOREPO="$ROOT/not a repo"; mkdir -p "$NOREPO"
-SPACED="$ROOT/my projects/the repo"; mkrepo "$SPACED" https://github.com/acme/spaced.git
-URL_S=https://github.com/acme/spaced/pull/27
-head_of "$URL_S" feat-a
-REPO_A="$ROOT/a"; mkrepo "$REPO_A" https://github.com/acme/a.git
-REPO_B="$ROOT/b"; mkrepo "$REPO_B" https://github.com/acme/b.git
-URL_A=https://github.com/acme/a/pull/27
-URL_B=https://github.com/acme/b/pull/27
-head_of "$URL_A" other-branch
-head_of "$URL_B" feat-a
-
-# 1. The session's folder is not a repo; the command's cd names one, with a space.
+# The session's folder is not a repo: the printed URL is assigned, head read first.
 fresh
-assign "cd \"$SPACED\" && gh stack submit --auto" "$SUB" "$NOREPO"
+assign 'cd "/some/where else" && gh stack submit --auto' "$REAL" "$NOREPO"
 wait_lines "$CALLS" '^pr edit' 1
-is "cd into a spaced path: its URL is assigned" "pr edit $URL_S --add-assignee @me" "$(edits)"
-check "cd into a spaced path: head branch read first" "pr view $URL_S --json headRefName" "$(head -1 "$CALLS")"
-is "cd into a spaced path: nothing logged" "0" "$(log_lines)"
+is "not a repo: the printed URL is assigned" "pr edit $URL --add-assignee @me" "$(edits)"
+check "not a repo: head branch read first" "pr view $URL --json headRefName" "$(head -1 "$CALLS")"
+is "not a repo: nothing logged" "0" "$(log_lines)"
 
-# 2. The session is in repo A, which has a PR of that number; the cd names repo B.
+# The session is in another repo with a PR of that number: that one is never touched.
 fresh
-assign "cd $REPO_B && gh stack submit --auto" "$SUB" "$REPO_A"
+assign "cd /elsewhere && gh stack submit --auto" "$REAL" "$REPO_A"
 wait_lines "$CALLS" '^pr edit' 1
-is "other repo: B's PR is assigned" "pr edit $URL_B --add-assignee @me" "$(edits)"
-refute "other repo: A is never touched" "acme/a/" "$(cat "$CALLS")"
+is "other repo: the printed PR is assigned" "pr edit $URL --add-assignee @me" "$(edits)"
+refute "other repo: the session's repo is never touched" "acme/a/" "$(cat "$CALLS")"
 
-# 3. No cd, the session's folder is the repo: by URL.
-fresh
-assign "gh stack submit --auto" "$SUB" "$REPO_B"
-wait_lines "$CALLS" '^pr edit' 1
-is "no cd: the session's repo, by URL" "pr edit $URL_B --add-assignee @me" "$(edits)"
+# No cd, a cd in a variable or a cd that doesn't exist: the folder no longer matters.
+is "no cd"              "$URL" "$(prs_of "gh stack submit" "$REAL" "$REPO_A")"
+is "cd to a variable"   "$URL" "$(prs_of 'cd "$REPO" && gh stack submit' "$REAL" "$REPO_A")"
+is "cd to a missing folder" "$URL" "$(prs_of "cd /no/such/folder && gh stack submit" "$REAL" "$REPO_A")"
+is "cd ~"               "$URL" "$(prs_of "cd ~/code && gh stack submit" "$REAL" "$REPO_A")"
+is "--remote"           "$URL" "$(prs_of "gh stack submit --remote upstream" "$REAL" "$REPO_A")"
+is "gh stack link"      "$URL" "$(prs_of "gh stack link a b" "$REAL" "$REPO_A")"
 
-# The forms a cd comes in.
-is "subshell cd"      "$URL_B" "$(prs_of "(cd $REPO_B && gh stack submit)" "$SUB" "$REPO_A")"
-is "single-quoted cd" "$URL_S" "$(prs_of "cd '$SPACED' && gh stack submit" "$SUB" "$REPO_A")"
-is "double-quoted cd" "$URL_S" "$(prs_of "cd \"$SPACED\" && gh stack submit" "$SUB" "$REPO_A")"
-is "escaped space"    "$URL_S" "$(prs_of "cd ${SPACED// /\\ } && gh stack submit" "$SUB" "$REPO_A")"
-is "last cd wins"     "$URL_B" "$(prs_of "cd $REPO_A && cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
-is "relative cd"      "$URL_B" "$(prs_of "cd b && gh stack submit" "$SUB" "$ROOT")"
-is "a cd after gh stack doesn't count" "$URL_A" "$(prs_of "cd $REPO_A && gh stack submit; cd $REPO_B" "$SUB" "$NOREPO")"
-is "a cd in a message doesn't count" "$URL_B" \
-  "$(prs_of "git commit -m \"cd $REPO_A\" && gh stack submit" "$SUB" "$REPO_B")"
-is "a cd in a command substitution doesn't count" "$URL_B" \
-  "$(prs_of "X=\$(cd $REPO_A && pwd) && gh stack submit" "$SUB" "$REPO_B")"
-is "gh stack under bash -c" "$URL_B" "$(prs_of "bash -c 'cd $REPO_B && gh stack submit'" "$SUB" "$NOREPO")"
-is "gh stack link"    "$URL_B" "$(prs_of "cd $REPO_B && gh stack link" "$SUB" "$REPO_A")"
-
-# A commit message before gh stack: whatever it holds, the cd after it is still read.
-HEREDOC="git commit -m \"\$(cat <<'EOF'
-Fix it :) don't cd $REPO_A
-gh stack submit (unbalanced
-EOF
-)\" && cd $REPO_B && gh stack submit --auto"
-is "a here-document message" "$URL_B" "$(prs_of "$HEREDOC" "$SUB" "$NOREPO")"
-is "a here-document on the gh stack line" "$URL_B" \
-  "$(prs_of "cd $REPO_B && cat <<EOF && gh stack submit
+# Every form that really runs gh stack counts. These were dropped with no log line.
+is "captured in \$(...)" "$URL" "$(prs_of 'out=$(gh stack submit --auto 2>&1); echo "$out"' "$REAL" "$REPO_A")"
+is "echoed from \$(...)" "$URL" "$(prs_of 'echo "$(gh stack submit --auto 2>&1)"' "$REAL" "$REPO_A")"
+is "under eval"          "$URL" "$(prs_of 'eval "gh stack submit --auto"' "$REAL" "$REPO_A")"
+is "in backticks"        "$URL" "$(prs_of 'x=`gh stack submit --auto`; echo "$x"' "$REAL" "$REPO_A")"
+is "under bash -c"       "$URL" "$(prs_of "bash -c 'gh stack submit'" "$REAL" "$REPO_A")"
+is "under bash -lc, cd first" "$URL" "$(prs_of "bash -lc 'cd /x && gh stack submit'" "$REAL" "$REPO_A")"
+is "in a subshell"       "$URL" "$(prs_of "(cd /x && gh stack submit)" "$REAL" "$REPO_A")"
+is "in a pipe"           "$URL" "$(prs_of "gh stack submit --auto 2>&1 | tail -5" "$REAL" "$REPO_A")"
+is "under if !"          "$URL" "$(prs_of "if ! gh stack submit; then echo no; fi" "$REAL" "$REPO_A")"
+is "with a variable set" "$URL" "$(prs_of "GH_TOKEN=x gh stack submit" "$REAL" "$REPO_A")"
+is "after a here-document" "$URL" "$(prs_of "cat <<EOF
 it's :)
-EOF" "$SUB" "$NOREPO")"
-is "an apostrophe in a comment" "$URL_B" "$(prs_of "# don't stop
-cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
-BIGMSG=$(printf 'fix the thing in the place, (it is long) and "quoted"\n%.0s' $(seq 1 2000))
-fresh
-started=$SECONDS
-is "a 100 KB here-document" "$URL_B" "$(prs_of "git commit -m \"\$(cat <<'EOF'
-$BIGMSG
 EOF
-)\" && cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
-elapsed=$((SECONDS-started))
-[ "$elapsed" -lt 5 ] && ok "a 100 KB here-document: inside the hook's limit" || bad "a 100 KB here-document: inside the hook's limit" "took ${elapsed}s"
+gh stack submit" "$REAL" "$REPO_A")"
 fresh
-started=$SECONDS
-BIGQUOTED=$(printf 'fix the thing in the place, (it is long) and more of it\n%.0s' $(seq 1 2000))
-is "a 100 KB quoted message" "$URL_B" "$(prs_of "git commit -m \"$BIGQUOTED\" && cd $REPO_B && gh stack submit" "$SUB" "$NOREPO")"
-elapsed=$((SECONDS-started))
-[ "$elapsed" -lt 5 ] && ok "a 100 KB quoted message: inside the hook's limit" || bad "a 100 KB quoted message: inside the hook's limit" "took ${elapsed}s"
-
-# --remote names the remote to read.
-REMOTES="$ROOT/remotes"; mkrepo "$REMOTES" https://github.com/acme/origin-one.git
-"$REAL_GIT" -C "$REMOTES" remote add upstream https://github.com/acme/upstream-one.git
-is "--remote <name>" https://github.com/acme/upstream-one/pull/27 \
-  "$(prs_of "gh stack submit --remote upstream" "$SUB" "$REMOTES")"
-is "--remote=<name>" https://github.com/acme/upstream-one/pull/27 \
-  "$(prs_of "gh stack submit --remote=upstream" "$SUB" "$REMOTES")"
-is "--remote with no such remote: unknown" 27 "$(prs_of "gh stack submit --remote nope" "$SUB" "$REMOTES")"
-is "--remote it can't read: unknown" 27 "$(prs_of "gh stack submit --remote \"\$R\"" "$SUB" "$REMOTES")"
-
-# 4. The head branch doesn't match: nothing assigned, one log line.
+assign 'out=$(gh stack submit --auto 2>&1); echo "$out"' "$REAL" "$REPO_A"
+wait_lines "$CALLS" '^pr edit' 1
+is "captured in \$(...): assigned" "pr edit $URL --add-assignee @me" "$(edits)"
 fresh
-assign "gh stack submit --auto" "$SUB" "$REPO_A"
+ctx=$(context "$(review 'out=$(gh stack submit --auto 2>&1); echo "$out"' "$REAL" "$REPO_A")")
+check "captured in \$(...): reviewed" "$URL (head branch: feat-a)" "$ctx"
+
+# No character in a command can hang the hook.
+is "a carriage return" "stack|$URL|feat-a" "$(within_limit $'cd /x\r\ngh stack submit' "$REAL" "$REPO_A")"
+is "a carriage return on the line" "stack|$URL|feat-a" "$(within_limit $'cd /x \r&& gh stack submit' "$REAL" "$REPO_A")"
+is "a form feed" "stack|$URL|feat-a" "$(within_limit $'cd /x\f&& gh stack submit' "$REAL" "$REPO_A")"
+is "a vertical tab" "stack|$URL|feat-a" "$(within_limit $'cd /x\v&& gh stack submit' "$REAL" "$REPO_A")"
+is "unbalanced quotes" "stack|$URL|feat-a" "$(within_limit "echo 'it; gh stack submit \"\$(\`" "$REAL" "$REPO_A")"
+BIGMSG=$(printf 'fix the thing in the place, (it is long) and "quoted"\n%.0s' $(seq 1 2000))
+is "a 100 KB command" "stack|$URL|feat-a" "$(within_limit "git commit -m \"$BIGMSG\" && gh stack submit" "$REAL" "$REPO_A")"
+
+# The head branch doesn't match: nothing assigned, one log line.
+fresh
+assign "gh stack submit --auto" "Created PR #27 ($URL_OTHER) for feat-a" "$NOREPO"
 wait_lines "$LOG" . 1
 is "mismatch: nothing assigned" "" "$(edits)"
 is "mismatch: one log line" "1" "$(log_lines)"
-check "mismatch: names the PR" "$URL_A" "$(cat "$LOG")"
+check "mismatch: names the PR" "$URL_OTHER" "$(cat "$LOG")"
 grep -qE "$LOG_SHAPE" "$LOG" && ok "mismatch: the log line keeps its format" || bad "mismatch: the log line keeps its format" "$(cat "$LOG")"
 
 # The lookup fails: the same.
 fresh
-UNSEEN="$ROOT/unseen"; mkrepo "$UNSEEN" https://github.com/acme/unseen.git
-assign "gh stack submit --auto" "$SUB" "$UNSEEN"
+assign "gh stack submit --auto" "Created PR #27 (https://github.com/acme/unseen/pull/27) for feat-a" "$NOREPO"
 wait_lines "$LOG" . 1
 is "lookup fails: nothing assigned" "" "$(edits)"
 is "lookup fails: one log line" "1" "$(log_lines)"
 check "lookup fails: logs gh's reason" "no pull requests found" "$(cat "$LOG")"
 
-# 5. Repo unknown: no gh pr edit, one log line, and the review is told.
+# No URL printed: the repo is unknown, even when the session's folder holds that number.
 fresh
-assign "cd \"\$REPO\" && gh stack submit --auto" "$SUB" "$REPO_A"
+assign "gh stack submit --auto" "$BARE" "$REPO_A"
 wait_lines "$LOG" . 1
-is "unknown repo: gh pr edit never called" "" "$(edits)"
-is "unknown repo: one log line" "1" "$(log_lines)"
-grep -qE "$LOG_SHAPE" "$LOG" && ok "unknown repo: the log line keeps its format" || bad "unknown repo: the log line keeps its format" "$(cat "$LOG")"
-refute "unknown repo: no gh call on a bare number" "27" "$(cat "$CALLS")"
+is "no URL: gh pr edit never called" "" "$(edits)"
+is "no URL: one log line" "1" "$(log_lines)"
+grep -qE "$LOG_SHAPE" "$LOG" && ok "no URL: the log line keeps its format" || bad "no URL: the log line keeps its format" "$(cat "$LOG")"
+refute "no URL: no gh call on a bare number" "27" "$(cat "$CALLS")"
+is "no URL: no git or ssh" "" "$(grep -E '^(git|ssh) ' "$TOOLS")"
 fresh
-ctx=$(context "$(review "cd \"\$REPO\" && gh stack submit --auto" "$SUB" "$REPO_A")")
-check "unknown repo: the review context says so" "repo could not be identified" "$ctx"
-check "unknown repo: gives the number" "#27" "$ctx"
-check "unknown repo: gives the branch" "feat-a" "$ctx"
-check "unknown repo: not from the current folder" "not resolve" "$ctx"
+ctx=$(context "$(review "gh stack submit --auto" "$BARE" "$REPO_A")")
+check "no URL: the review context says so" "repo could not be identified" "$ctx"
+check "no URL: gives the number" "#27" "$ctx"
+check "no URL: gives the branch" "feat-a" "$ctx"
+check "no URL: not from the current folder" "not resolve" "$ctx"
 
-is "cd \$VAR beats the session's repo" 27 "$(prs_of "cd \"\$REPO\" && gh stack submit" "$SUB" "$REPO_A")"
-is "cd \$(...): unknown"       27 "$(prs_of "cd \"\$(git rev-parse --show-toplevel)\" && gh stack submit" "$SUB" "$REPO_A")"
-is "cd a glob: unknown"        27 "$(prs_of "cd rep* && gh stack submit" "$SUB" "$REPO_A")"
-is "cd -: unknown"             27 "$(prs_of "cd - && gh stack submit" "$SUB" "$REPO_A")"
-is "missing absolute: unknown" 27 "$(prs_of "cd $ROOT/missing && gh stack submit" "$SUB" "$REPO_A")"
-is "not a repo: unknown"       27 "$(prs_of "cd \"$NOREPO\" && gh stack submit" "$SUB" "$REPO_A")"
-NOORIGIN="$ROOT/no-origin"; mkdir -p "$NOORIGIN"; "$REAL_GIT" -C "$NOORIGIN" init -q
-is "no origin: unknown"        27 "$(prs_of "cd $NOORIGIN && gh stack submit" "$SUB" "$REPO_A")"
-LOCALR="$ROOT/local-remote"; mkrepo "$LOCALR" /srv/git/thing.git
-is "a local-path origin: unknown" 27 "$(prs_of "gh stack submit" "$SUB" "$LOCALR")"
-
-# 6. The (base: ...) suffix is not part of the branch.
+# The (base: ...) suffix gh stack link prints is not part of the branch.
+BASED="Created PR #27 ($URL) for feat-a (base: main)"
+is "base suffix: branch parsed without it" "stack|$URL|feat-a" "$(probe "gh stack link a" "$BASED" "$REPO_A")"
+is "base suffix, no URL" "stack|27|feat-a" "$(probe "gh stack link a" "Created PR #27 for feat-a (base: main)" "$REPO_A")"
 fresh
-BASED="Created PR #27 for feat-a (base: main)"
-is "base suffix: branch parsed without it" "stack|$URL_B|feat-a" "$(probe "gh stack submit" "$BASED" "$REPO_B")"
-assign "gh stack submit" "$BASED" "$REPO_B"
+assign "gh stack link a" "$BASED" "$REPO_A"
 wait_lines "$CALLS" '^pr edit' 1
-is "base suffix: the branch check passes" "pr edit $URL_B --add-assignee @me" "$(edits)"
+is "base suffix: the branch check passes" "pr edit $URL --add-assignee @me" "$(edits)"
 
-# The line as gh stack really prints it away from a terminal, URL and all.
-REAL_LINE="Checking stack state...
-Pushing to origin...
-✓ Created PR #27 (https://github.com/acme/b/pull/27) for feat-a
-✓ Pushed and synced 1 branches"
-is "real output line: number and branch" "stack|$URL_B|feat-a" "$(probe "gh stack submit --auto" "$REAL_LINE" "$REPO_B")"
-is "real output line, no jq" "stack|$URL_B|feat-a" \
-  "$(event "gh stack submit --auto" "$REAL_LINE" "$REPO_B" | PATH="$NOJQ" "$NOJQ/bash" -c '. "$1"; printf "%s\n" "$kind|$prs|$branches"' probe "$NEW_PRS")"
-fresh
-assign "gh stack submit --auto" "$REAL_LINE" "$REPO_B"
-wait_lines "$CALLS" '^pr edit' 1
-is "real output line: assigned" "pr edit $URL_B --add-assignee @me" "$(edits)"
+# Only a URL that really is this PR's counts.
+GHE=https://ghe.example.com/o/r/pull/5
+is "an enterprise host" "stack|$GHE|x" "$(probe "gh stack submit" "Created PR #5 ($GHE) for x" "$NOREPO")"
+is "another PR's number: unknown" "stack|27|x" "$(probe "gh stack submit" "Created PR #27 (https://github.com/o/r/pull/99) for x" "$NOREPO")"
+is "not https: unknown" "stack|27|x" "$(probe "gh stack submit" "Created PR #27 (http://github.com/o/r/pull/27) for x" "$NOREPO")"
+is "not a PR URL: unknown" "stack|27|x" "$(probe "gh stack submit" "Created PR #27 (https://github.com/o/r/issues/27) for x" "$NOREPO")"
+is "an option as a host: unknown" "stack|27|x" "$(probe "gh stack submit" "Created PR #27 (--repo=o/r/pull/27) for x" "$NOREPO")"
+is "a quote in the owner: unknown" 'stack|27|x' "$(probe "gh stack submit" 'Created PR #27 (https://github.com/o"o/r/pull/27) for x' "$NOREPO")"
+is "an escaped slash in the JSON" "stack|$URL|feat-a" \
+  "$(printf '{"tool_name":"Bash","tool_input":{"command":"gh stack submit"},"tool_response":{"stdout":"Created PR #27 (https:\\/\\/github.com\\/acme\\/b\\/pull\\/27) for feat-a"},"cwd":"/x"}' | bash -c '. "$1"; printf "%s\n" "$kind|$prs|$branches"' probe "$NEW_PRS")"
 
-# 7. Remote forms give the real host's URL, and ssh -G runs only for an alias.
-remote_case(){
-  fresh
-  local d="$ROOT/remote.$RUN"
-  mkrepo "$d" "$2"
-  is "$1" "$3" "$(prs_of "cd $d && gh stack submit" "Created PR #5 for x" "$NOREPO")"
-  is "$1: ssh -G calls" "$4" "$(grep -c '^ssh ' "$TOOLS")"
-}
-remote_case "HTTPS remote"       https://github.com/o/r.git      https://github.com/o/r/pull/5 0
-remote_case "HTTPS with no .git" https://github.com/o/r          https://github.com/o/r/pull/5 0
-remote_case "enterprise HTTPS"   https://ghe.example.com/o/r.git https://ghe.example.com/o/r/pull/5 0
-remote_case "SSH remote"         git@github.com:o/r.git          https://github.com/o/r/pull/5 0
-remote_case "ssh:// remote"      ssh://git@github.com/o/r.git    https://github.com/o/r/pull/5 0
-remote_case "SSH alias"          git@github.com-work:o/r.git     https://github.com/o/r/pull/5 1
-check "SSH alias: asks for that host" "ssh -G github.com-work" "$(cat "$TOOLS")"
-remote_case "SSH on another host" git@git.example.com:o/r.git    https://git.example.com/o/r/pull/5 1
-
-# 8. Odd branch names and paths: the review's output stays valid JSON.
+# Odd branch names: the review's output stays valid JSON.
 ODD='we"ird\name'
 fresh
-out=$(review "gh stack submit" "Created PR #27 for $ODD" "$REPO_B")
+out=$(review "gh stack submit" "Created PR #27 ($URL) for $ODD" "$NOREPO")
 is "odd branch: output parses" "PostToolUse" "$(printf '%s' "$out" | "$REAL_JQ" -r '.hookSpecificOutput.hookEventName')"
 check "odd branch: named exactly" "$ODD" "$(context "$out")"
-is "odd branch: parsed exactly" "stack|$URL_B|$ODD" "$(probe "gh stack submit" "Created PR #27 for $ODD" "$REPO_B")"
+is "odd branch: parsed exactly" "stack|$URL|$ODD" "$(probe "gh stack submit" "Created PR #27 ($URL) for $ODD" "$NOREPO")"
 out=$(review "gh stack submit" "Created PR #27 for $ODD" "$NOREPO")
-check "odd branch, unknown repo: output parses" "$ODD" "$(context "$out")"
-ODDDIR="$ROOT/qu\"o\\te"; mkrepo "$ODDDIR" https://github.com/acme/odd.git
-out=$(review "cd '$ODDDIR' && gh stack submit" "$SUB" "$ODDDIR")
-check "odd path: output parses" "https://github.com/acme/odd/pull/27" "$(context "$out")"
-out=$(review "gh stack submit" $'Created PR #27 for feat\001x' "$REPO_B")
+check "odd branch, no URL: output parses" "$ODD" "$(context "$out")"
+out=$(review "gh stack submit" $'Created PR #27 for feat\001x' "$NOREPO")
 is "a control character: output parses" "PostToolUse" "$(printf '%s' "$out" | "$REAL_JQ" -r '.hookSpecificOutput.hookEventName')"
+
+# A stack: bottom first, a repeated line is one PR, and one bad URL says so.
+S1=https://github.com/acme/b/pull/52
+S2=https://github.com/acme/b/pull/51
+STACK="Created PR #52 ($S1) for bottom
+Created PR #51 ($S2) for top
+Created PR #52 ($S1) for bottom"
+fresh
+ctx=$(context "$(review "gh stack submit" "$STACK" "$NOREPO")")
+check "URLs with branches, bottom first" "$S1 (head branch: bottom), $S2 (head branch: top)" "$ctx"
+check "tells the review to compare" "check each PR's head branch" "$ctx"
+check "tells the review to stop on a mismatch" "stop and say so" "$ctx"
+is "a repeated line is one PR" 1 "$(printf '%s' "$ctx" | grep -o 'pull/52' | wc -l | tr -d ' ')"
+is "review hook: no gh at all" "" "$(cat "$CALLS")"
+is "a stack: no git or ssh" "" "$(grep -E '^(git|ssh) ' "$TOOLS")"
+fresh
+ctx=$(context "$(review "gh stack submit" "Created PR #52 ($S1) for bottom
+Created PR #51 for top" "$NOREPO")")
+check "one PR with no URL: the review is told" "repo could not be identified" "$ctx"
+check "one PR with no URL: lists it by number" "#51 (head branch: top)" "$ctx"
+fresh
+assign "gh stack submit" "Created PR #52 ($S1) for bottom
+Created PR #51 ($S2) for top" "$NOREPO"
+wait_lines "$LOG" . 2
+is "a stack, no head matches: one log line each" 2 "$(log_lines)"
+is "a stack, assign hook: no git or ssh" "" "$(grep -E '^(git|ssh) ' "$TOOLS")"
 
 # With no jq at all.
 nojq_review(){ event "$1" "$2" "$3" | PATH="$NOJQ" "$NOJQ/bash" "$REVIEW"; }
@@ -316,22 +299,21 @@ nojq_probe(){
   event "$1" "$2" "$3" | PATH="$NOJQ" "$NOJQ/bash" -c '. "$1"; printf "%s\n" "$kind|$prs|${branches:-}"' probe "$NEW_PRS"
 }
 fresh
-out=$(nojq_review "gh stack submit" "Created PR #27 for $ODD" "$REPO_B")
+out=$(nojq_review "gh stack submit" "Created PR #27 ($URL) for $ODD" "$NOREPO")
 check "no jq: odd branch still parses" "$ODD" "$(context "$out")"
-check "no jq: lists the URL" "$URL_B" "$(context "$out")"
-is "no jq: a cd is not parsed, cwd is used" "stack|$URL_A|feat-a" \
-  "$(nojq_probe "cd \"$SPACED\" && gh stack submit" "$SUB" "$REPO_A")"
-is "no jq: base suffix dropped" "stack|$URL_B|feat-a" "$(nojq_probe "gh stack submit" "$BASED" "$REPO_B")"
-is "no jq: --remote is read" "stack|https://github.com/acme/upstream-one/pull/27|feat-a" \
-  "$(nojq_probe "gh stack submit --remote upstream" "$SUB" "$REMOTES")"
+check "no jq: lists the URL" "$URL" "$(context "$out")"
+is "no jq: the printed URL" "stack|$URL|feat-a" "$(nojq_probe "cd /x && gh stack submit" "$REAL" "$REPO_A")"
+is "no jq: base suffix dropped" "stack|$URL|feat-a" "$(nojq_probe "gh stack submit" "$BASED" "$REPO_A")"
+is "no jq: no URL is unknown" "stack|27|feat-a" "$(nojq_probe "gh stack submit" "$BARE" "$REPO_A")"
+is "no jq: under eval" "stack|$URL|feat-a" "$(nojq_probe 'eval "gh stack submit"' "$REAL" "$REPO_A")"
 is "no jq: gh pr create keeps its URL" "pr|https://github.com/acme/a/pull/9|" \
   "$(nojq_probe "gh pr create --fill" "https://github.com/acme/a/pull/9" "$REPO_A")"
 fresh
-event "cd \"$SPACED\" && gh stack submit" "$SUB" "$REPO_A" | PATH="$NOJQ" "$NOJQ/bash" "$ASSIGN"
-wait_lines "$LOG" . 1
-is "no jq: a missed cd is refused by the branch check" "" "$(edits)"
+event "gh stack submit" "$REAL" "$NOREPO" | PATH="$NOJQ" "$NOJQ/bash" "$ASSIGN"
+wait_lines "$CALLS" '^pr edit' 1
+is "no jq: assigned by URL" "pr edit $URL --add-assignee @me" "$(edits)"
 
-# 9. gh pr create: its URL, assigned directly, with no lookup.
+# gh pr create: its URL, assigned directly, with no lookup.
 PR_URL=https://github.com/acme/a/pull/9
 is "gh pr create: prs is its URL" "pr|$PR_URL|" "$(probe "gh pr create --fill" "$PR_URL" "$NOREPO")"
 fresh
@@ -344,39 +326,18 @@ fresh
 out=$(review "gh pr create --fill" "$PR_URL" "$NOREPO")
 check "gh pr create: the review context names it" "$PR_URL" "$(context "$out")"
 
-# 10. An unrelated Bash command: no git, jq or ssh, and nothing printed.
+# An unrelated Bash command: no git, jq or ssh, and nothing printed.
 fresh
 out=$(assign "ls -la" "total 0" "$REPO_A"; review "ls -la" "total 0" "$REPO_A")
 is "unrelated command: prints nothing" "" "$out"
 # event() itself runs the real jq, so TOOLS only records the hooks' own calls.
 is "unrelated command: no git, jq or ssh" "" "$(cat "$TOOLS")"
 
-# 11. ~ expands unquoted, and stays literal quoted.
-fresh
-mkrepo "$HOME/code/tilde" https://github.com/acme/tilde.git
-TILDE=https://github.com/acme/tilde/pull/27
-is "~/x expands against HOME" "$TILDE" "$(prs_of "cd ~/code/tilde && gh stack submit" "$SUB" "$NOREPO")"
-is "~/\"x\" expands too" "$TILDE" "$(prs_of "cd ~/\"code/tilde\" && gh stack submit" "$SUB" "$NOREPO")"
-is "a quoted ~/x stays literal: unknown" 27 "$(prs_of "cd \"~/code/tilde\" && gh stack submit" "$SUB" "$REPO_A")"
-is "a single-quoted ~/x stays literal: unknown" 27 "$(prs_of "cd '~/code/tilde' && gh stack submit" "$SUB" "$REPO_A")"
-is "~user can't be read: unknown" 27 "$(prs_of "cd ~someone/x && gh stack submit" "$SUB" "$REPO_A")"
-
-# 12. Claude Code may already have applied the cd to the event's cwd.
-FOO="$ROOT/parent/foo"; mkrepo "$FOO" https://github.com/acme/foo.git
-URL_F=https://github.com/acme/foo/pull/27
-head_of "$URL_F" feat-a
-fresh
-assign "cd foo && gh stack submit --auto" "$SUB" "$FOO"
-wait_lines "$CALLS" '^pr edit' 1
-is "cwd already moved: the repo at cwd is used" "pr edit $URL_F --add-assignee @me" "$(edits)"
-check "cwd already moved: the branch check ran" "pr view $URL_F" "$(cat "$CALLS")"
-
-# 13. A command or output that merely mentions gh stack runs no git or ssh.
-ALIASED="$ROOT/aliased"; mkrepo "$ALIASED" git@github.com-work:o/r.git
+# A command or output that merely mentions gh stack acts on nothing.
 mention(){
   fresh
-  assign "$1" "$2" "$ALIASED" >/dev/null
-  out=$(review "$1" "$2" "$ALIASED")
+  assign "$1" "$2" "$REPO_A" >/dev/null
+  out=$(review "$1" "$2" "$REPO_A")
   is "$3: prints nothing" "" "$out"
   is "$3: no git or ssh" "" "$(grep -E '^(git|ssh) ' "$TOOLS")"
   is "$3: no gh" "" "$(cat "$CALLS")"
@@ -387,27 +348,13 @@ mention 'cat references/stacks.md' "Run gh stack submit --auto to open PRs." "a 
 is "a doc read: no jq either" "" "$(cat "$TOOLS")"
 mention 'gh stack submit --auto' "All branches up to date; no PR created" "a submit that creates no PR"
 is "a submit that creates no PR: no jq either" "" "$(cat "$TOOLS")"
-mention 'grep "gh stack submit" notes' "Created PR #27 for feat-a" "a grep that also hits a Created PR line"
-mention 'cat notes' "gh stack submit printed: Created PR #27 for feat-a" "a doc that quotes the output"
+mention 'grep "gh stack submit" notes' "$REAL" "a grep that also hits a Created PR line"
+mention "grep 'gh stack submit' notes" "$REAL" "a single-quoted grep that hits one"
+mention 'cat notes' "gh stack submit printed: Created PR #27 ($URL) for feat-a" "a doc that quotes the output"
 mention 'grep "gh stack submit" notes' "see https://github.com/o/r/pull/3" "a grep that hits a PR URL"
 fresh
-event 'grep "gh stack submit" notes' "Created PR #27 for feat-a" "$ALIASED" | PATH="$NOJQ" "$NOJQ/bash" "$REVIEW" >/dev/null
+event 'grep "gh stack submit" notes' "$REAL" "$REPO_A" | PATH="$NOJQ" "$NOJQ/bash" "$REVIEW" >/dev/null
 is "no jq, a grep: no git or ssh" "" "$(cat "$TOOLS")"
-
-# 14. $HOME and ${HOME} at the start of a path expand, except in single quotes.
-fresh
-mkrepo "$HOME/code/home-var" https://github.com/acme/home-var.git
-HOMEVAR=https://github.com/acme/home-var/pull/27
-is "unquoted \$HOME"      "$HOMEVAR" "$(prs_of 'cd $HOME/code/home-var && gh stack submit' "$SUB" "$NOREPO")"
-is "double-quoted \$HOME" "$HOMEVAR" "$(prs_of 'cd "$HOME/code/home-var" && gh stack submit' "$SUB" "$NOREPO")"
-is "unquoted \${HOME}"    "$HOMEVAR" "$(prs_of 'cd ${HOME}/code/home-var && gh stack submit' "$SUB" "$NOREPO")"
-is "double-quoted \${HOME}" "$HOMEVAR" "$(prs_of 'cd "${HOME}/code/home-var" && gh stack submit' "$SUB" "$NOREPO")"
-is "\$HOME itself is the home folder" https://github.com/acme/at-home/pull/27 \
-  "$(mkrepo "$HOME" https://github.com/acme/at-home.git; prs_of 'cd "$HOME" && gh stack submit' "$SUB" "$NOREPO")"
-is "single-quoted \$HOME stays literal: unknown" 27 "$(prs_of "cd '\$HOME/code/home-var' && gh stack submit" "$SUB" "$NOREPO")"
-is "cd \"\$REPO\": unknown" 27 "$(prs_of 'cd "$REPO" && gh stack submit' "$SUB" "$REPO_A")"
-is "\$HOMEX is another variable: unknown" 27 "$(prs_of 'cd "$HOMEX/code" && gh stack submit' "$SUB" "$REPO_A")"
-is "\$HOME past the start: unknown" 27 "$(prs_of 'cd "/x$HOME/code" && gh stack submit' "$SUB" "$REPO_A")"
 
 # The second fast check and the locale: real PR creation is untouched.
 locale_probe(){
@@ -417,36 +364,11 @@ PR_EVENT=$(event "gh pr create --fill" "$PR_URL" "$NOREPO")
 is "locale: an LC_ALL is restored" "en_US.UTF-8" "$(locale_probe "$PR_EVENT" LC_ALL=en_US.UTF-8)"
 is "locale: no LC_ALL stays unset" "unset" "$(locale_probe "$PR_EVENT" -u LC_ALL)"
 
-# One remote lookup per hook run, whatever the size of the stack.
-STACK3="Created PR #41 for s-one (base: main)
-Created PR #42 for s-two (base: s-one)
-Created PR #43 for s-three (base: s-two)"
-fresh
-out=$(review "cd $ALIASED && gh stack submit" "$STACK3" "$NOREPO")
-is "three PRs, review hook: one git call" 1 "$(grep -c '^git ' "$TOOLS")"
-is "three PRs, review hook: one ssh -G" 1 "$(grep -c '^ssh ' "$TOOLS")"
-is "review hook: no gh at all" "" "$(cat "$CALLS")"
-# Numbers out of order: bottom of the stack is the first line gh stack prints.
-fresh
-ctx=$(context "$(review "cd $REPO_B && gh stack submit" "Created PR #52 for bottom
-Created PR #51 for top
-Created PR #52 for bottom" "$NOREPO")")
-check "URLs with branches, bottom first" "https://github.com/acme/b/pull/52 (head branch: bottom), https://github.com/acme/b/pull/51 (head branch: top)" "$ctx"
-check "tells the review to compare" "check each PR's head branch" "$ctx"
-check "tells the review to stop on a mismatch" "stop and say so" "$ctx"
-is "a repeated line is one PR" 1 "$(printf '%s' "$ctx" | grep -o 'pull/52' | wc -l | tr -d ' ')"
-
-fresh
-assign "cd $ALIASED && gh stack submit" "$STACK3" "$NOREPO"
-is "three PRs, assign hook: one git call" 1 "$(grep -c '^git ' "$TOOLS")"
-is "three PRs, assign hook: one ssh -G" 1 "$(grep -c '^ssh ' "$TOOLS")"
-wait_lines "$LOG" . 3
-is "three PRs, assign hook: one log line each when none matches" 3 "$(log_lines)"
-
-# No fixed wait or retry in a hook.
+# No fixed wait or retry in a hook, and nothing left of the local lookup.
 refute "new-prs.sh: no sleep"       "sleep" "$(cat "$NEW_PRS")"
 refute "assign-author.sh: no sleep" "sleep" "$(cat "$ASSIGN")"
 refute "review-new-pr.sh: no sleep" "sleep" "$(cat "$REVIEW")"
+refute "new-prs.sh: runs no git"    "git -C" "$(cat "$NEW_PRS")"
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
