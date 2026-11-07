@@ -238,6 +238,15 @@ rm "$R/tsconfig.json"; git -C "$R" add -A; git -C "$R" commit -qm notsconfig >/d
 commit_file "$R" src/a.ts
 refute "no tsconfig.json: no type check" "TSC-ARGS" "$OUT"
 
+# A check killed by a signal is a failure, not a pass.
+printf '#!/bin/sh\nkill -9 $$\n' > "$R/node_modules/.bin/tsc"
+printf '{}\n' > "$R/tsconfig.json"
+git -C "$R" add -A; git -C "$R" commit -qm tsconfig-again >/dev/null 2>&1
+rm -f "$LOG"
+commit_file "$R" src/a.ts
+check "killed check: reported as failed" "type-check failed" "$OUT"
+refute "killed check: never logged as passed" "passed" "$(cat "$LOG" 2>/dev/null)"
+
 # A check over the limit is stopped, along with what it started.
 repo
 scripts '{"lint":"sleep 40 & echo $! > stray.pid; wait"}'

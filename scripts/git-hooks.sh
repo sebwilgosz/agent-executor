@@ -119,7 +119,7 @@ limited() {
     $SIG{ALRM} = sub { $late = 1; kill "TERM", -$pid; sleep 1; kill "KILL", -$pid };
     alarm $limit;
     waitpid $pid, 0;
-    my $code = $? >> 8;
+    my $code = $? & 127 ? 128 + ($? & 127) : $? >> 8;
     alarm 0;
     kill "KILL", -$pid if $late;
     exit($late ? 124 : $code);
