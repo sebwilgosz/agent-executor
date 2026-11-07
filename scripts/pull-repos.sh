@@ -191,7 +191,7 @@ update_default_ref() {
   # Git would refuse for a worktree entry whose folder is gone, and that entry is to be ignored.
   local head_ok=""
   [ "$stale_def" -eq 0 ] || head_ok=--update-head-ok
-  run_git -C "$main_wt" fetch $head_ok origin "refs/heads/$def:refs/heads/$def" || return 1
+  run_git -C "$main_wt" fetch --refmap= $head_ok origin "refs/heads/$def:refs/heads/$def" || return 1
   [ -n "$local_sha" ] || run_git -C "$main_wt" branch --set-upstream-to="origin/$def" "$def"
   return 0
 }
@@ -208,8 +208,9 @@ update_repo() {
     repo_result failed "could not update"; return
   fi
   # The tracking ref follows the remote as a default fetch refspec would, with its
-  # plus. A plain bare clone has no such refspec, so this names it.
-  if ! run_git -C "$folder" fetch origin "+refs/heads/$def:refs/remotes/origin/$def"; then
+  # plus. A plain bare clone has no such refspec, so this names it. --refmap= keeps a
+  # forced refspec in the repo's own config, as in a mirror, from moving local branches.
+  if ! run_git -C "$folder" fetch --refmap= origin "+refs/heads/$def:refs/remotes/origin/$def"; then
     if [ "$reachable" -eq 1 ]; then
       repo_result failed "could not update"
     else

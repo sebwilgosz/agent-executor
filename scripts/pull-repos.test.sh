@@ -496,6 +496,23 @@ out=$(GIT_CONFIG_GLOBAL="$ROOT/offline" run)
 is "offline: one line" "Could not reach any origin. Are you online?" "$out"
 is "offline: nothing moved" "$api_before" "$(sha_of "$P/api")"
 
+# A forced fetch refspec in the repo's own config must not move the local default.
+fresh; git clone -q --mirror "https://github.com/acme/api.git" "$P/api.git"
+tree=$(git -C "$P/api.git" rev-parse 'main^{tree}')
+local_commit=$(git -C "$P/api.git" commit-tree -p main -m local "$tree")
+git -C "$P/api.git" update-ref refs/heads/main "$local_commit"
+advance acme/api
+is "mirror with a local commit: diverged" "Pulled 0 of 1 repo.
+Could not pull:
+- api: diverged from origin" "$(run)"
+is "mirror with a local commit: left as it was" "$local_commit" "$(git -C "$P/api.git" rev-parse refs/heads/main)"
+
+# With nothing local to lose, a mirror still fast-forwards.
+fresh; git clone -q --mirror "https://github.com/acme/api.git" "$P/api.git"
+advance acme/api
+is "mirror behind origin: pulled" "Pulled all 1 repo." "$(run)"
+is "mirror behind origin: fast-forwarded" "$(remote_sha acme/api)" "$(git -C "$P/api.git" rev-parse refs/heads/main)"
+
 # One unreachable origin among reachable ones is named.
 fresh; clone_to acme/api "$P/api"; clone_to acme/web "$P/web"
 git -C "$P/web" remote set-url origin "https://github.com/acme/no-such-repo.git"
