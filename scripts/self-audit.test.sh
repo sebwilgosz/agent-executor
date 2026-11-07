@@ -198,6 +198,19 @@ check "heavy missing: integrity error" "✗ integrity: scripts/heavy.sh missing"
 check "heavy missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/heavy.sh")"
 [ "$rc" -eq 0 ] && ok "heavy missing: exit 0" || bad "heavy missing: exit 0" "exit $rc"
 
+# 16. INTEGRITY: and the queue's hook, present and wired.
+refute "heavy hook present: no integrity error" "heavy-hook.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/heavy-hook.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "heavy hook missing: integrity error" "✗ integrity: scripts/heavy-hook.sh missing" "$out"
+check "heavy hook missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/heavy-hook.sh")"
+[ "$rc" -eq 0 ] && ok "heavy hook missing: exit 0" || bad "heavy hook missing: exit 0" "exit $rc"
+cp "$REPO/scripts/heavy-hook.sh" "$PLUG/scripts/"
+sed '/heavy-hook/d' "$REPO/hooks/hooks.json" > "$PLUG/hooks/hooks.json"
+out=$(ROOT="$PLUG" audit)
+check "heavy hook unwired: integrity error" "✗ integrity: hooks/hooks.json no longer runs heavy-hook.sh" "$out"
+check "heavy hook unwired: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "no longer runs heavy-hook.sh")"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
