@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 — 2026-11-07
+
+- `/executor:review` marks your own draft PR ready on ✅ or ⚠️. Before, only `/executor:build` did, so a PR from `/executor:ship` or a plain `gh pr create` stayed a draft after a passing review until you flipped it by hand. It now applies to every review of your own PR, a draft you opened by hand included. A teammate's draft stays a draft, even under `--fix`, and `--no-fix` leaves yours alone. `scripts/review-ready.sh` does it, no AI, and the summary says when a PR was marked or could not be.
+- The self-audit checks `scripts/review-ready.sh` is present.
+
 ## 0.6.0 — 2026-11-07
 
 - `/executor:status`: where your builds are, across every repo. It prints what is yours to merge now, what waits on you and what is still moving, from every live plan and each PR's state on GitHub, whose state wins over a stale plan line. It is read-only: it never marks a plan, pushes or posts. A bare `/executor:status` runs through the plugin's hook with no model turn, and falls through to the skill on a failure, blank output or after 15 s. `/executor:help` lists it and routes "where are my builds" and "what's in flight" to it.
