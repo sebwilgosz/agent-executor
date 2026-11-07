@@ -557,7 +557,7 @@ sweep_stash=""; sweep_flog=""; sweep_commit=""
 for g in "$ROOT"/case*/p/* "$ROOT"/case*/p/*/* ; do
   [ -e "$g/.git" ] || { [ -f "$g/HEAD" ] && [ -d "$g/objects" ]; } || continue
   [ -z "$(git -C "$g" stash list)" ] || sweep_stash="$sweep_stash $g"
-  git -C "$g" log -g --all --format=%gs 2>/dev/null | grep -qE '^(reset|rebase|pull|stash)' && sweep_flog="$sweep_flog $g"
+  git -C "$g" log -g --all --format='%gn %gs' 2>/dev/null | grep -qE '^PullScript (reset|rebase|pull|stash)' && sweep_flog="$sweep_flog $g"
   [ -z "$(git -C "$g" log --all --format=%h --committer=PullScript 2>/dev/null)" ] || sweep_commit="$sweep_commit $g"
 done
 is "never: no stash entry anywhere" "" "$sweep_stash"
