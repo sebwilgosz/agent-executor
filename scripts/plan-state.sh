@@ -44,8 +44,6 @@ unknown() {
   say "UNKNOWN: $1"
 }
 
-plan_path() { "$BASH" "$SELF_DIR/plan-path.sh" "$@" 2>/dev/null; }
-
 MARK=0
 case "${1:-}" in
   --mark) MARK=1; shift ;;
@@ -59,7 +57,6 @@ PLAN="${1:-}"
 . "$SELF_DIR/plan-items.sh" 2>/dev/null \
   || unknown "scripts/plan-items.sh is missing, so $PLAN cannot be read"
 
-HOST_RE='^[[:alnum:]][[:alnum:].-]*$'
 TEXT_RE='[^[:space:]]'
 
 read_items "$PLAN" || unknown "cannot read $PLAN"
@@ -73,36 +70,12 @@ ERR=$(mktemp) || unknown "cannot make a temp file"
 TMP_PLAN=""
 trap 'rm -f "$ERR" "$TMP_PLAN"' EXIT
 
-# Is this folder a checkout of the plan's repo?
-in_plan_checkout() {
-  local here plan_dir
-  here=$(plan_path "$PWD")
-  case "$here" in STOP:*) return 1 ;; esac
-  plan_dir=$(cd "$(dirname "$PLAN")" 2>/dev/null && pwd)
-  [ "$here" = "$plan_dir" ]
-}
-
-# Prints the value of the plan's "Host:" header line, nothing without one.
-plan_host() {
-  local l
-  while IFS= read -r l || [ -n "$l" ]; do
-    l=${l%$'\r'}
-    case "$l" in
-      "## "*) return 0 ;;
-      "Host: "*) printf '%s' "${l#Host: }"; return 0 ;;
-    esac
-  done < "$PLAN"
-}
-
-# Sets REPO_ARG once, what gh gets as --repo: [<host>/]<org>/<repo>.
+# Sets REPO_ARG once, what gh gets as --repo.
 REPO_ARG=""
 set_repo_arg() {
   [ -z "$REPO_ARG" ] || return 0
-  local host=""
-  if in_plan_checkout; then host=$(plan_path --host "$PWD"); fi
-  [ -n "$host" ] || host=$(plan_host)
-  [ -z "$host" ] || [[ $host =~ $HOST_RE ]] || unknown "not a host: $host, in $PLAN"
-  REPO_ARG="${host:+$host/}$SLUG"
+  resolve_repo "$PLAN" "$SLUG" || unknown "$PLAN_WHY"
+  REPO_ARG=$PLAN_REPO
 }
 
 # Sets PR_STATE to MERGED, CLOSED or OPEN, or ends with UNKNOWN.
@@ -121,36 +94,14 @@ pr_state() {
   esac
 }
 
-# Sets CHECKOUT_OK once, for the first branch item: is this folder the plan's repo?
-# Sets CMP, the ref to compare with, from default-branch.sh.
-CHECKOUT_OK=""
-CMP=""
-need_checkout() {
-  [ -z "$CHECKOUT_OK" ] || return 0
-  in_plan_checkout || unknown "no checkout of this plan's repo here, to read branch $1: $PWD"
-  . "$SELF_DIR/default-branch.sh" </dev/null
-  CMP=$cmp
-  CHECKOUT_OK=1
-}
-
-# Returns 0 when the branch is an ancestor of the default branch, 1 when it isn't
-# or, on an unticked item ($2 is 0), doesn't exist yet; ends with UNKNOWN when git
+# Returns 0 when the branch is merged, 1 when it isn't; ends with UNKNOWN when it
 # can't tell.
 branch_merged() {
-  local rc
-  need_checkout "$1"
-  git check-ref-format --branch "$1" >/dev/null 2>&1 \
-    || unknown "not a branch name: $1"
-  if ! git rev-parse --verify --quiet "refs/heads/$1^{commit}" >/dev/null 2>&1; then
-    [ "$2" -eq 0 ] && return 1
-    unknown "branch $1 not found, so it cannot be read"
-  fi
-  git merge-base --is-ancestor "refs/heads/$1" "$CMP" 2>"$ERR"
-  rc=$?
-  case "$rc" in
+  plan_branch_merged "$PLAN" "$1" "$2"
+  case "$?" in
     0) return 0 ;;
     1) return 1 ;;
-    *) unknown "git cannot compare $1 with $CMP: $(head -1 "$ERR")" ;;
+    *) unknown "$PLAN_WHY" ;;
   esac
 }
 
