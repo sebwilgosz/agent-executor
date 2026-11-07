@@ -1,4 +1,4 @@
-# Sourced by find-checkout.sh: the search for local repos under the roots
+# Sourced by find-checkout.sh and pull-repos.sh: the search for local repos under the roots
 # (scripts/roots.sh reads those). No output, no network, never fails. Defines:
 #   discover_repos <predicate> <root>... — sets repos to the folders that count.
 #

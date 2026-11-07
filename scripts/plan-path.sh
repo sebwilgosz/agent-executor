@@ -73,23 +73,7 @@ plans_root() {
   done
 }
 
-# Prints <owner>/<name> from a remote URL, nothing when it doesn't hold both.
-slug_from_url() {
-  local p owner name
-  case "$1" in
-    *://*/*) p=${1#*://}; p=${p#*/} ;;
-    *://*) return 0 ;;
-    *:*) p=${1#*:} ;;
-    *) p=$1 ;;
-  esac
-  while [ "${p%/}" != "$p" ]; do p=${p%/}; done
-  case "$p" in */*) ;; *) return 0 ;; esac
-  name=${p##*/}; name=${name%.git}
-  p=${p%/*}; owner=${p##*/}
-  case "$owner" in ""|.|..) return 0 ;; esac
-  case "$name" in ""|.|..) return 0 ;; esac
-  printf '%s/%s' "$owner" "$name"
-}
+. "$SELF_DIR/remote-slug.sh"
 
 # Prints the host of a remote URL, nothing when it names none. An SSH one may name
 # an alias: ssh -G reads the real host from the ssh config, with no network.

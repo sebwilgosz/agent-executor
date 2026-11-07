@@ -153,9 +153,10 @@ e=$ERRS
 
 # -- where plans live: without plan-path.sh /executor:build has no way to find,
 #    name or carry on a plan.
-[ -s "$ROOT/scripts/plan-path.sh" ] \
-  && ok "integrity: the plans resolver is present" \
-  || err "integrity: scripts/plan-path.sh missing - /executor:build cannot find or name a plan → $REINSTALL"
+e=$ERRS
+[ -s "$ROOT/scripts/plan-path.sh" ] || err "integrity: scripts/plan-path.sh missing - /executor:build cannot find or name a plan → $REINSTALL"
+[ -s "$ROOT/scripts/remote-slug.sh" ] || err "integrity: scripts/remote-slug.sh missing - plan-path.sh sources it to read a repo's owner and name → $REINSTALL"
+[ "$e" = "$ERRS" ] && ok "integrity: the plans resolver is present"
 
 # -- legacy plans: build step 0 and /executor:help run the migration.
 [ -s "$ROOT/scripts/plans-migrate.sh" ] \
@@ -181,6 +182,11 @@ e=$ERRS
 [ -s "$ROOT/scripts/find-checkout.sh" ] || err "integrity: scripts/find-checkout.sh missing — /executor:review cannot find a PR's local checkout → $REINSTALL"
 [ -s "$ROOT/scripts/repo-discovery.sh" ] || err "integrity: scripts/repo-discovery.sh missing — find-checkout.sh sources it to search the roots → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: the PR checkout finder is present"
+
+# -- updating local repos: without pull-repos.sh foundation branches stay behind.
+[ -s "$ROOT/scripts/pull-repos.sh" ] \
+  && ok "integrity: the repo updater is present" \
+  || err "integrity: scripts/pull-repos.sh missing - local repos cannot be updated → $REINSTALL"
 
 # -- init's per-repo enable: the engine behind E2. Without it /executor:init
 #    cannot detect or add the repo's .claude/settings.json enable.
