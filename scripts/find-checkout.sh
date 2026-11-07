@@ -88,29 +88,15 @@ if origin=$(git config --get remote.origin.url 2>/dev/null) && is_pr_repo "$orig
 fi
 
 . "$SELF_DIR/roots.sh"
+. "$SELF_DIR/repo-discovery.sh"
 
-# Depth-first over <root>/* and <root>/*/*, which is path order. A bare repo
-# and its worktrees share one common git dir: the first one seen stands for all.
-found=(); seen="|"
-consider() {
-  [ -e "$1/.git" ] || { [ -f "$1/HEAD" ] && [ -d "$1/objects" ] && [ -d "$1/refs" ]; } || return 0
-  local o common
-  o=$(git -C "$1" config --get remote.origin.url 2>/dev/null) && is_pr_repo "$o" || return 0
-  common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=$1
-  case "$seen" in *"|$common|"*) return 0 ;; esac
-  seen="$seen$common|"
-  found+=("$1")
+origin_is_pr_repo() {
+  local o
+  o=$(git -C "$1" config --get remote.origin.url 2>/dev/null) && is_pr_repo "$o"
 }
-for root in "${roots[@]}"; do
-  [ -d "$root" ] || continue
-  for d in "$root"/*; do
-    [ -d "$d" ] || continue
-    consider "$d"
-    for e in "$d"/*; do [ -d "$e" ] && consider "$e"; done
-  done
-done
+discover_repos origin_is_pr_repo "${roots[@]}"
 
-if [ "${#found[@]}" -eq 0 ]; then
+if [ "${#repos[@]}" -eq 0 ]; then
   for root in "${roots[@]}"; do
     if [ -d "$root" ]; then tag LOOKED "$root"; else tag LOOKED "$root (missing)"; fi
   done
@@ -125,14 +111,14 @@ if [ "${#found[@]}" -eq 0 ]; then
     stop "gh repo clone $owner/$repo failed: $(first_err) → see $LOG"
   fi
   tag NOTE "cloned $owner/$repo into $target"
-  found=("$target")
+  repos=("$target")
 fi
 
-co=${found[0]}
+co=${repos[0]}
 also=""
-if [ "${#found[@]}" -gt 1 ]; then
-  also=${found[1]}
-  for f in "${found[@]:2}"; do also="$also · $f"; done
+if [ "${#repos[@]}" -gt 1 ]; then
+  also=${repos[1]}
+  for f in "${repos[@]:2}"; do also="$also · $f"; done
 fi
 
 cd "$co" 2>/dev/null || stop "can't enter $co → check its permissions"
