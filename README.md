@@ -89,6 +89,8 @@ Plans never go in your repository. Each is one dated file in a folder of its own
 
 `<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan stays live until its header says `Status: done <date>`, and two live plans in one repository never share a file. Executor adds that line itself once every item's PR is merged or closed, when a build runs in the repository or a stack syncs after a merge; `scripts/plan-sweep.sh` does it for every repository at once, and `--dry-run` only shows what it would mark.
 
+Plans from an older version sit in a legacy `.executor/` folder in the repository. `scripts/plans-migrate.sh` moves every legacy `.executor/` under `~/Projects`, or the folder you name, to this layout, and `--dry-run` only shows what it would move. It never overwrites: a clash is reported and that file stays. A folder inside a repository means that repository alone, and a build moves its own repository's on its first run.
+
 To put them elsewhere, run `/executor:init`, which writes a `## Plans` section in `~/.engineer-of-wealth/executor/config.md`. The `EXECUTOR_PLANS` environment variable wins over it. Moving the folder moves nothing: init prints the `mv` to run. `/executor:help` shows the folder in use, where the setting comes from and this repository's live plans.
 
 To keep plans in a notes app, link the folder in: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.

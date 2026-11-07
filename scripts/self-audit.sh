@@ -141,6 +141,11 @@ e=$ERRS
   && ok "integrity: the plans resolver is present" \
   || err "integrity: scripts/plan-path.sh missing - /executor:build cannot find or name a plan → $REINSTALL"
 
+# -- legacy plans: build step 0 and /executor:help run the migration.
+[ -s "$ROOT/scripts/plans-migrate.sh" ] \
+  && ok "integrity: the plans migration is present" \
+  || err "integrity: scripts/plans-migrate.sh missing - /executor:build cannot move a legacy plan → $REINSTALL"
+
 # -- finished plans: without plan-state.sh a merged plan stays live and the next
 #    build stops to ask about it; the sweep is what /executor:help lists.
 e=$ERRS

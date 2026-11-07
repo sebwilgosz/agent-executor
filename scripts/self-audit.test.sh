@@ -125,6 +125,15 @@ for s in plan-state plan-sweep; do
   [ "$rc" -eq 0 ] && ok "$s missing: exit 0" || bad "$s missing: exit 0" "exit $rc"
 done
 
+# 8. INTEGRITY: and the migration of legacy plans.
+cp "$REPO/scripts/plans-migrate.sh" "$PLUG/scripts/"
+refute "plans-migrate present: no integrity error" "scripts/plans-migrate.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/plans-migrate.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "plans-migrate missing: integrity error" "✗ integrity: scripts/plans-migrate.sh missing" "$out"
+check "plans-migrate missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/plans-migrate.sh")"
+[ "$rc" -eq 0 ] && ok "plans-migrate missing: exit 0" || bad "plans-migrate missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

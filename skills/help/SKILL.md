@@ -2,7 +2,7 @@
 name: help
 description: "Executor front door: shows what Executor does and routes to the right skill. Today that is code review of a pull request, from any folder, or of the current branch, plus setup and its check."
 disable-model-invocation: true
-allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh:*)
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
 ---
 # EXECUTOR (front door)
 
@@ -33,6 +33,8 @@ SETUP:
                                    and the per-repo enable, asks where your
                                    checkouts and your plans live
   scripts/plan-sweep.sh [--dry-run]  marks every finished plan done
+  scripts/plans-migrate.sh [--dry-run] [<root>]
+                                   moves legacy .executor/ folders to the plans folder
 ```
 
 Below the block, print what `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --summary` prints: the plans folder and where it comes from, this repo's folder and its live plans.
@@ -46,5 +48,6 @@ Below the block, print what `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --s
 | "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init themselves: Claude cannot run it. It ends with the setup check |
 | "build this", "implement X", "implement the spec", a spec or RFC | /executor:build |
 | "sweep the plans", "mark finished plans" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh`, with `--dry-run` when asked only to look, and show what it prints |
+| "move my old plans", "migrate the plans" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh`, with `--dry-run` when asked only to look, and show what it prints |
 
 If the user types content directly, detect the intent from the table and invoke the matching skill with their text.

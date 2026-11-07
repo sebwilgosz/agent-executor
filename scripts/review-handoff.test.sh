@@ -64,13 +64,13 @@ if command -v jq >/dev/null 2>&1; then
 else
   pv=$(grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' "$REPO/.claude-plugin/plugin.json" | head -1 | grep -oE '"[^"]+"$' | tr -d '"')
 fi
-is "manifest is 0.4.0" "0.4.0" "$pv"
 top=$(grep -m1 '^## ' "$REPO/CHANGELOG.md")
 check "changelog's top entry is the manifest's version" "## $pv — " "$top"
 entry=$(awk '/^## /{n++} n==1' "$REPO/CHANGELOG.md")
-check "changelog: the roots setting" '## Roots' "$entry"
-check "changelog: the checkout finder" 'scripts/find-checkout.sh' "$entry"
-check "changelog: the hand-off" 'claude "/executor:review' "$entry"
+released=$(awk '/^## /{f=0} /^## 0\.4\.0 /{f=1} f' "$REPO/CHANGELOG.md")
+check "changelog: the roots setting" '## Roots' "$released"
+check "changelog: the checkout finder" 'scripts/find-checkout.sh' "$released"
+check "changelog: the hand-off" 'claude "/executor:review' "$released"
 for s in build ship init; do
   check "skill $s asserts $pv" "version-check.sh $pv" "$(cat "$REPO/skills/$s/SKILL.md")"
 done

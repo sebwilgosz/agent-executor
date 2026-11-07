@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-11-07
+
+- **Existing users: run `scripts/plans-migrate.sh` once**, from the plugin's folder, with `--dry-run` first to see what it would do. Plans no longer live in the repository, so it moves every `.executor/` under `~/Projects`, or the folder you name, to the plans folder. It never overwrites: a clash is reported and that file stays. It removes the `.executor/` line from the repo's `info/exclude` and the emptied folder. Build step 0 does the same for the repo it runs in.
+- Plans live outside the repository, by default in `~/.engineer-of-wealth/executor/plans/<org>/<repo>/`, one dated file per plan. `/executor:init` or `EXECUTOR_PLANS` moves that folder; `scripts/plan-path.sh` is the only code that knows the layout. Build no longer writes to the repository or its exclude file, and two live plans in one repo never share a file.
+- A finished plan says so: `scripts/plan-state.sh --mark` adds `Status: done <date>` once every item's PR is merged or closed, from build and after `gh stack sync --prune`. `scripts/plan-sweep.sh [--dry-run]` does it for the whole plans folder.
+
 ## 0.4.0 — 2026-11-03
 
 - Review a pull request from any folder. Say "let's review acme/api#7", or run `/executor:review` with `owner/repo#N` or a pull URL, in any session. In the PR's own repository it reviews as before. Anywhere else it finds the repository's checkout and proposes a new session there running `/executor:review <url>`; where the client can't start one, it prints one command, `cd "<checkout>" && claude "/executor:review <url>"`. It never reviews a repository from a folder that isn't its checkout. With no checkout it lists where it looked and asks before cloning into the first root; on no, nothing is cloned. A bare PR number or a branch name still means the current repository.

@@ -16,6 +16,16 @@ The file stays on your machine and the repository is never touched. Because it i
 - **`<org>/<repo>`:** from the `origin` URL, or `local/<name>` without an origin. Every worktree of a repo shares the folder, which `plan-path.sh` prints. A missing folder is created on the first write, never on a read.
 - **A plan's name:** `plan-path.sh --new "<title>"` prints it: today's date and the title, with a numeric suffix when the name is taken. The title of a local spec is its file name without `.md`, a leading `spec - ` or a trailing ` - spec` (`plan-path.sh --title "<file>"`). The title of an issue, a URL or text is its H1 or title without a leading `Spec:`.
 
+## Moving legacy plans
+
+Before plans moved out of the repository, build kept them in a legacy `.executor/` folder there. `scripts/plans-migrate.sh [--dry-run] [<root>]` moves every legacy `.executor/` under `<root>` (`~/Projects` by default, four levels deep, skipping `node_modules`) to its repo's folder. A `<root>` inside a repository means that repository: from its top folder, and not a repository nested in it. One line per file:
+
+- **`plan.md`, `plan-*.md`:** `<YYYY-MM-DD> - <title>.md`, the date from the file's modification time. The title is the plan's heading without `Build:` or `Spec:`, else its `Spec:` line's link text or file name, else the file's own name. A host other than `github.com` adds the `Host:` line.
+- **`done/*.md`:** the name kept, `Status: done <date>` added from that name.
+- **Anything else:** `legacy/` inside the repo's folder.
+
+It never overwrites: a clash is reported and that file stays. When nothing is left, the legacy `.executor/` goes, and with it its line in `info/exclude`, in the repo's git common dir, once no other worktree or subfolder holds a legacy `.executor/`. Symbolic links and tracked files are reported and left. Build step 0 runs it for the repo it is in.
+
 ## Which plan is live
 
 The folder is the state: there is no pointer file. A plan stays live until its header says `Status: done <date>`, the date as `YYYY-MM-DD`. The header is the lines before the first `## ` heading. `plan-path.sh --live` prints the live plans, newest first. It reads only the `*.md` files directly in the repo's folder, so a subfolder never holds a plan. Two live plans in one repo are allowed; they never share a file.
