@@ -71,6 +71,10 @@ fresh
 put "$D/AGENTS.md" "## Specs" "Specs: GitHub, a parent issue. Tickets: none."
 is "tickets: none" "none" "$(field tracker "$(bash "$SH" "$D")")"
 
+fresh
+put "$D/AGENTS.md" "## Specs" "Specs: Notion."
+is "a bare kind keeps its words as the location" "Notion." "$(field location "$(bash "$SH" "$D")")"
+
 # 2. The nearest file that names a home wins, walking upwards.
 fresh
 put "$D/AGENTS.md" "## Specs" "Specs: Notion."

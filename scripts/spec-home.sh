@@ -72,7 +72,7 @@ classify() {
     case "$low" in *docs/specs*) kind=repo; found=1 ;; esac
   fi
   if [ "$found" -eq 0 ]; then
-    case "$low" in *vault*|*folder*|*projects/*|*.executor/specs*) kind=folder; found=1 ;; esac
+    case "$low" in *vault*|*folder*|*projects/*) kind=folder; found=1 ;; esac
   fi
   if [ "$found" -eq 0 ]; then problem="no recognizable home in: $specs"; return; fi
   if [ "$found" -gt 1 ]; then problem="more than one home in: $specs"; return; fi
@@ -80,7 +80,7 @@ classify() {
   case "$kind" in
     notion|jira|linear|github)
       location=$(trim "$(printf '%s' "$specs" | sed -E 's/^[A-Za-z]+[[:space:]]*,?//')")
-      [ -n "$location" ] || location=$specs ;;
+      case "$location" in *[[:alnum:]]*) ;; *) location=$specs ;; esac ;;
   esac
   low=$(printf '%s' "$tickets" | tr '[:upper:]' '[:lower:]')
   for k in jira linear github; do
