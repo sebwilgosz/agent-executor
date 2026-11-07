@@ -100,3 +100,7 @@ To keep plans in a notes app, link the folder in: `ln -s ~/.engineer-of-wealth/e
 - [GitHub CLI](https://cli.github.com) (`gh`), signed in, for pull requests
 - For stacked PRs: the [gh-stack](https://github.com/github/gh-stack) extension (`gh extension install github/gh-stack`) and stacked PRs enabled on the repository; without them Executor opens plain PRs chained by base branch
 - `jq` is used when present; the hook works without it
+
+## Example report
+
+`python examples/report.py --max-rows 50` prints the first 50 customers.
