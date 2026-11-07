@@ -30,6 +30,8 @@ A review runs in five steps:
 4. **Fix**, on your own PRs. Every confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits it on the PR's branch and reviews again, at most three rounds and without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports: nothing is committed or pushed. `--fix` and `--no-fix` override that, and a fork stays report-only either way.
 5. **Report**, always in the same shape: verdict, build, CI, spec, which mode ran and how many bugs were fixed, then what is still Critical and the Suggestions. Each finding links to the file and line and says when it fails and how to fix it.
 
+On ✅ or ⚠️ it marks your own draft PR ready (`scripts/review-ready.sh`), a draft you opened by hand too. A teammate's draft stays a draft, and so does yours under `--no-fix`.
+
 Suggestions are listed, never fixed for you. Nothing is posted to GitHub unless you ask.
 
 ### Review from any folder

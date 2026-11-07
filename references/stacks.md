@@ -51,4 +51,4 @@ The stack stays rooted in live branches, never in merged ones. The ship and revi
 
 ## Draft until reviewed
 
-New PRs open as drafts. A draft means Executor is still reviewing it. When the review's verdict is ✅ or ⚠️, mark it ready, `gh pr ready <n>`: now it's yours to merge. Stacked PRs are merged on github.com, not from the CLI.
+New PRs open as drafts. A draft means Executor is still reviewing it. When the review's verdict is ✅ or ⚠️, the review marks your PR ready: now it's yours to merge. Stacked PRs are merged on github.com, not from the CLI.

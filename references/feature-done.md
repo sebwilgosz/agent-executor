@@ -27,4 +27,4 @@ Features ship as stacked PRs: `${CLAUDE_PLUGIN_ROOT}/references/stacks.md` has t
 
 4. Opening the PR starts `executor:review` on it through the plugin's hook, once the title and body are set. Let it run to its summary. A feature built by a builder agent under `/executor:build` stops at the open PR: build runs the review, since a builder can't start the review's agents.
 
-The feature is done when the review's summary says ✅ or ⚠️: mark the PR ready, `gh pr ready <n>`, and it's yours to merge. On ❌ it stays a draft: the review has already fixed what it could, and whatever is still Critical goes back to building this feature.
+The feature is done when the review's summary says ✅ or ⚠️: the review has marked your PR ready, and it's yours to merge. On ❌ it stays a draft: the review has already fixed what it could, and whatever is still Critical goes back to building this feature.

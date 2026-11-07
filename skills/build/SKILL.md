@@ -77,7 +77,7 @@ Builders run at the same time; reviews run one at a time, in this session, as th
 
 Run `/executor:review <n> --fix` on the PR, here: the builder can't, because it can't start the review's verifier agents. The review fixes what it can on the PR's own branch and ends with its summary.
 
-- **✅ or ⚠️:** `gh pr ready <n>`, mark the item `PR #n ✅ ready` and tick it. The next item of its stack can start (step 3, point 4).
+- **✅ or ⚠️:** the review has marked the PR ready. Mark the item `PR #n ✅ ready` and tick it; a **Ready:** line saying it was not marked goes in step 5. The next item of its stack can start (step 3, point 4).
 - **❌:** the PR stays a draft. Mark the item `PR #n ❌` with what is still Critical; its stack stops there.
 
 ## 5. Report

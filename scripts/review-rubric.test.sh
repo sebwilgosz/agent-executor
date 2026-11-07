@@ -6,6 +6,7 @@
 #   B. the six dimensions stay the one rubric: no seventh, no separate checklist,
 #      and a performance finding is `Best practice`, not a category of its own.
 #   C. docs drift sits in dimension 6, with its own category and severity rule.
+#   D. the review marks your PR ready, and it is the only place that does.
 # Whether a review finds these things is walked through by hand (see the PR).
 #
 # Run: bash scripts/review-rubric.test.sh   (exit 0 = all pass)
@@ -67,6 +68,16 @@ FALSE_DOCS='leaves docs stating something false'
 check "severity: the format's rule keeps false docs Critical" "$FALSE_DOCS" "$(grep '^- \*\*Critical\*\*' "$REPO/references/review-format.md")"
 check "severity: the verifier's rule keeps false docs Critical" "$FALSE_DOCS" "$(grep 'Re-judge the severity' "$REPO/agents/verifier.md")"
 check "the summary has a line for a skipped docs check" '**Docs:**' "$(cat "$REPO/references/review-format.md")"
+
+# D. The review marks your PR ready, and it is the only place that does.
+STEP7=$(awk '/^## 7\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
+check "step 7 runs the ready script" 'scripts/review-ready.sh' "$STEP7"
+check "step 7: only in fix mode" 'Fix mode' "$STEP7"
+check "step 7: on a passing verdict" '✅ or ⚠️' "$STEP7"
+check "the summary has a line for it" '**Ready:**' "$(cat "$REPO/references/review-format.md")"
+for f in skills/build/SKILL.md skills/ship/SKILL.md agents/builder.md references/feature-done.md references/stacks.md; do
+  is "$f doesn't run gh pr ready itself" "0" "$(grep -c 'gh pr ready' "$REPO/$f")"
+done
 
 echo
 printf 'review-rubric: %d passed, %d failed\n' "$PASS" "$FAIL"
