@@ -181,6 +181,11 @@ is "in a subshell"       "$URL" "$(prs_of "(cd /x && gh stack submit)" "$REAL" "
 is "in a pipe"           "$URL" "$(prs_of "gh stack submit --auto 2>&1 | tail -5" "$REAL" "$REPO_A")"
 is "under if !"          "$URL" "$(prs_of "if ! gh stack submit; then echo no; fi" "$REAL" "$REPO_A")"
 is "with a variable set" "$URL" "$(prs_of "GH_TOKEN=x gh stack submit" "$REAL" "$REPO_A")"
+is "gh by absolute path" "$URL" "$(prs_of "/opt/homebrew/bin/gh stack submit --auto" "$REAL" "$REPO_A")"
+is "gh by relative path" "$URL" "$(prs_of "./gh stack submit --auto" "$REAL" "$REPO_A")"
+is "gh by home path"     "$URL" "$(prs_of "cd /x && ~/bin/gh stack link a b" "$REAL" "$REPO_A")"
+is "gh by path, under eval" "$URL" "$(prs_of 'eval "/opt/homebrew/bin/gh stack submit"' "$REAL" "$REPO_A")"
+is "gh by path, in \$(...)" "$URL" "$(prs_of 'out=$(/opt/homebrew/bin/gh stack submit --auto 2>&1); echo "$out"' "$REAL" "$REPO_A")"
 is "after a here-document" "$URL" "$(prs_of "cat <<EOF
 it's :)
 EOF
@@ -306,6 +311,7 @@ is "no jq: the printed URL" "stack|$URL|feat-a" "$(nojq_probe "cd /x && gh stack
 is "no jq: base suffix dropped" "stack|$URL|feat-a" "$(nojq_probe "gh stack submit" "$BASED" "$REPO_A")"
 is "no jq: no URL is unknown" "stack|27|feat-a" "$(nojq_probe "gh stack submit" "$BARE" "$REPO_A")"
 is "no jq: under eval" "stack|$URL|feat-a" "$(nojq_probe 'eval "gh stack submit"' "$REAL" "$REPO_A")"
+is "no jq: gh by path" "stack|$URL|feat-a" "$(nojq_probe "/opt/homebrew/bin/gh stack submit" "$REAL" "$REPO_A")"
 is "no jq: gh pr create keeps its URL" "pr|https://github.com/acme/a/pull/9|" \
   "$(nojq_probe "gh pr create --fill" "https://github.com/acme/a/pull/9" "$REPO_A")"
 fresh
@@ -350,6 +356,8 @@ mention 'gh stack submit --auto' "All branches up to date; no PR created" "a sub
 is "a submit that creates no PR: no jq either" "" "$(cat "$TOOLS")"
 mention 'grep "gh stack submit" notes' "$REAL" "a grep that also hits a Created PR line"
 mention "grep 'gh stack submit' notes" "$REAL" "a single-quoted grep that hits one"
+mention 'grep "/x/gh stack submit" notes' "$REAL" "a grep for a path that hits one"
+mention "grep '/x/gh stack submit' notes" "$REAL" "a single-quoted grep for a path"
 mention 'cat notes' "gh stack submit printed: Created PR #27 ($URL) for feat-a" "a doc that quotes the output"
 mention 'grep "gh stack submit" notes' "see https://github.com/o/r/pull/3" "a grep that hits a PR URL"
 fresh
