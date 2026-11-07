@@ -190,6 +190,14 @@ check "review-ready missing: integrity error" "✗ integrity: scripts/review-rea
 check "review-ready missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/review-ready.sh")"
 [ "$rc" -eq 0 ] && ok "review-ready missing: exit 0" || bad "review-ready missing: exit 0" "exit $rc"
 
+# 15. INTEGRITY: and the heavy command queue's slot script.
+refute "heavy present: no integrity error" "scripts/heavy.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/heavy.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "heavy missing: integrity error" "✗ integrity: scripts/heavy.sh missing" "$out"
+check "heavy missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/heavy.sh")"
+[ "$rc" -eq 0 ] && ok "heavy missing: exit 0" || bad "heavy missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

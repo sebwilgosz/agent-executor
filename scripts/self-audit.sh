@@ -132,6 +132,11 @@ done
   && ok "integrity: the review's ready step is present" \
   || err "integrity: scripts/review-ready.sh missing - /executor:review cannot mark your PR ready → $REINSTALL"
 
+# -- the heavy command queue: without heavy.sh heavy commands stop taking turns.
+[ -s "$ROOT/scripts/heavy.sh" ] \
+  && ok "integrity: the heavy command queue's slot script is present" \
+  || err "integrity: scripts/heavy.sh missing - heavy commands cannot take turns → $REINSTALL"
+
 # -- ship: the skill and its engine. ship.sh does the guard/push/PR math; the
 #    skill opens the draft PR so the PR hooks above take over.
 e=$ERRS
