@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0 — 2026-11-07
+
+- `scripts/git-hooks.sh install` adds two opt-in git hooks to a repo, bare or not. A new worktree gets copy-on-write clones of `node_modules` and `.next/cache` from the main checkout, so it starts with no install. Next.js may still recompile in the new folder, because its build cache is tied to the folder's path. After a commit, the type check and lint of each package it touched run on their own, and any errors print in the commit's output. The commit always stands, and no model is involved.
+- Builders no longer have to run a full build for each commit. It runs once, before the PR opens.
+
 ## 0.7.0 — 2026-11-07
 
 - Spec from sources. `/executor:spec` drafts a spec for what you name from every relevant source (what you pass, your instruction files and the notes they name, the spec home, then the repo: README, `docs/`, `CHANGELOG.md`, `git log`, issues, PRs, an earlier plan) in the shape of `references/spec.md`. Every fact names its source, what it inferred becomes an open question asked in one message with suggested answers, and nothing is saved before a yes. `/executor:build` offers it when it finds no spec.

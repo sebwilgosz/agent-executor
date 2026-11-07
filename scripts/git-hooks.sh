@@ -8,7 +8,8 @@
 #
 # post-checkout: a new worktree gets copy-on-write clones of node_modules and
 # .next/cache from the main checkout, for each package up to two folders down, so it
-# neither installs nor compiles from nothing. It waits, so they exist once
+# needs no install. Next.js may still recompile, as its cache is tied to the folder's
+# path. It waits, so they exist once
 # `git worktree add` returns. It never falls back to a full copy.
 #
 # post-commit: the type check and lint of each package the commit touched. Passing
