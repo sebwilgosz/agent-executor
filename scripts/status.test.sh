@@ -145,8 +145,8 @@ sebwilgosz/agent-executor
       #32  Status                     Stack B 1/1   CI red
     MOVING
       Stack A: 1 not started" "$(status)"
-"$SHELL_BIN" "$STATUS" >/dev/null 2>&1; is "the table: exit 0" "0" "$?"
 is "the table: the exact lookup, one per PR" "2" "$(grep -c -- '^pr view 3[12] --repo sebwilgosz/agent-executor --json state,isDraft,statusCheckRollup' "$GH_CALLS")"
+(cd "$TMP" && "$SHELL_BIN" "$STATUS" >/dev/null 2>&1); is "the table: exit 0" "0" "$?"
 
 reset
 prs "acme/web 1 OPEN false run:SUCCESS"
