@@ -58,10 +58,10 @@ The build must pass. Find its commands in this order: the repo's own docs (`CLAU
 Go through the diff once per dimension:
 
 1. **Duplication**: code that repeats logic already in the repo or elsewhere in the diff.
-2. **Correctness against the spec**: every requirement the change claims to meet is met; every behaviour it adds is asked for. Off-by-one, nil and empty input, error paths, concurrency, ordering. Code shaped to pass a test rather than meet the requirement is Critical.
+2. **Correctness against the spec**: every requirement the change claims to meet is met; every behaviour it adds is asked for. Off-by-one, integer overflow, nil and empty input, error paths, concurrency, ordering. Code shaped to pass a test rather than meet the requirement is Critical.
 3. **Test coverage**: each new or changed behaviour has a test that would fail without it. Each spec requirement has one. Tests that assert nothing count as missing.
-4. **Security**: injection, missing authorisation, secrets in code or logs, unsafe deserialisation, user input reaching a shell, a query or a path, new dependencies.
-5. **Best practices**: error handling, naming, dead code, needless complexity, resource leaks, performance traps in hot paths. **Inline comments**: say which can be removed or cut shorter. A comment that explains *why* stays. One finding per file, a Suggestion.
+4. **Security**: injection, cross-site scripting, CSRF, SSRF, missing authorisation, secrets in code or logs, unsafe deserialisation, user input reaching a shell, a query or a path, new dependencies.
+5. **Best practices**: error handling, naming, dead code, needless complexity, resource leaks. **Performance traps**: N+1 and other queries in a loop, unbounded queries or loops, O(n²) over user-sized data, a new query with no index. Critical only when the cost is real on a path the diff touches (an unbounded query on a request path, an N+1 over user data); otherwise a Suggestion. **Inline comments**: say which can be removed or cut shorter. A comment that explains *why* stays. One finding per file, a Suggestion.
 6. **Repo conventions**: whatever the files loaded in step 1 require, and the idiom of the surrounding code. For a PR, also its description against `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md`: a wall of text, a missing Testing section, a missing diagram where the change has a shape. One finding for the whole description, a Suggestion, linked to the PR. A refactor mixed into a feature PR large enough to belong in its own PR is a Suggestion too.
    **References to local material** anywhere in the diff, the commit messages or the PR description: local file paths outside the repo, numbered items of a local spec, brainstorming sections.
 
