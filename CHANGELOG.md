@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 — 2026-11-07
+
+- Spec from sources. `/executor:spec` drafts a spec for what you name from every relevant source (what you pass, your instruction files and the notes they name, the spec home, then the repo: README, `docs/`, `CHANGELOG.md`, `git log`, issues, PRs, an earlier plan) in the shape of `references/spec.md`. Every fact names its source, what it inferred becomes an open question asked in one message with suggested answers, and nothing is saved before a yes. `/executor:build` offers it when it finds no spec.
+- The spec home: where a spec is read from and written to. A short `## Specs` section in the nearest `AGENTS.md` or `CLAUDE.md` (the working folder upwards, then the target repo's own) names it: a folder, the repo, Notion, GitHub issues, Linear or Jira, with the ticket tracker if there is one. `scripts/spec-home.sh` finds it, flags files or words that disagree instead of guessing, writes the section on a yes into `AGENTS.md` and `CLAUDE.md` as they exist, and prepares the local fallback, `~/.engineer-of-wealth/executor/specs/<org>/<repo>/`. `references/spec-home.md` is the rule every skill follows.
+- `/executor:init` gains a step, E5, that shows the home for the folder or asks where specs live; the setup check is now E6. `scripts/self-audit.sh` checks the resolver, the ticket script and the two spec references, and with `-v` prints the file that names the home.
+- Build and review read the spec from its home. Build looks after what you gave it, review after the PR's own links and the issues it closes, both before `SPEC.md`, `specs/` and `docs/specs/`. With several specs in the home, the one you named, the branch or the PR title wins; none or several matching: it asks. A spec is never written back.
+- Tickets from the plan. When the spec home names a tracker, build offers once per run, after you approve the plan, one ticket per plan item: a sub-issue of the spec's parent issue on GitHub (`scripts/ticket-github.sh`), or an issue or ticket through your Linear or Jira connector. The ticket holds the builder's brief and a link to the spec, the PR closes it, and the plan records it so a rerun never creates one twice. An unreachable tracker never stops the build.
+
 ## 0.6.4 — 2026-11-07
 
 - Each role now names its model. The `executor:builder` agent runs on Sonnet, `/executor:review` on Opus, including its fixes and re-review, and the `executor:verifier` agent on Sonnet. Before, all three followed the session's model, so a session on Opus built everything on Opus, and a session on Sonnet reviewed on Sonnet. Planning still runs on the session's model. A review started in a session on another model switches to Opus for that turn, which reads the conversation again instead of from its cache.

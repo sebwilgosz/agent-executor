@@ -63,6 +63,7 @@ Spec: [<spec title>](<path or URL of the spec>)
 
 - **`Host: <host>`**, under the `Spec:` line, only when `plan-path.sh --host` prints a host other than `github.com`, so the plan can be read from outside a checkout.
 - **One item per feature**: a checkbox, the feature's name, a link to the part of the spec it owns, then its PR and state once there is one.
+- **A ticket**, when build created one (step 2b of the build skill): `ticket #12` on GitHub, `ticket TRAV-88` on Jira or Linear, after the spec link and before the PR. Readers of the plan skip it; a rerun reads it so it never creates one twice.
 - **Grouped by stack**, as `references/stacks.md` maps a spec: the foundation alone first, a chain of dependent features in one stack bottom-up, independent features in stacks of their own. Stacks are what runs in parallel; the items inside one run in order.
 - **Every requirement of the spec belongs to exactly one item.** None is left out, none is built twice.
 - **Leave out** a section with nothing in it (no foundation, say).

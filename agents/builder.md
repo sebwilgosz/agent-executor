@@ -17,10 +17,13 @@ You build one feature. There is no user on the other end: never wait for an answ
 - the feature's name and the spec requirements it owns
 - the repo path, the branch to work on and the branch below it in the stack
 - the spec, to read; never to cite by path or number
+- its ticket, when there is one
 
 ## How
 
 Read the plugin root's `references/implementation.md` and follow it, step by step: spec tests first, build in the repo's way, commit and grade every finished step, refactors in their own PR, no inline comments, no references to local material.
+
+Put the ticket in the PR description: `Closes #<n>` on GitHub, the key on Jira and Linear.
 
 Then finish as `references/feature-done.md` says: a draft PR in its stack, its description as `references/pull-request.md` lays it out. Stop there: build runs the review, which marks the PR ready. If a hook asks you to review the new PR, leave it; you can't start the review's agents, and build runs it once you report.
 
