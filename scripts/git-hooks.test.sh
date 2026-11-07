@@ -55,7 +55,7 @@ repo() {
 scripts() {
   printf '{"name":"root","scripts":%s}\n' "$1" > "$R/package.json"
   git -C "$R" add -A
-  git -C "$R" commit -qm scripts --no-verify
+  git -C "$R" commit -qm scripts >/dev/null 2>&1
 }
 commit_file() { # <repo> <path>; OUT is the commit's whole output and RC its exit code
   mkdir -p "$1/$(dirname "$2")"
@@ -150,17 +150,17 @@ is "lockfile differs: still cloned" "a" "$(cat "$W/node_modules/x/f" 2>/dev/null
 check "lockfile differs: says so" "out of date" "$out"
 
 # The main checkout in a bare repo is the worktree on the default branch, not the first.
-N=$((N+1))
-B="$ROOT/r$N/repo.git"; mkdir -p "$ROOT/r$N"
 repo
+D="$ROOT/bare"; B="$D/repo.git"; mkdir -p "$D"
 git clone -q --bare "$R" "$B" 2>/dev/null
 bash "$HOOKS" install "$B" >/dev/null 2>&1
-git -C "$B" worktree add -q "$ROOT/r$N/aaa" -b aaa 2>/dev/null
-git -C "$B" worktree add -q "$ROOT/r$N/main" main 2>/dev/null
-mkdir -p "$ROOT/r$N/main/node_modules/m"; printf 'main\n' > "$ROOT/r$N/main/node_modules/m/f"
-git -C "$B" worktree add -q "$ROOT/r$N/new" -b new 2>/dev/null
-is "bare repo: clones from the default branch's worktree" "main" "$(cat "$ROOT/r$N/new/node_modules/m/f" 2>/dev/null)"
-absent "bare repo: the default branch's own worktree got nothing" "$ROOT/r$N/main/.next/cache"
+git -C "$B" worktree add -q "$D/aaa" -b aaa 2>/dev/null
+git -C "$B" worktree add -q "$D/main" main 2>/dev/null
+mkdir -p "$D/main/node_modules/m"; printf 'main\n' > "$D/main/node_modules/m/f"
+git -C "$B" worktree add -q "$D/new" -b new 2>/dev/null
+is "bare repo: clones from the default branch's worktree" "main" "$(cat "$D/new/node_modules/m/f" 2>/dev/null)"
+absent "bare repo: the default branch's own worktree got nothing" "$D/main/.next/cache"
+exists "bare repo: the hooks live in the shared folder" "$B/hooks/post-commit"
 
 # A plugin update is picked up with no reinstall.
 repo
@@ -268,7 +268,7 @@ check "worktree commit: in the worktree's own folder" "$W" "$OUT"
 
 # 5. The builder's rule.
 IMPL=$(cat "$SELF_DIR/../references/implementation.md")
-check "builder rule: the full build runs once, before the PR" "once" "$IMPL"
+check "builder rule: the full build runs once, before the PR" "The full build runs once" "$IMPL"
 check "builder rule: names the commit check" "commit check" "$IMPL"
 refute "builder rule: a commit no longer has to build" "complete: it builds" "$IMPL"
 
