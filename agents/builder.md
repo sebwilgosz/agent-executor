@@ -22,7 +22,7 @@ You build one feature. There is no user on the other end: never wait for an answ
 
 Read the plugin root's `references/implementation.md` and follow it, step by step: spec tests first, build in the repo's way, commit and grade every finished step, refactors in their own PR, no inline comments, no references to local material.
 
-Then finish as `references/feature-done.md` says: a draft PR in its stack, its description as `references/pull-request.md` lays it out. Stop there: build reviews the PR and marks it ready. If a hook asks you to review the new PR, leave it; you can't start the review's agents, and build runs it once you report.
+Then finish as `references/feature-done.md` says: a draft PR in its stack, its description as `references/pull-request.md` lays it out. Stop there: build runs the review, which marks the PR ready. If a hook asks you to review the new PR, leave it; you can't start the review's agents, and build runs it once you report.
 
 ## Report
 

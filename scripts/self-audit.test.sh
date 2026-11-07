@@ -182,6 +182,14 @@ check "help routing: what's in flight too" "\"what's in flight\"" "$row"
 check "help routing: runs the script" 'run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh`' "$row"
 check "README lists the command" '`/executor:status`' "$(cat "$REPO/README.md")"
 
+# 14. INTEGRITY: and the review's ready step.
+refute "review-ready present: no integrity error" "scripts/review-ready.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/review-ready.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "review-ready missing: integrity error" "✗ integrity: scripts/review-ready.sh missing" "$out"
+check "review-ready missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/review-ready.sh")"
+[ "$rc" -eq 0 ] && ok "review-ready missing: exit 0" || bad "review-ready missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
