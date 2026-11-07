@@ -127,6 +127,11 @@ done
   && ok "integrity: the review's docs check is present" \
   || err "integrity: scripts/docs-mentions.sh missing - /executor:review cannot check the docs against the diff → $REINSTALL"
 
+# -- the review's last step: without review-ready.sh a passing PR stays a draft.
+[ -s "$ROOT/scripts/review-ready.sh" ] \
+  && ok "integrity: the review's ready step is present" \
+  || err "integrity: scripts/review-ready.sh missing - /executor:review cannot mark your PR ready → $REINSTALL"
+
 # -- ship: the skill and its engine. ship.sh does the guard/push/PR math; the
 #    skill opens the draft PR so the PR hooks above take over.
 e=$ERRS
