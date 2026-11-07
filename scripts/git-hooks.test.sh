@@ -247,6 +247,18 @@ commit_file "$R" src/a.ts
 check "killed check: reported as failed" "type-check failed" "$OUT"
 refute "killed check: never logged as passed" "passed" "$(cat "$LOG" 2>/dev/null)"
 
+# A check that cannot start is one line, not a failure.
+repo
+scripts '{"lint":"echo NOT-STARTED-OUT; exit 127"}'
+bash "$HOOKS" install "$R" >/dev/null 2>&1
+rm -f "$LOG"
+commit_file "$R" src/a.js
+is "cannot start: the commit exits 0" "0" "$RC"
+check "cannot start: says so" "lint in . could not start" "$OUT"
+refute "cannot start: not reported as a failure" "lint failed" "$OUT"
+refute "cannot start: prints none of its output" "NOT-STARTED-OUT" "$OUT"
+check "cannot start: logged as not started" "not-started" "$(cat "$LOG" 2>/dev/null)"
+
 # A check over the limit is stopped, along with what it started.
 repo
 scripts '{"lint":"sleep 40 & echo $! > stray.pid; wait"}'
