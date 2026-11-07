@@ -2,7 +2,9 @@
 # Spec tests for scripts/heavy.sh — heavy commands take turns machine-wide, and
 # the queue always fails open. Every test has its own state folder through
 # EXECUTOR_HEAVY_DIR, so the real one is never touched. Each "command" is its own
-# bash, called the way the Bash tool calls it: heavy.sh $$ <label>; <command>.
+# bash, called the way the Bash tool calls it: heavy.sh <label>; <command>. The call
+# is never the last thing its bash does, or bash would exec it in place and it would
+# watch the wrong parent.
 #
 # Timing is tolerant of a loaded machine: a limit that says how soon something
 # must happen is measured from when it was caused, a test waits for the log rather
@@ -58,7 +60,7 @@ slot_files() { find "$EXECUTOR_HEAVY_DIR" -name '*.lock' | wc -l | tr -d ' '; }
 hold() {
   local before; before=$(outcomes acquired)
   mkdir -p "$2"
-  bash -c 'cd "$3" && bash "$1" $$ "$2"; while :; do sleep 0.2; done' _ "$HEAVY" "$1" "$2" >/dev/null 2>&1 &
+  bash -c 'cd "$3" && bash "$1" "$2"; while :; do sleep 0.2; done' _ "$HEAVY" "$1" "$2" >/dev/null 2>&1 &
   HELD=$!
   disown "$HELD"
   SHELLS+=("$HELD")
@@ -66,7 +68,7 @@ hold() {
 }
 
 # One call from a shell of its own that exits when the call returns.
-call() { bash -c 'bash "$1" $$ "$2"' _ "$HEAVY" "$1" 2>&1; }
+call() { bash -c 'bash "$1" "$2"; exit $?' _ "$HEAVY" "$1" 2>&1; }
 
 nice_of() { ps -o nice= -p "$1" | tr -d ' '; }
 
@@ -75,7 +77,7 @@ echo "heavy.sh spec tests"
 # 1. Six commands started at once with two slots.
 state '{"slots":2,"wait_minutes":3}'
 M="$ROOT/markers"; mkdir -p "$M"
-SIX='bash "$1" $$ six; d=$2
+SIX='bash "$1" six; d=$2
 touch "$d/in.$$"
 ls "$d" | grep -c "^in\." >> "$d/../counts"
 sleep 2
@@ -99,7 +101,7 @@ free_after_kill() {
   state '{"slots":1,"wait_minutes":3}'
   hold first "$ROOT/first"
   local holder=$HELD err="$ROOT/waiting.$N" deadline
-  bash -c 'bash "$1" $$ second; sleep 0.2' _ "$HEAVY" 2>"$err" >/dev/null &
+  bash -c 'bash "$1" second; sleep 0.2' _ "$HEAVY" 2>"$err" >/dev/null &
   local waiter=$!
   deadline=$((SECONDS+PATIENCE))
   while [ ! -s "$err" ] && [ "$SECONDS" -lt "$deadline" ]; do sleep 0.1; done
@@ -121,7 +123,7 @@ check "SIGKILL: the release is logged" "released" "$(grep '  first  ' "$LOG")"
 # A shell that has exited but that its parent hasn't reaped still has its pid.
 unreaped_after_exit() {
   state '{"slots":1}'
-  HEAVY="$HEAVY" perl -e 'my $c = fork; unless ($c) { exec "bash", "-c", q{bash "$HEAVY" $$ ghost} } sleep 120' >/dev/null 2>&1 &
+  HEAVY="$HEAVY" perl -e 'my $c = fork; unless ($c) { exec "bash", "-c", q{bash "$HEAVY" ghost; :} } sleep 120' >/dev/null 2>&1 &
   local parent=$!
   disown "$parent"
   SHELLS+=("$parent")
@@ -140,7 +142,7 @@ within "unreaped shell: the slot is free within 5 s" 5 "$ELAPSED"
 # A shell stopped while it waits ends the wait, and takes no slot later.
 state '{"slots":1,"wait_minutes":3}'
 hold first "$ROOT/first"
-bash -c 'bash "$1" $$ stopped; sleep 0.2' _ "$HEAVY" >/dev/null 2>"$ROOT/stopped" &
+bash -c 'bash "$1" stopped; sleep 0.2' _ "$HEAVY" >/dev/null 2>"$ROOT/stopped" &
 STOPPED=$!
 disown "$STOPPED"
 deadline=$((SECONDS+PATIENCE))
@@ -177,32 +179,29 @@ is "hold limit: the next command took the slot" "2" "$(outcomes acquired)"
 kill -9 "$HELD"
 
 # 5. A held slot keeps none of the caller's pipes open. The shell here outlives
-#    the call, so the pipes can only close if the holder let go of them. If it
-#    didn't, the watchdog ends the shell, and the check after it fails.
+#    the call, so cat can only finish if the holder let go of the pipe.
 state '{"slots":1}'
-bash -c 'while :; do sleep 0.2; done' >/dev/null 2>&1 &
+PIPED="$ROOT/piped.out"; RETURNED="$ROOT/piped.returned"
+bash -c 'bash "$1" piped 2>&1 </dev/null | cat > "$2"; touch "$3"; while :; do sleep 0.2; done' _ "$HEAVY" "$PIPED" "$RETURNED" >/dev/null 2>&1 &
 LONG=$!
 disown "$LONG"
 SHELLS+=("$LONG")
-( sleep "$PATIENCE"; kill -9 "$LONG" 2>/dev/null ) >/dev/null 2>&1 &
-DOG=$!
-disown "$DOG"
-out=$(exec 4>&1; bash "$HEAVY" "$LONG" piped 2>&1 </dev/null | cat)
-kill -0 "$LONG" 2>/dev/null && ok "pipes: the call returned while its slot was held" || bad "pipes: the call returned while its slot was held" "it only returned when the shell died"
-is "pipes: nothing printed" "" "$out"
+deadline=$((SECONDS+PATIENCE))
+while [ ! -e "$RETURNED" ] && [ "$SECONDS" -lt "$deadline" ]; do sleep 0.1; done
+[ -e "$RETURNED" ] && ok "pipes: the call returned while its slot was held" || bad "pipes: the call returned while its slot was held" "cat never saw the pipe close"
+is "pipes: nothing printed" "" "$(cat "$PIPED")"
 is "pipes: acquired" "1" "$(outcomes acquired)"
 is "pipes: not yet released" "0" "$(outcomes released)"
 kill -9 "$LONG" 2>/dev/null
-kill -9 "$DOG" 2>/dev/null
 
 state '{"slots":1}'
-out=$(bash -c 'bash "$1" $$ piped; echo done' _ "$HEAVY" | cat)
+out=$(bash -c 'bash "$1" piped; echo done' _ "$HEAVY" | cat)
 is "pipes: a piped call returns once its shell finishes" "done" "$out"
 
 # 6. The log: its fields, and never the command text.
 state '{}'
 WHERE="$ROOT/logged"; mkdir -p "$WHERE"
-bash -c 'cd "$2" && bash "$1" $$ npm-test; API_TOKEN=hunter2-xyz sleep 1' _ "$HEAVY" "$WHERE" >/dev/null 2>&1
+bash -c 'cd "$2" && bash "$1" npm-test; API_TOKEN=hunter2-xyz sleep 1' _ "$HEAVY" "$WHERE" >/dev/null 2>&1
 until_logged released 1
 line=$(grep '  acquired' "$LOG")
 check "log: acquired line has the label and cwd" "  npm-test  $WHERE  " "$line"
@@ -220,7 +219,7 @@ is "log: a label cannot split a line" "2" "$(wc -l < "$LOG" | tr -d ' ')"
 # 7. Turned off, and every way it fails open.
 state
 SECONDS=0
-out=$(bash -c 'a=$(ps -o nice= -p $$); bash "$1" $$ off; rc=$?; b=$(ps -o nice= -p $$); echo "$rc:$((b-a))"' _ "$HEAVY" 2>&1)
+out=$(bash -c 'a=$(ps -o nice= -p $$); bash "$1" off; rc=$?; b=$(ps -o nice= -p $$); echo "$rc:$((b-a))"' _ "$HEAVY" 2>&1)
 is "no heavy.json: nothing printed, exit 0, no renice" "0:0" "$out"
 within "no heavy.json: returns at once" 20 "$SECONDS"
 [ ! -e "$LOG" ] && ok "no heavy.json: no log line" || bad "no heavy.json: no log line" "$(cat "$LOG")"
@@ -254,27 +253,24 @@ fails_open "wait_minutes is null" '{"wait_minutes":null}'
 fails_open "hold_minutes is a list" '{"hold_minutes":[1]}'
 fails_open "hold_minutes is negative" '{"hold_minutes":-1}'
 
+# The shell is gone before the script starts, so init has adopted the script.
 state '{}'
-bash -c ':' &
-DEAD=$!
-wait "$DEAD"
-SECONDS=0
-out=$(bash "$HEAVY" "$DEAD" gone 2>&1); rc=$?
-is "pid already gone: nothing printed" "" "$out"
-is "pid already gone: exit 0" "0" "$rc"
-within "pid already gone: returns at once" 20 "$SECONDS"
-is "pid already gone: logs failed" "1" "$(outcomes failed)"
-is "pid already gone: no slot" "0" "$(slot_files)"
+ERR="$ROOT/orphan.err"
+bash -c '(sleep 0.5; exec bash "$1" orphan) >"$2" 2>&1 &' _ "$HEAVY" "$ERR"
+until_logged failed 1 && ok "shell already gone: logs failed" || bad "shell already gone: logs failed" "no failed line"
+is "shell already gone: nothing printed" "" "$(cat "$ERR")"
+is "shell already gone: no slot" "0" "$(slot_files)"
+is "shell already gone: not acquired" "0" "$(outcomes acquired)"
 
+# A prefix written the old way, with a pid first, still names its label.
 state '{}'
-out=$(bash "$HEAVY" nonsense bad 2>&1); rc=$?
-is "pid not a number: nothing printed, exit 0" ":0" "$out:$rc"
-is "pid not a number: logs failed" "1" "$(outcomes failed)"
-is "pid not a number: no slot" "0" "$(slot_files)"
+bash -c 'bash "$1" "$$" old-form; :' _ "$HEAVY" >/dev/null 2>&1
+until_logged acquired 1
+check "old form: the label is still the label" "  old-form  " "$(grep '  acquired' "$LOG")"
 
 state '{}'
 BARE="$ROOT/bare"; mkdir -p "$BARE"; ln -s "$(command -v date)" "$BARE/date"
-out=$(PATH="$BARE" "$BASH" -c '"$1" "$2" $$ noperl' _ "$BASH" "$HEAVY" 2>&1); rc=$?
+out=$(PATH="$BARE" "$BASH" -c '"$1" "$2" noperl' _ "$BASH" "$HEAVY" 2>&1); rc=$?
 is "perl missing: nothing printed, exit 0" ":0" "$out:$rc"
 is "perl missing: logs failed" "1" "$(outcomes failed)"
 is "perl missing: no slot" "0" "$(slot_files)"
@@ -295,7 +291,7 @@ chmod 755 "$EXECUTOR_HEAVY_DIR"
 
 # 8. Lower priority: the shell, so its children inherit it.
 state '{}'
-out=$(bash -c 'a=$(ps -o nice= -p $$); bash "$1" $$ low; b=$(ps -o nice= -p $$); sleep 1 & c=$(ps -o nice= -p $!); echo "$((b-a)):$((c-a))"' _ "$HEAVY" 2>&1)
+out=$(bash -c 'a=$(ps -o nice= -p $$); bash "$1" low; b=$(ps -o nice= -p $$); sleep 1 & c=$(ps -o nice= -p $!); echo "$((b-a)):$((c-a))"' _ "$HEAVY" 2>&1)
 is "renice: the shell and its children run 10 lower" "10:10" "$out"
 
 # 9. Defaults: {} means two slots.

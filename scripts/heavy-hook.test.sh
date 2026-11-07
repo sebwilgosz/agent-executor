@@ -67,7 +67,7 @@ new_command() {
   printf '%s' "${got%x}"
 }
 
-prefix() { printf "bash '%s/scripts/heavy.sh' \$\$ %s; " "$PLUGIN" "$1"; }
+prefix() { printf "bash '%s/scripts/heavy.sh' %s; " "$PLUGIN" "$1"; }
 
 matches() {
   run "$1"
@@ -237,16 +237,28 @@ state '{}'
 while IFS= read -r c; do
   run "$c"; is "already prefixed: $c" "" "$OUT"
 done <<'EOF'
+bash '/some/other root/scripts/heavy.sh' npm-test; npm test
+bash '/a;b&c/scripts/heavy.sh' by-hand.1; npm test
+bash "/x/scripts/heavy.sh" my_label; npx vitest
+bash /x/scripts/heavy.sh z; npm test
+bash scripts/heavy.sh z && npm test
+bash heavy.sh z ; npm test
 bash '/some/other root/scripts/heavy.sh' $$ npm-test; npm test
 bash '/a;b&c/scripts/heavy.sh' $$ by-hand.1; npm test
 bash "/x/scripts/heavy.sh" $$ my_label; npx vitest
 bash /x/scripts/heavy.sh $$ z; npm test
 EOF
+run $'bash /x/scripts/heavy.sh z\nnpm test'; is "already prefixed: on a line of its own" "" "$OUT"
 matches 'npm test' npm-test 'first pass'
 FIRST=$(new_command)
 run "$FIRST"; is "already prefixed: the hook's own output" "" "$OUT"
-c="ls; bash '/x/scripts/heavy.sh' \$\$ y; npm test"
+refute "the prefix holds no variable" '$' "$FIRST"
+c="ls; bash '/x/scripts/heavy.sh' y; npm test"
 matches "$c" npm-test "prefix further on is not a prefix"
+c="bash /x/scripts/my-heavy.sh y; npm test"
+matches "$c" npm-test "another script is not a prefix"
+c="bash /x/scripts/heavy.sh y z; npm test"
+matches "$c" npm-test "more than a label is not a prefix"
 
 # 4. An ordinary command never starts jq. The stub is known to work: npm test does.
 state '{}'
@@ -333,7 +345,7 @@ failed_logged "root with a quote"
 state '{}'
 S="$ROOT/a b;c&d"; copy_plugin "$S"
 run 'npm test' "$S/scripts/heavy-hook.sh"
-is "root with spaces and separators: quoted" "bash '$S/scripts/heavy.sh' \$\$ npm-test; npm test" "$(new_command)"
+is "root with spaces and separators: quoted" "bash '$S/scripts/heavy.sh' npm-test; npm test" "$(new_command)"
 
 state '{}'
 M="$ROOT/no-script/scripts"; mkdir -p "$M"; cp "$HOOK" "$M/"
