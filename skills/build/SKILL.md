@@ -45,7 +45,7 @@ From here on, "the plan" is that one file. Two live plans in one repo are allowe
 
 ## 1. The spec
 
-Find it: what the user gave (a path, a URL, an issue, text in the message), then `SPEC.md`, `specs/`, `docs/specs/` in the repo. Read it whole.
+Find it: what the user gave (a path, a URL, an issue, text in the message), then `SPEC.md`, `specs/`, `docs/specs/` in the repo. Read it whole. With no spec at all, offer `/executor:spec` to draft one from the user's sources in place of the question list below, and carry on with what it writes.
 
 Run the spec check of `references/implementation.md`, step 0, on the whole spec. Open points are asked in one message, each with a suggested answer, and nothing is planned until they are answered. The answers are part of the spec from now on: the plan's `Spec:` line keeps the link, and the answers go under it as a short list.
 

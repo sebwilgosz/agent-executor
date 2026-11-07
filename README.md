@@ -64,6 +64,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | Skill | What it does |
 |---|---|
 | `/executor:help` | What Executor does; routes what you type to the right skill |
+| `/executor:spec` | Draft a spec from your notes, the repo and its history, and save it where your specs live (see [Where specs live](#where-specs-live)) |
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch; another repo's PR opens in its checkout |
 | `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |

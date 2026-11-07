@@ -37,7 +37,7 @@ refute "skill: Claude may start it" "disable-model-invocation" "$SKILL"
 check "reads the shape" "references/spec.md" "$SKILL"
 check "reads the spec home rule" "references/spec-home.md" "$SKILL"
 check "resolves the home with the script" "scripts/spec-home.sh" "$SKILL"
-src=$(printf '%s\n' "$SKILL" | awk '/^## Sources/{f=1;next} /^## /{f=0} f')
+src=$(printf '%s\n' "$SKILL" | awk '/^## ([0-9]\. )?Sources/{f=1;next} /^## /{f=0} f')
 l1=$(printf '%s\n' "$src" | grep -E '^1\. '); l2=$(printf '%s\n' "$src" | grep -E '^2\. ')
 l3=$(printf '%s\n' "$src" | grep -E '^3\. '); l4=$(printf '%s\n' "$src" | grep -E '^4\. ')
 check "source 1: what the user passes" "passes" "$l1"

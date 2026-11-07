@@ -19,6 +19,8 @@ EXECUTOR PLUGIN:
   builds a spec into reviewed pull requests, reviews every pull request
 
 INCLUDES:
+  /executor:spec <what to build>   draft a spec from your notes and the repo,
+                                   save it where your specs live
   /executor:build <spec>           plan it with you, build in parallel,
                                    review every PR; you merge
   /executor:review [PR | branch]   review, verify, fix, review again
@@ -48,6 +50,7 @@ Below the block, print what `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --s
 | "review", "code review", a PR number, a PR URL, owner/repo#N, "let's review <ref>", "check this PR", "is this ready to merge" | /executor:review |
 | "ship this", "push", "commit and push", "push changes", "open a PR", "submit the branch" | /executor:ship |
 | "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init themselves: Claude cannot run it. It ends with the setup check |
+| "write a spec for X", "plan X from my notes", "draft an RFC" | /executor:spec |
 | "build this", "implement X", "implement the spec", a spec or RFC | /executor:build |
 | "where are my builds", "what's in flight" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh` and show what it prints |
 | "sweep the plans", "mark finished plans" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh`, with `--dry-run` when asked only to look, and show what it prints |
