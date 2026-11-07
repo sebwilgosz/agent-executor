@@ -245,6 +245,30 @@ check "worktrees: same-named files clash" "clash: $SRC/wt-web/.executor/spec.md"
 is "worktrees: the second stays" "from the worktree" "$(cat "$SRC/wt-web/.executor/spec.md")"
 check "worktrees: the exclude line stays" ".executor/" "$(cat "$EX")"
 
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+write "$WEB/.executor/spec.md" 'from the top'
+write "$WEB/sub/.executor/spec.md" 'from the subfolder'
+printf '.executor/\n' > "$WEB/.git/info/exclude"
+out=$(migrate "$WEB")
+check "a subfolder's clash: reported" "clash: $WEB/sub/.executor/spec.md" "$out"
+is "a subfolder's clash: the exclude line stays" ".executor/" "$(cat "$WEB/.git/info/exclude")"
+is "a subfolder's clash: what's left stays ignored" "" "$(git -C "$WEB" status --short)"
+check "a subfolder's clash: says why the line stays" "$WEB/sub still holds one" "$out"
+dry=$(migrate --dry-run "$WEB")
+refute "a subfolder's clash: a dry run wouldn't drop the line" "would remove .executor/" "$dry"
+
+reset
+new_repo "$WEB" "git@github.com:acme/web.git"
+write "$WEB/.executor/spec.md" 'from the top'
+write "$WEB/sub/.executor/other.md" 'from the subfolder'
+printf '.executor/\n' > "$WEB/.git/info/exclude"
+dry=$(migrate --dry-run "$WEB")
+check "both folders empty: a dry run drops the line" "would remove .executor/" "$dry"
+migrate "$WEB" >/dev/null
+gone "both folders empty: the subfolder's left" "$WEB/sub/.executor"
+is "both folders empty: the exclude line goes" "" "$(cat "$WEB/.git/info/exclude")"
+
 # F. --dry-run.
 worktrees
 write "$WEB/.executor/plan.md" "$PLAN_BODY"

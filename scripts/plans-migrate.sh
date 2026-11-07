@@ -10,7 +10,8 @@
 #   done/*.md           the name kept, "Status: done <date>" added from that name.
 #   anything else       legacy/, in the same shape.
 # It never overwrites: a clash is reported and that file stays. Once a repo has no
-# .executor/ in any worktree, the .executor/ line leaves its shared exclude file.
+# .executor/ in any worktree or subfolder found, the .executor/ line leaves its
+# shared exclude file.
 # The emptied folder is removed. Symbolic links and tracked files are left alone.
 #
 # Usage: plans-migrate.sh [--dry-run] [<root>]     --dry-run changes nothing
@@ -236,7 +237,8 @@ move_file() {
   place "$f" "$folder/legacy/$rel"
 }
 
-# Removes the .executor/ line once no worktree of the repo holds a .executor/.
+# Removes the .executor/ line once no worktree of the repo holds a .executor/ and
+# no .executor/ this run found in the repo, a subfolder's included, is still there.
 drop_exclude_line() {
   local repo=$1 common file wt tmp
   common=$(common_dir "$repo") || return 0
@@ -249,6 +251,13 @@ drop_exclude_line() {
       return 0
     fi
   done <<< "$(git -C "$repo" worktree list --porcelain 2>/dev/null </dev/null)"
+  while IFS= read -r wt; do
+    listed "$GONE" "$wt" && continue
+    if [ "$(common_dir "${wt%/*}")" = "$common" ]; then
+      printf 'kept .executor/ in %s: %s still holds one\n' "$file" "${wt%/*}"
+      return 0
+    fi
+  done <<< "$FOUND"
   if [ "$DRY" -eq 1 ]; then
     printf 'would remove .executor/ from %s\n' "$file"
     return 0

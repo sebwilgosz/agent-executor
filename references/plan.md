@@ -24,7 +24,7 @@ Before plans moved out of the repository, build kept them in a legacy `.executor
 - **`done/*.md`:** the name kept, `Status: done <date>` added from that name.
 - **Anything else:** `legacy/` inside the repo's folder.
 
-It never overwrites: a clash is reported and that file stays. When nothing is left, the legacy `.executor/` goes, and with it its line in `info/exclude`, in the repo's git common dir, once no other worktree holds a legacy `.executor/`. Symbolic links and tracked files are reported and left. Build step 0 runs it for the repo it is in.
+It never overwrites: a clash is reported and that file stays. When nothing is left, the legacy `.executor/` goes, and with it its line in `info/exclude`, in the repo's git common dir, once no other worktree or subfolder holds a legacy `.executor/`. Symbolic links and tracked files are reported and left. Build step 0 runs it for the repo it is in.
 
 ## Which plan is live
 
