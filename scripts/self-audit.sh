@@ -113,6 +113,7 @@ for s in assign-author review-new-pr; do
   [ -s "$ROOT/scripts/$s.sh" ] || err "integrity: scripts/$s.sh missing → $REINSTALL"
 done
 [ -s "$ROOT/scripts/new-prs.sh" ] || err "integrity: scripts/new-prs.sh missing — both hooks source it → $REINSTALL"
+[ -s "$ROOT/scripts/remote-url.sh" ] || err "integrity: scripts/remote-url.sh missing — new-prs.sh and plan-path.sh source it → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: both PR hooks are wired"
 
 # -- the review's mode: without review-mode.sh the review can't tell your PR
