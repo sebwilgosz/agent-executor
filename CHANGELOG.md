@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 — 2026-11-07
+
+- Spec from sources. `/executor:spec` drafts a spec for what you name from every relevant source (what you pass, your instruction files and the notes they name, the spec home, then the repo: README, `docs/`, `CHANGELOG.md`, `git log`, issues, PRs, an earlier plan) in the shape of `references/spec.md`. Every fact names its source, what it inferred becomes an open question asked in one message with suggested answers, and nothing is saved before a yes. `/executor:build` offers it when it finds no spec.
+- The spec home: where a spec is read from and written to. A short `## Specs` section in the nearest `AGENTS.md` or `CLAUDE.md` (the working folder upwards, then the target repo's own) names it: a folder, the repo, Notion, GitHub issues, Linear or Jira, with the ticket tracker if there is one. `scripts/spec-home.sh` finds it, flags files or words that disagree instead of guessing, writes the section on a yes into `AGENTS.md` and `CLAUDE.md` as they exist, and prepares the local fallback, `~/.engineer-of-wealth/executor/specs/<org>/<repo>/`. `references/spec-home.md` is the rule every skill follows.
+- `/executor:init` gains a step, E5, that shows the home for the folder or asks where specs live; the setup check is now E6. `scripts/self-audit.sh` checks the resolver, the ticket script and the two spec references, and with `-v` prints the file that names the home.
+- Build and review read the spec from its home. Build looks after what you gave it, review after the PR's own links and the issues it closes, both before `SPEC.md`, `specs/` and `docs/specs/`. With several specs in the home, the one you named, the branch or the PR title wins; none or several matching: it asks. A spec is never written back.
+- Tickets from the plan. When the spec home names a tracker, build offers once per run, after you approve the plan, one ticket per plan item: a sub-issue of the spec's parent issue on GitHub (`scripts/ticket-github.sh`), or an issue or ticket through your Linear or Jira connector. The ticket holds the builder's brief and a link to the spec, the PR closes it, and the plan records it so a rerun never creates one twice. An unreachable tracker never stops the build.
+
 ## 0.6.3 — 2026-11-07
 
 - The stack hooks read the URL `gh stack` prints for each new PR, instead of working it out from the command's `cd` and the repo's remote. That URL names the right repo from any folder and needs no local lookup, so about 300 lines of command parsing are gone, along with the hooks' `git` and `ssh -G` calls. A line with no URL means the repo is unknown: nothing is assigned, one line goes in `assign.log`, and the review is told to find the repo.
