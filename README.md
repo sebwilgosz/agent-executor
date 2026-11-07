@@ -65,6 +65,7 @@ Every PR Claude opens is also assigned to you, its author. That one is plain she
 | `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
 | `/executor:review` | Review, verify, fix and re-review a PR or a branch; another repo's PR opens in its checkout |
 | `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
+| `/executor:status` | Across every repo, what to merge now, what waits on you, what is still moving. You type it |
 | `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable, the search roots and the plans folder. You type it |
 
 ## Build from a spec
@@ -78,6 +79,25 @@ Type `/executor:build` with a spec (a path, a URL, an issue, or the text itself)
 5. **Report.** The checklist as it stands, the open questions in one message, and what is yours to merge, bottom of each stack first. Run `/executor:build` again to carry on.
 
 A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. A refactor the feature needs gets its own PR below it. The rules are in `references/implementation.md`, `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
+
+## Where your builds are
+
+Type `/executor:status`, or ask "where are my builds" or "what's in flight". It reads every live plan and each PR's state on GitHub (`scripts/status.sh`, no AI) and prints what is yours to merge now, what waits on you and what is still moving, across every repo:
+
+```
+EXECUTOR STATUS
+
+acme/api
+  2026-11-07 - billing export
+    MERGE NOW
+      #31  CSV export                 Stack A 1/2   CI green   review ready
+    WAITING ON YOU
+      #32  Invoice emails             Stack B 1/1   CI red     review ready
+    MOVING
+      Stack A: 1 not started
+```
+
+The bare command prints this with no model turn. Text after it ("what blocks acme/api?") gets an answer from the same output. It only reads: it never marks a plan, pushes or posts. A plan whose items are all merged or closed but which isn't marked yet ends with `finished, not marked: run scripts/plan-sweep.sh`. Finished plans stay in their folder: there is no archive step.
 
 ## Where plans live
 

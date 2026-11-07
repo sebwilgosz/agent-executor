@@ -151,6 +151,37 @@ check "docs-mentions missing: integrity error" "✗ integrity: scripts/docs-ment
 check "docs-mentions missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/docs-mentions.sh")"
 [ "$rc" -eq 0 ] && ok "docs-mentions missing: exit 0" || bad "docs-mentions missing: exit 0" "exit $rc"
 
+# 11. INTEGRITY: and the script behind /executor:status.
+cp "$REPO/scripts/status.sh" "$PLUG/scripts/"
+refute "status present: no integrity error" "scripts/status.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/status.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "status missing: integrity error" "✗ integrity: scripts/status.sh missing" "$out"
+check "status missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/status.sh")"
+[ "$rc" -eq 0 ] && ok "status missing: exit 0" || bad "status missing: exit 0" "exit $rc"
+
+# 12. /executor:status is a user-only skill the help lists, and the audit says so.
+PLUG="$TMP/plugin3"; mkdir -p "$PLUG"
+for d in .claude-plugin agents hooks references scripts skills; do cp -R "$REPO/$d" "$PLUG/"; done
+out=$(ROOT="$PLUG" audit -v)
+check  "status skill: named among the user-only skills" "✓ integrity: help, init and status run only when you type them" "$out"
+refute "status skill: no integrity warning" "⚠ integrity" "$out"
+sed '/^disable-model-invocation:/d' "$REPO/skills/status/SKILL.md" > "$PLUG/skills/status/SKILL.md"
+out=$(ROOT="$PLUG" audit -v)
+check  "status skill model-invocable: integrity error" "✗ integrity: status lost disable-model-invocation" "$out"
+refute "status skill model-invocable: the ok line is gone" "run only when you type them" "$out"
+
+# 13. The skill and the help may run the script, and the help routes to it.
+HELP="$REPO/skills/help/SKILL.md"
+for f in "$REPO/skills/status/SKILL.md" "$HELP"; do
+  check "${f#"$REPO"/}: allowed-tools runs status.sh" 'Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh)' "$(grep '^allowed-tools:' "$f")"
+done
+check "help block lists the command" "/executor:status" "$(awk '/^## HELP$/{h=1} h' "$HELP" | awk '/^```$/{f++; next} f==1')"
+row=$(grep -F '"where are my builds"' "$HELP")
+check "help routing: what's in flight too" "\"what's in flight\"" "$row"
+check "help routing: runs the script" 'run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh`' "$row"
+check "README lists the command" '`/executor:status`' "$(cat "$REPO/README.md")"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

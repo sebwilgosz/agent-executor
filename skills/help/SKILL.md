@@ -2,7 +2,7 @@
 name: help
 description: "Executor front door: shows what Executor does and routes to the right skill. Today that is code review of a pull request, from any folder, or of the current branch, plus setup and its check."
 disable-model-invocation: true
-allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
+allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh)
 ---
 # EXECUTOR (front door)
 
@@ -27,6 +27,8 @@ INCLUDES:
                                    opens it in that repo's checkout
   /executor:ship                   commit, push, open a draft PR
                                    the review starts on its own
+  /executor:status                 across every repo: what to merge now,
+                                   what waits on you, what is still moving
 
 SETUP:
   /executor:init                   checks gh and its sign-in, offers gh stack
@@ -47,6 +49,7 @@ Below the block, print what `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --s
 | "ship this", "push", "commit and push", "push changes", "open a PR", "submit the branch" | /executor:ship |
 | "set up", "install gh stack", "is it set up", "check setup" | say the user types /executor:init themselves: Claude cannot run it. It ends with the setup check |
 | "build this", "implement X", "implement the spec", a spec or RFC | /executor:build |
+| "where are my builds", "what's in flight" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh` and show what it prints |
 | "sweep the plans", "mark finished plans" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh`, with `--dry-run` when asked only to look, and show what it prints |
 | "move my old plans", "migrate the plans" | run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh`, with `--dry-run` when asked only to look, and show what it prints |
 

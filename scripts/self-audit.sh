@@ -46,7 +46,7 @@ EOW="${EOW_HOME:-$HOME/.engineer-of-wealth}"
 LOG="$EOW/executor/assign.log"
 
 # Skills only the user may run.
-USER_ONLY="help init"
+USER_ONLY="help init status"
 
 # ===================================================================== SETUP
 if command -v gh >/dev/null; then
@@ -160,6 +160,11 @@ e=$ERRS
 [ -s "$ROOT/scripts/plan-items.sh" ] || err "integrity: scripts/plan-items.sh missing - plan-state.sh sources it to read a plan's items → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: finished plans can be told and marked"
 
+# -- status: /executor:status and the help's routing row both run this script.
+[ -s "$ROOT/scripts/status.sh" ] \
+  && ok "integrity: the status script is present" \
+  || err "integrity: scripts/status.sh missing - /executor:status has nothing to run → $REINSTALL"
+
 # -- finding a PR's checkout: without find-checkout.sh a review of another
 #    repo's PR has no way to its local checkout.
 [ -s "$ROOT/scripts/find-checkout.sh" ] \
@@ -173,16 +178,16 @@ e=$ERRS
   || err "integrity: scripts/init-plugin-enable.sh missing — /executor:init cannot offer the per-repo enable → $REINSTALL"
 
 # -- user-only skills. Claude must never trigger init (it installs and
-#    configures) and has no reason to start help (you type it);
-#    disable-model-invocation keeps them yours and out of the skill list
-#    every request carries.
+#    configures) and has no reason to start help or status (you type them; the
+#    help runs status.sh itself); disable-model-invocation keeps them yours and
+#    out of the skill list every request carries.
 e=$ERRS
 for s in $USER_ONLY; do
   [ -f "$SK/$s/SKILL.md" ] || { err "integrity: skill $s missing → $REINSTALL"; continue; }
   sed -n '1,/^---$/{/^---$/!p;}' "$SK/$s/SKILL.md" | sed 1d | grep -q '^disable-model-invocation:[[:space:]]*true' \
     || err "integrity: $s lost disable-model-invocation: true — Claude could run it without you → $REINSTALL"
 done
-[ "$e" = "$ERRS" ] && ok "integrity: help and init run only when you type them"
+[ "$e" = "$ERRS" ] && ok "integrity: help, init and status run only when you type them"
 grep -q '^<!-- shared-setup v[0-9]' "$ROOT/references/shared-setup.md" \
   || warn "integrity: references/shared-setup.md has no version line — plugins cannot tell whether their copies match → $REINSTALL"
 
