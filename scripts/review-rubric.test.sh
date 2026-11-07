@@ -73,6 +73,7 @@ check "the summary has a line for a skipped docs check" '**Docs:**' "$(cat "$REP
 STEP7=$(awk '/^## 7\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
 check "step 7 runs the ready script" 'scripts/review-ready.sh' "$STEP7"
 check "step 7: only in fix mode" 'Fix mode' "$STEP7"
+check "step 7: a review by branch too" 'review-ready.sh --branch' "$STEP7"
 check "step 7: on a passing verdict" '✅ or ⚠️' "$STEP7"
 check "the summary has a line for it" '**Ready:**' "$(cat "$REPO/references/review-format.md")"
 for f in skills/build/SKILL.md skills/ship/SKILL.md agents/builder.md references/feature-done.md references/stacks.md; do

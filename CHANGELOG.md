@@ -2,7 +2,7 @@
 
 ## 0.6.1 — 2026-11-07
 
-- `/executor:review` marks your own draft PR ready on ✅ or ⚠️. Before, only `/executor:build` did, so a PR from `/executor:ship` or a plain `gh pr create` stayed a draft after a passing review until you flipped it by hand. It now applies to every review of your own PR, a draft you opened by hand included. A teammate's draft stays a draft, even under `--fix`, and `--no-fix` leaves yours alone. `scripts/review-ready.sh` does it, no AI, and the summary says when a PR was marked or could not be.
+- `/executor:review` marks your own draft PR ready on ✅ or ⚠️. Before, only `/executor:build` did, so a PR from `/executor:ship` or a plain `gh pr create` stayed a draft after a passing review until you flipped it by hand. It now applies to every review of your own PR, a draft you opened by hand included. A review by branch does so only when it saw exactly what the PR holds: its head commit, nothing uncommitted. A teammate's draft stays a draft, even under `--fix`, and `--no-fix` leaves yours alone. `scripts/review-ready.sh` does it, no AI, and the summary says when a PR was marked or could not be.
 - The self-audit checks `scripts/review-ready.sh` is present.
 
 ## 0.6.0 — 2026-11-07

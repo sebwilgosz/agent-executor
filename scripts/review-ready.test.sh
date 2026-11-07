@@ -29,6 +29,10 @@ reply(){ [ "$1" = FAIL ] && { echo "gh: HTTP 502" >&2; exit 1; }; echo "A new re
 case "$1 $2" in
   "pr view") reply "${GH_VIEW:-}" ;;
   "api user") reply "${GH_USER-me}" ;;
+  "pr list")
+    [ "${GH_LIST:-}" = FAIL ] && reply FAIL
+    q=; while [ $# -gt 0 ]; do [ "$1" = --jq ] && q=$2; shift; done
+    printf '%s' "${GH_LIST:-[]}" | jq -r "$q"; exit ;;
   "pr ready")
     printf '%s\n' "$3" >> "$CALLS"
     [ "${GH_READY:-}" = FAIL ] && { echo "gh: no permission" >&2; exit 1; }
@@ -103,6 +107,61 @@ is    "no PR given: no flip"       ""  "$(calls)"
 # 4. A gh notice on stderr can't end up in a field: the stub prints one on every
 #    reply, so the output above would differ. Output is exactly one line.
 is "one line of output" "1" "$(GH_VIEW='me false true OPEN' run 7 | wc -l | tr -d ' ')"
+
+# 5. A review by branch marks the branch's PR only when it saw what the PR holds:
+#    its head commit, with no uncommitted change to a tracked file.
+REPO="$ROOT/repo"
+git init -q -b main "$REPO"
+cd "$REPO" || exit 1
+git config user.email me@example.com; git config user.name Me
+echo one > tracked; git add tracked; git commit -q -m base
+git checkout -q -b other; git commit -q --allow-empty -m other
+git checkout -q -b mine main; git commit -q --allow-empty -m mine
+SHA=$(git rev-parse mine); OTHER=$(git rev-parse other)
+pr_at(){ # number author fork draft head
+  printf '{"number":%s,"author":{"login":"%s"},"isCrossRepository":%s,"isDraft":%s,"state":"OPEN","headRefOid":"%s"}' "$1" "$2" "$3" "$4" "$5"
+}
+OWN="[$(pr_at 7 me false true "$SHA")]"
+
+is "branch, no name: marked ready"    "READY: marked ready" "$(GH_LIST=$OWN run --branch)"
+is "branch, no name: flips its PR"    "7"                   "$(calls)"
+is "branch, named: marked ready"      "READY: marked ready" "$(GH_LIST="[$(pr_at 8 me false true "$OTHER")]" run --branch other)"
+is "branch, named: flips its PR"      "8"                   "$(calls)"
+is "already ready: skipped"           "SKIP: already ready" "$(GH_LIST="[$(pr_at 7 me false false "$SHA")]" run --branch)"
+is "already ready: no flip"           ""                    "$(calls)"
+is "a teammate's PR: skipped"         "SKIP: PR by @mate"   "$(GH_LIST="[$(pr_at 7 mate false true "$SHA")]" run --branch)"
+is "a teammate's PR: no flip"         ""                    "$(calls)"
+
+rm -f "$LOG"
+is "no PR for the branch: skipped"    "SKIP: no open PR at this commit" "$(GH_LIST='[]' run --branch)"
+is "no PR for the branch: no flip"    ""                    "$(calls)"
+is "no PR for the branch: not logged" "no"                  "$([ -e "$LOG" ] && echo yes || echo no)"
+is "unpushed commits: skipped"        "SKIP: no open PR at this commit" "$(GH_LIST="[$(pr_at 7 me false true "$OTHER")]" run --branch)"
+is "unpushed commits: no flip"        ""                    "$(calls)"
+is "a fork's same-named branch: skipped" "SKIP: no open PR at this commit" "$(GH_LIST="[$(pr_at 9 me true true "$SHA")]" run --branch)"
+is "a fork's same-named branch: no flip" ""                 "$(calls)"
+is "your PR after a fork's: still yours" "7"                "$(GH_LIST="[$(pr_at 9 stranger true true "$SHA"),$(pr_at 7 me false true "$SHA")]" run --branch >/dev/null; calls)"
+
+echo two > tracked
+check "uncommitted change: skipped"   "SKIP: uncommitted changes" "$(GH_LIST=$OWN run --branch)"
+is    "uncommitted change: no flip"   ""                    "$(calls)"
+is    "another branch ignores this tree" "READY: marked ready" "$(GH_LIST="[$(pr_at 8 me false true "$OTHER")]" run --branch other)"
+git checkout -q -- tracked
+echo new > untracked
+is "an untracked file: still marked"  "READY: marked ready" "$(GH_LIST=$OWN run --branch)"
+rm -f untracked
+
+rm -f "$LOG"
+out=$(GH_LIST=FAIL run --branch); rc=$?
+check "PR list fails: UNKNOWN"        "UNKNOWN: could not read the PR" "$out"
+is    "PR list fails: exit 0"         "0" "$rc"
+is    "PR list fails: no flip"        ""  "$(calls)"
+check "PR list fails: logged"         "gh: HTTP 502" "$(cat "$LOG")"
+
+out=$(run --branch nosuch); rc=$?
+check "no such branch: UNKNOWN"       "UNKNOWN: branch nosuch not found" "$out"
+is    "no such branch: exit 0"        "0" "$rc"
+is    "no such branch: no flip"       ""  "$(calls)"
 
 echo
 printf 'review-ready.sh: %d passed, %d failed\n' "$PASS" "$FAIL"

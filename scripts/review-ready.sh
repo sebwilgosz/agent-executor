@@ -7,6 +7,7 @@
 # and flips nothing.
 #
 # Usage:   review-ready.sh <number|url>
+#          review-ready.sh --branch [<name>]   (no name: HEAD)
 # Output is one line; the exit code is always 0:
 #   READY: marked ready
 #   SKIP: <why>       left as it is
@@ -29,13 +30,32 @@ log_fail() {
 pr="${1:-}"
 [ -n "$pr" ] || say UNKNOWN "no PR given to review-ready.sh"
 
-if ! out=$(gh pr view "$pr" --json author,isCrossRepository,isDraft,state --jq '"\(.author.login) \(.isCrossRepository) \(.isDraft) \(.state)"' 2>"$ERR"); then
-  log_fail "gh pr view $pr"
-  say UNKNOWN "could not read the PR, see $LOG"
-fi
 author=""; fork=""; draft=""; state=""
-read -r author fork draft state <<<"$out"
-[ -n "$state" ] || say UNKNOWN "could not read the PR, gh returned nothing"
+if [ "$pr" = --branch ]; then
+  # A branch review covers the local commits and uncommitted changes, so its
+  # verdict only speaks for a PR whose head is that same state. Matching on the
+  # commit also rules out unpushed work and a fork's same-named branch.
+  branch="${2:-}"
+  [ -n "$branch" ] || branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  sha=$(git rev-parse --verify --quiet "$branch^{commit}" 2>/dev/null) || say UNKNOWN "branch $branch not found"
+  if [ "$sha" = "$(git rev-parse HEAD 2>/dev/null)" ] && ! git diff --quiet HEAD 2>/dev/null; then
+    say SKIP "uncommitted changes, so the review was not of the PR's head"
+  fi
+  if ! out=$(gh pr list --head "$branch" --state open --limit 50 --json number,author,isCrossRepository,isDraft,state,headRefOid \
+             --jq "[.[] | select(.headRefOid == \"$sha\" and (.isCrossRepository | not))][0] // empty | \"\\(.number) \\(.author.login) \\(.isCrossRepository) \\(.isDraft) \\(.state)\"" 2>"$ERR"); then
+    log_fail "gh pr list --head $branch"
+    say UNKNOWN "could not read the PR, see $LOG"
+  fi
+  [ -n "$out" ] || say SKIP "no open PR at this commit"
+  read -r pr author fork draft state <<<"$out"
+else
+  if ! out=$(gh pr view "$pr" --json author,isCrossRepository,isDraft,state --jq '"\(.author.login) \(.isCrossRepository) \(.isDraft) \(.state)"' 2>"$ERR"); then
+    log_fail "gh pr view $pr"
+    say UNKNOWN "could not read the PR, see $LOG"
+  fi
+  read -r author fork draft state <<<"$out"
+  [ -n "$state" ] || say UNKNOWN "could not read the PR, gh returned nothing"
+fi
 
 [ "$state" = OPEN ] || say SKIP "PR is $(printf '%s' "$state" | tr '[:upper:]' '[:lower:]')"
 [ "$draft" = true ] || say SKIP "already ready"

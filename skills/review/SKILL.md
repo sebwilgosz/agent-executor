@@ -107,4 +107,4 @@ Every Critical finding left after step 5 is a bug, and Executor fixes it. Sugges
 
 ## 7. Report
 
-Clean up any worktree you added (`git worktree remove`). **Fix mode, a PR, and a verdict of ✅ or ⚠️:** run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-ready.sh <n|url>`. It marks your own draft ready and leaves any other PR as it is. Then print the summary exactly as `references/review-format.md` lays it out, and nothing after it but the commit links, if fix mode made any. Never post the review to GitHub unless the user asks.
+Clean up any worktree you added (`git worktree remove`). **Fix mode and a verdict of ✅ or ⚠️:** run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-ready.sh <n|url>` for a PR, or `… review-ready.sh --branch [<name>]` for a branch. It marks your own draft ready and leaves any other PR as it is. Then print the summary exactly as `references/review-format.md` lays it out, and nothing after it but the commit links, if fix mode made any. Never post the review to GitHub unless the user asks.
