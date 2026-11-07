@@ -16,11 +16,12 @@ PASS=0; FAIL=0
 ok()    { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
 bad()   { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; printf '       %s\n' "$2"; }
 check() { case "$3" in *"$2"*) ok "$1" ;; *) bad "$1" "want substring: $2" ;; esac; }
-before(){ # before <name> <first> <second> <text>: first appears on an earlier line than second
-  local a b
-  a=$(printf '%s\n' "$4" | grep -nF -- "$2" | head -1 | cut -d: -f1)
-  b=$(printf '%s\n' "$4" | grep -nF -- "$3" | head -1 | cut -d: -f1)
-  [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] && ok "$1" || bad "$1" "'$2' line ${a:-none}, '$3' line ${b:-none}"
+before(){ # before <name> <first> <second> <text>: first appears earlier in the text than second
+  local t=$4 a b pre
+  a=; b=
+  case "$t" in *"$2"*) pre=${t%%"$2"*}; a=${#pre} ;; esac
+  case "$t" in *"$3"*) pre=${t%%"$3"*}; b=${#pre} ;; esac
+  [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] && ok "$1" || bad "$1" "'$2' at ${a:-none}, '$3' at ${b:-none}"
 }
 
 BUILD=$(cat skills/build/SKILL.md)
@@ -61,3 +62,7 @@ check "rule: a missing tool is named, not guessed" "unread" "$HOME_DOC"
 
 # 4. The spec check names the same places.
 check "spec check: finds the spec in the home" "spec home" "$IMPL"
+
+echo
+printf "spec-read: %d passed, %d failed\n" "$PASS" "$FAIL"
+[ "$FAIL" -eq 0 ]
