@@ -2,11 +2,12 @@
 # heavy-hook.sh — PreToolUse hook on Bash: puts a heavy command in the queue. No AI.
 # When a command matches, it answers with the same tool input and this command:
 #
-#   bash '<plugin root>/scripts/heavy.sh' $$ <label>; <original command, byte for byte>
+#   bash '<plugin root>/scripts/heavy.sh' <label>; <original command, byte for byte>
 #
 # The original stays unquoted, so deny and ask rules still see it, and the answer
-# has no permissionDecision, so what is allowed never changes. Nothing is printed
-# for any other command.
+# has no permissionDecision, so what is allowed never changes. The prefix holds no
+# variable, because Claude Code blocks a command with one it can't check. Nothing is
+# printed for any other command.
 #
 # Settings: heavy.json in the state folder, as in heavy.sh. No file means off.
 #
@@ -153,8 +154,9 @@ else
   )
 fi
 
-# By hand or by another copy of this hook, under any root and with any label.
-PREFIXED="^[[:space:]]*bash[[:space:]]+('[^']*|\"[^\"]*|[^[:space:];&|'\"]*)heavy\\.sh['\"]?[[:space:]]+\\\$\\\$([[:space:]]|;)"
+# By hand or by another copy of this hook, under any root and with any label. An
+# older copy wrote $$ before the label.
+PREFIXED="^[[:space:]]*bash[[:space:]]+('([^']*/)?|\"([^\"]*/)?|([^[:space:];&|'\"]*/)?)heavy\\.sh['\"]?[[:space:]]+(\\\$\\\$([[:space:]]|;)|[A-Za-z0-9._-]+[[:space:]]*(;|&&|\$))"
 [[ $first_line =~ $PREFIXED ]] && exit 0
 
 [ "${#segments[@]}" -gt 0 ] || exit 0
@@ -181,7 +183,7 @@ esac
 [ -f "$root/scripts/heavy.sh" ] || failed
 
 # jq adds the prefix to the command it read itself, so nothing here can lose a byte.
-printf '%s' "$event" | jq -c --arg prefix "bash '$root/scripts/heavy.sh' \$\$ $matched; " '
+printf '%s' "$event" | jq -c --arg prefix "bash '$root/scripts/heavy.sh' $matched; " '
   {hookSpecificOutput: {
     hookEventName: "PreToolUse",
     updatedInput: (.tool_input + {command: ($prefix + .tool_input.command)})

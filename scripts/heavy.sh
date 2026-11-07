@@ -4,8 +4,12 @@
 # blocks until it holds a slot or the wait limit passes. CONTRIBUTING's rule 5 asks
 # for non-blocking where it can be; waiting is what this script is for.
 #
-# Usage:   heavy.sh <shell pid> <label>
-#          bash heavy.sh $$ npm-test; npm test
+# Usage:   heavy.sh <label>
+#          bash heavy.sh npm-test; npm test
+#
+# The shell it serves is its parent, so a command must follow it: as the last command
+# of a bash -c, bash would exec it in place and its parent would be another process.
+# A pid before the label, the old form, is ignored.
 #
 # A slot is a kernel lock on a file in the state folder, kept by a detached holder
 # that watches the shell. When the holder dies, for any reason, the kernel frees the
@@ -29,10 +33,10 @@ DIR="${EXECUTOR_HEAVY_DIR:-${HOME:-}/.engineer-of-wealth/executor}"
 case "$DIR" in /*) ;; *) DIR="$PWD/$DIR" ;; esac
 [ -e "$DIR/heavy.json" ] || exit 0
 
-LABEL="${2:-unknown}"
+LABEL="${2:-${1:-unknown}}"
 
 if ! command -v perl >/dev/null 2>&1 \
-  || ! perl -x "$0" "$DIR" "${1:-}" "$LABEL" "$PWD" </dev/null >/dev/null 3>&2 2>/dev/null; then
+  || ! perl -x "$0" "$DIR" "$PPID" "$LABEL" "$PWD" </dev/null >/dev/null 3>&2 2>/dev/null; then
   { printf '%s  %s  %s  waited=0  failed\n' "$(date '+%F %T')" "${LABEL//[[:cntrl:]]/ }" "${PWD//[[:cntrl:]]/ }" >> "$DIR/heavy.log"; } 2>/dev/null
 fi
 exit 0
@@ -156,7 +160,8 @@ sub keep_slot {
     }
 }
 
-fail() unless $pid =~ /^[1-9][0-9]*$/ && alive();
+# A pid of 1 means the shell is gone and init adopted this script.
+fail() unless $pid > 1 && alive();
 
 my ($slots, $wait, $hold) = eval { settings() };
 fail() unless defined $slots;
