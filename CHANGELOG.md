@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — 2026-11-07
+
+- `/executor:status`: where your builds are, across every repo. It prints what is yours to merge now, what waits on you and what is still moving, from every live plan and each PR's state on GitHub, whose state wins over a stale plan line. It is read-only: it never marks a plan, pushes or posts. A bare `/executor:status` runs through the plugin's hook with no model turn, and falls through to the skill on a failure, blank output or after 15 s. `/executor:help` lists it and routes "where are my builds" and "what's in flight" to it.
+- `scripts/status.sh` does the work, no AI, with at most 8 lookups at once. When a lookup fails, that item goes to UNKNOWN with why and the rest of the plan prints; when `gh` is missing or a whole repo can't be read, the repo gets one `UNKNOWN` line with its plans named and the other repos carry on. Failures go to `status.log`.
+- `/executor:review` checks the docs against the diff, inside its repo-conventions dimension. `scripts/docs-mentions.sh`, no AI, finds flags, `UPPER_SNAKE` names and deleted or renamed paths the diff removed, and where the docs still mention them, along with any names the review passes it. Never `CHANGELOG*`: history may name old things. Docs that now state something false are Critical, so fix mode corrects them; behaviour changed without touching the docs that describe it is a Suggestion. Findings use the new category `Docs`. If the check can't run, the summary says so in one line and the review goes on.
+- The review's dimensions name more of what they look for: integer overflow under correctness; cross-site scripting, CSRF and SSRF under security; and under best practices the performance traps: N+1 and other queries in a loop, unbounded queries or loops, O(n²) over user-sized data, a new query with no index. A trap is Critical only when its cost is real on a path the diff touches, otherwise a Suggestion. It is still six dimensions, and a performance finding is still `Best practice`.
+- `scripts/plan-items.sh`: the one reader of a plan's items, shared by `plan-state.sh` and `status.sh`.
+- The self-audit checks `scripts/docs-mentions.sh`, `scripts/plan-items.sh` and `scripts/status.sh` are present, and that `/executor:status` runs only when you type it.
+
 ## 0.5.0 — 2026-11-07
 
 - **Existing users: run `scripts/plans-migrate.sh` once**, from the plugin's folder, with `--dry-run` first to see what it would do. Plans no longer live in the repository, so it moves every `.executor/` under `~/Projects`, or the folder you name, to the plans folder. It never overwrites: a clash is reported and that file stays. It removes the `.executor/` line from the repo's `info/exclude` and the emptied folder. Build step 0 does the same for the repo it runs in.
