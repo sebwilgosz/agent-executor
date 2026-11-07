@@ -137,7 +137,7 @@ remote_default() {
   else
     reachable=0
   fi
-  [ -n "$def" ] || def=$(cd "$folder" && . "$SELF_DIR/default-branch.sh" && printf '%s' "$def")
+  [ -n "$def" ] || def=$(cd "$folder" && { . "$SELF_DIR/default-branch.sh"; printf '%s' "$def"; })
   printf 'default branch: %s\n' "$def"
   return 0
 }

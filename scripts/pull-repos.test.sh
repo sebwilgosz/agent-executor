@@ -496,6 +496,12 @@ out=$(GIT_CONFIG_GLOBAL="$ROOT/offline" run)
 is "offline: one line" "Could not reach any origin. Are you online?" "$out"
 is "offline: nothing moved" "$api_before" "$(sha_of "$P/api")"
 
+# Offline, a fresh bare clone has no tracking ref to fall back on, and is still unreachable.
+fresh; git clone -q --bare "https://github.com/acme/api.git" "$P/api.git"
+mkdir -p "$CASE/bin"; printf '#!/bin/sh\nexit 1\n' > "$CASE/bin/gh"; chmod +x "$CASE/bin/gh"
+out=$(PATH="$CASE/bin:$PATH" GIT_CONFIG_GLOBAL="$ROOT/offline" run)
+is "offline, fresh bare clone: one line" "Could not reach any origin. Are you online?" "$out"
+
 # A forced fetch refspec in the repo's own config must not move the local default.
 fresh; git clone -q --mirror "https://github.com/acme/api.git" "$P/api.git"
 tree=$(git -C "$P/api.git" rev-parse 'main^{tree}')
