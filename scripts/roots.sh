@@ -6,17 +6,19 @@
 #           section or list: ~/Projects.
 # Defines:
 #   config_section <heading> — sets section_paths to the "- <path>" lines of
-#           that "## <heading>" section, the same way.
+#           that "## <heading>" section, the same way, and section_found to 1
+#           when the section exists, even with no lines, else 0.
 # No output, never fails.
 
 config_section() {
   section_paths=()
+  section_found=0
   local cfg="${EOW_HOME:-$HOME/.engineer-of-wealth}/executor/config.md" inside=0 l
   [ -r "$cfg" ] || return 0
   while IFS= read -r l || [ -n "$l" ]; do
     l="${l%"${l##*[![:space:]]}"}"
     case "$l" in
-      "## $1") inside=1; continue ;;
+      "## $1") inside=1; section_found=1; continue ;;
       "#"*) inside=0; continue ;;
     esac
     [ "$inside" -eq 1 ] || continue
@@ -39,4 +41,4 @@ if [ "${#section_paths[@]}" -gt 0 ]; then
 else
   roots=("$HOME/Projects")
 fi
-unset section_paths
+unset section_paths section_found
