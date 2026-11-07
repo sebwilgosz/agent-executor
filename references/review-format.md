@@ -20,7 +20,7 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 
 ## Severity
 
-- **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, or leaves a spec requirement unmet or untested. Critical findings are bugs: in fix mode the review fixes them, in report-only mode they stay open.
+- **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, leaves a spec requirement unmet or untested, or adds a performance trap whose cost is real on a path the diff touches. Critical findings are bugs: in fix mode the review fixes them, in report-only mode they stay open.
 - **Suggestion**: everything else worth changing. Suggestions are listed, never fixed by the review.
 
 ## The summary

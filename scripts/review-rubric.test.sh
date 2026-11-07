@@ -40,6 +40,9 @@ done
 check "best practices: when a trap is Critical" \
   'Critical only when the cost is real on a path the diff touches (an unbounded query on a request path, an N+1 over user data); otherwise a Suggestion' \
   "$PRACTICES"
+TRAP='a performance trap whose cost is real on a path the diff touches'
+check "severity: the format's rule keeps a real trap Critical" "$TRAP" "$(grep '^- \*\*Critical\*\*' "$REPO/references/review-format.md")"
+check "severity: the verifier's rule keeps a real trap Critical" "$TRAP" "$(grep 'Re-judge the severity' "$REPO/agents/verifier.md")"
 
 # B. One rubric.
 check "step 3 still says six dimensions" 'six dimensions' "$STEP3"
