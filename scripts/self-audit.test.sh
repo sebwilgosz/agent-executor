@@ -134,6 +134,14 @@ check "plans-migrate missing: integrity error" "✗ integrity: scripts/plans-mig
 check "plans-migrate missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/plans-migrate.sh")"
 [ "$rc" -eq 0 ] && ok "plans-migrate missing: exit 0" || bad "plans-migrate missing: exit 0" "exit $rc"
 
+# 9. INTEGRITY: and the review's docs check.
+refute "docs-mentions present: no integrity error" "scripts/docs-mentions.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/docs-mentions.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "docs-mentions missing: integrity error" "✗ integrity: scripts/docs-mentions.sh missing" "$out"
+check "docs-mentions missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/docs-mentions.sh")"
+[ "$rc" -eq 0 ] && ok "docs-mentions missing: exit 0" || bad "docs-mentions missing: exit 0" "exit $rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

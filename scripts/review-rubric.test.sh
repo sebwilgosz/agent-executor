@@ -5,6 +5,7 @@
 #      one is Critical.
 #   B. the six dimensions stay the one rubric: no seventh, no separate checklist,
 #      and a performance finding is `Best practice`, not a category of its own.
+#   C. docs drift sits in dimension 6, with its own category and severity rule.
 # Whether a review finds these things is walked through by hand (see the PR).
 #
 # Run: bash scripts/review-rubric.test.sh   (exit 0 = all pass)
@@ -54,6 +55,18 @@ case "$CATEGORIES" in
   *[Pp]erformance*) bad "no Performance category" "$CATEGORIES" ;;
   *) ok "no Performance category" ;;
 esac
+
+# C. Docs drift lives in dimension 6: the script, then judgement.
+CONVENTIONS=$(printf '%s\n' "$STEP3" | awk '/^6\. \*\*/{f=1} /^Write each finding/{f=0} f')
+check "dimension 6 runs the docs check" 'scripts/docs-mentions.sh' "$CONVENTIONS"
+check "docs not touched for a change: Suggestion" 'Suggestion' "$(printf '%s\n' "$CONVENTIONS" | grep 'docs-mentions')"
+check "docs stating something false: Critical" 'Critical' "$(printf '%s\n' "$CONVENTIONS" | grep 'docs-mentions')"
+check "UNKNOWN skips the check and goes on" 'UNKNOWN' "$(printf '%s\n' "$CONVENTIONS" | grep 'docs-mentions')"
+check "Docs is a category" 'Docs' "$CATEGORIES"
+FALSE_DOCS='leaves docs stating something false'
+check "severity: the format's rule keeps false docs Critical" "$FALSE_DOCS" "$(grep '^- \*\*Critical\*\*' "$REPO/references/review-format.md")"
+check "severity: the verifier's rule keeps false docs Critical" "$FALSE_DOCS" "$(grep 'Re-judge the severity' "$REPO/agents/verifier.md")"
+check "the summary has a line for a skipped docs check" '**Docs:**' "$(cat "$REPO/references/review-format.md")"
 
 echo
 printf 'review-rubric: %d passed, %d failed\n' "$PASS" "$FAIL"
