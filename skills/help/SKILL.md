@@ -23,7 +23,7 @@ INCLUDES:
                                    save it where your specs live
   /executor:build <spec>           plan it with you, build in parallel,
                                    review every PR; you merge
-  /executor:review [PR | branch]   review, verify, fix, review again
+  /executor:review [PR | branch]   review, verify Criticals, fix, review again
                                    no argument: the current branch
                                    owner/repo#N or a URL from any folder:
                                    opens it in that repo's checkout

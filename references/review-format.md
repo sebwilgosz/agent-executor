@@ -22,6 +22,7 @@ Proposed Fix: <concrete suggestion of resolving or clarifying>
 
 - **Critical**: merging it causes wrong behaviour, data loss or a security hole, breaks the build, leaves a spec requirement unmet or untested, adds a performance trap whose cost is real on a path the diff touches, or leaves docs stating something false (a removed flag still documented). Critical findings are bugs: in fix mode the review fixes them, a false doc by correcting the doc, in report-only mode they stay open.
 - **Suggestion**: everything else worth changing. Suggestions are listed, never fixed by the review.
+- **Only Critical findings are verified.** Suggestions are listed as the reviewer drafted them. A Critical brought down by its verifier is listed among the Suggestions, with the verifier's wording.
 
 ## The summary
 

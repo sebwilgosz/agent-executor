@@ -1,13 +1,13 @@
 ---
 name: review
-description: "Executor: review a pull request or the current branch, verifying every finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR as #42, owner/repo#N or a pull URL ('review #42', 'let's review acme/api#7'), from any folder: another repo's PR is handed off to its local checkout."
+description: "Executor: review a pull request or the current branch, verifying every Critical finding; fixes the confirmed bugs on your own PRs, only reports on anyone else's. Use when a PR was just created, when the user asks for a code review, or names a PR as #42, owner/repo#N or a pull URL ('review #42', 'let's review acme/api#7'), from any folder: another repo's PR is handed off to its local checkout."
 model: opus
 effort: high
 ---
 
 # EXECUTOR · REVIEW
 
-Review once, verify every finding independently, then fix the confirmed bugs and review the fixes, or only report them. The output is always the summary in `${CLAUDE_PLUGIN_ROOT}/references/review-format.md`: read it before step 4.
+Review once, verify every Critical finding independently, then fix the confirmed bugs and review the fixes, or only report them. The output is always the summary in `${CLAUDE_PLUGIN_ROOT}/references/review-format.md`: read it before step 4.
 
 ## 1. Target and mode
 
@@ -71,11 +71,11 @@ Go through the diff once per dimension:
 Write each finding as the format file says. Merge findings with one root cause into one. Keep the ten most valuable Suggestions; Critical findings are never cut.
 ## 4. Draft the two sections
 
-Sort the findings into **Critical** and **Suggestions**, one numbered finding each in the format file's finding line, the count running continuously across both sections. This draft is what the verifiers check.
+Sort the findings into **Critical** and **Suggestions**, one numbered finding each in the format file's finding line, the count running continuously across both sections. When you cannot settle a finding's severity, draft it as Critical: a verifier then judges it and can bring it down. A real bug must not escape verification by being drafted as a Suggestion. This draft is what the verifiers check.
 
-## 5. Verify: one agent per finding
+## 5. Verify: one agent per Critical finding
 
-Spawn one `executor:verifier` agent per finding, except a failed build, **all in one message** so they run in parallel. Give each one only:
+Spawn one `executor:verifier` agent per Critical finding, except a failed build, **all in one message** so they run in parallel. Suggestions get no verifier: they are only listed, never fixed. Give each one only:
 
 - the finding line as drafted, with its severity
 - the repo path, and the worktree path if you built in one
@@ -89,7 +89,7 @@ Apply each verdict:
 | Verdict      | Then                                                        |
 | ------------ | ----------------------------------------------------------- |
 | CONFIRMED    | keep the finding as the verifier restated it                |
-| RECLASSIFIED | move it to the severity the verifier gave, with its wording |
+| RECLASSIFIED | move it to the severity the verifier gave, with its wording; a Critical brought down to Suggestion is listed among the Suggestions |
 | DEBUNKED     | remove from output                                          |
 
 ## 6. Fix the bugs, then review again (fix mode only)
