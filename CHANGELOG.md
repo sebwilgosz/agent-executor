@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `/executor:init` offers GitHub's "Automatically delete head branches" for the build repository (step E2b). It reads the setting and, only on a yes, turns it on, so a merged PR no longer leaves its branch behind. It changes a GitHub setting, so it always asks, and a check that fails (no network, no permission) is one line and init carries on. The engine is `scripts/init-delete-branches.sh`.
+
 ## 0.9.0 — 2026-11-08
 
 - `/executor:review` verifies only Critical findings. Each Critical finding still goes to its own `executor:verifier`, which confirms, debunks or reclassifies it; Suggestions get no verifier, since the review only lists them and never fixes them. A Critical brought down to a Suggestion is listed among the Suggestions with the verifier's wording. A finding whose severity the review can't settle is drafted as Critical, so a verifier judges it and a real bug can't escape by being drafted as a Suggestion. A verifier run costs about 34k weighted tokens, and a six-PR build that drafts 2 Critical and 6 Suggestions per PR drops from 48 verifiers to 12, saving about 1.2M weighted tokens.

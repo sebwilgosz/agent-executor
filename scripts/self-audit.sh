@@ -198,6 +198,12 @@ e=$ERRS
   && ok "integrity: init's per-repo enable engine is present" \
   || err "integrity: scripts/init-plugin-enable.sh missing — /executor:init cannot offer the per-repo enable → $REINSTALL"
 
+# -- init's delete-head-branches step: without the script init cannot check or
+#    offer GitHub's "Automatically delete head branches".
+[ -s "$ROOT/scripts/init-delete-branches.sh" ] \
+  && ok "integrity: init's delete-head-branches engine is present" \
+  || err "integrity: scripts/init-delete-branches.sh missing — /executor:init cannot offer automatic deletion of head branches → $REINSTALL"
+
 # -- the spec home: without spec-home.sh no skill can tell where specs are kept.
 #    Reports the file that names the home for this folder; it never writes and
 #    an unnamed home is no fault, so it is not a warning.
