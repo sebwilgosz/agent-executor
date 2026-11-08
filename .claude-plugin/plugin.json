@@ -1,7 +1,7 @@
 {
   "name": "executor",
-  "version": "0.8.0",
-  "description": "Executor: reviews every pull request against your spec and your repo's conventions, builds it, verifies each finding with its own agent, fixes the confirmed bugs on your own PRs and reviews again. Free.",
+  "version": "0.9.0",
+  "description": "Executor: reviews every pull request against your spec and your repo's conventions, builds it, verifies each Critical finding with its own agent, fixes the confirmed bugs on your own PRs and reviews again. Free.",
   "author": {
     "name": "Sebastian Wilgosz",
     "url": "https://sebwilgosz.com"

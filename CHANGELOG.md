@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0 — 2026-11-08
+
+- `/executor:review` verifies only Critical findings. Each Critical finding still goes to its own `executor:verifier`, which confirms, debunks or reclassifies it; Suggestions get no verifier, since the review only lists them and never fixes them. A Critical brought down to a Suggestion is listed among the Suggestions with the verifier's wording. A finding whose severity the review can't settle is drafted as Critical, so a verifier judges it and a real bug can't escape by being drafted as a Suggestion. A verifier run costs about 34k weighted tokens, and a six-PR build that drafts 2 Critical and 6 Suggestions per PR drops from 48 verifiers to 12, saving about 1.2M weighted tokens.
+
 ## 0.8.0 — 2026-11-07
 
 - `scripts/git-hooks.sh install` adds two opt-in git hooks to a repo, bare or not. A new worktree gets copy-on-write clones of `node_modules` and `.next/cache` from the main checkout, so it starts with no install. Next.js may still recompile in the new folder, because its build cache is tied to the folder's path. After a commit, the type check and lint of each package it touched run on their own, and any errors print in the commit's output. The commit always stands, and no model is involved.
