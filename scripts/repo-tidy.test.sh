@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Spec tests for scripts/repo-tidy.sh - tidies one repo after merges: returns the
-# checkout to the default branch, removes finished worktrees, deletes merged local
-# branches, and never touches anything dirty or any remote branch. One case per
-# rule. No network: a local bare repo under $ROOT/gh stands in for github.com and
-# a stub gh answers `gh pr list --head <branch>` from files under $ROOT/prs.
+# Spec tests for scripts/repo-tidy.sh - tidies one repo after merges: removes
+# finished worktrees and deletes merged local branches, only Executor's own (named
+# by a PR in a plan, or worktree-agent-*), never switches the checkout, and never
+# touches anything dirty or any remote branch. One case per rule. No network: a
+# local bare repo under $ROOT/gh stands in for github.com and a stub gh answers
+# `gh pr list --head <branch>` from files under $ROOT/prs and the one
+# `gh pr list --state all` from $ROOT/prs/_all.
 #
 # Run: bash scripts/repo-tidy.test.sh   (exit 0 = all pass)
 set -u
@@ -48,11 +50,13 @@ while [ $# -gt 0 ]; do
   [ "$1" != "--head" ] || head=$2
   shift
 done
-[ -z "$head" ] || [ ! -f "$PRS/$head" ] || cat "$PRS/$head"
+if [ -z "$head" ]; then [ ! -f "$PRS/_all" ] || cat "$PRS/_all"; exit 0; fi
+[ ! -f "$PRS/$head" ] || cat "$PRS/$head"
 exit 0
 STUB
 chmod +x "$BIN/gh"
 export PRS
+PLANS="$ROOT/plans"; export EXECUTOR_PLANS="$PLANS"
 export PATH="$BIN:$PATH"
 
 SEED="$ROOT/seed"
@@ -66,7 +70,7 @@ git -C "$SEED" push -q origin main
 N=0
 fresh() {
   N=$((N+1)); CASE="$ROOT/case$N"; REPO="$CASE/api"; mkdir -p "$CASE"
-  rm -f "$PRS"/*
+  rm -f "$PRS"/*; rm -rf "$PLANS"; PRN=0
   git clone -q "https://github.com/acme/api.git" "$REPO"
   mkdir -p "$EOW_HOME/executor"; : > "$TLOG"
 }
@@ -85,6 +89,13 @@ squash_merged() {
   git -C "$SEED" commit -q -m "add $b (#1)"
   git -C "$SEED" push -q origin main
 }
+# Names a branch as Executor's: a plan in the plans folder mentions its PR number.
+own() {
+  PRN=$((PRN+1))
+  mkdir -p "$PLANS/acme/api"
+  printf -- '- PR #%s\n' "$PRN" >> "$PLANS/acme/api/2026-01-01 - plan.md"
+  printf '%s %s\n' "$PRN" "$1" >> "$PRS/_all"
+}
 tidy() {
   ( cd "$ELSEWHERE" && "$SHELL_BIN" "$TIDY" "$@" 2>&1 ); printf 'rc=%s\n' "$?"
 }
@@ -98,28 +109,20 @@ snapshot() {
 echo "repo-tidy.sh spec tests"
 
 # THE CHECKOUT
-# On a branch whose PR is merged, clean: back on the default, fast-forwarded.
-fresh; squash_merged feat-a
+# On a merged Executor branch: never switched, no Switched section.
+fresh; squash_merged feat-a; own feat-a
 out=$(tidy "$REPO")
-is "merged checkout: back on main" main "$(git -C "$REPO" branch --show-current)"
-is "merged checkout: fast-forwarded" "$(git --git-dir="$GH/acme/api.git" rev-parse main)" "$(git -C "$REPO" rev-parse main)"
-check "merged checkout: listed as switched" "feat-a" "$out"
+is "merged checkout: stays on the branch" feat-a "$(git -C "$REPO" branch --show-current)"
+refute "merged checkout: no Switched section" "Switched" "$out"
+is "merged checkout: default branch not fast-forwarded" "$(git -C "$REPO" rev-parse origin/main~1)" "$(git -C "$REPO" rev-parse main)"
 check "merged checkout: exit 0" "rc=0" "$out"
-refute "merged checkout: branch deleted, no longer kept" "kept" "$out"
-is "merged checkout: merged branch deleted" "main " "$(branches)"
-
-# The same but dirty: stays, listed.
-fresh; squash_merged feat-a
-printf 'wip\n' >> "$REPO/feat-a.txt"
-out=$(tidy "$REPO")
-is "dirty checkout: stays on the branch" feat-a "$(git -C "$REPO" branch --show-current)"
-check "dirty checkout: listed as kept" "feat-a" "$out"
-check "dirty checkout: says why" "changes" "$out"
-is "dirty checkout: change untouched" "wip" "$(tail -1 "$REPO/feat-a.txt")"
+fresh; squash_merged feat-a; own feat-a
+out=$(tidy --dry-run "$REPO")
+refute "merged checkout, dry run: no Would switch" "Would switch" "$out"
 
 # THE WORKTREES
-# A merged worktree, clean: removed.
-fresh; squash_merged feat-b
+# A merged worktree of a branch a plan names, clean: removed.
+fresh; squash_merged feat-b; own feat-b
 git -C "$REPO" switch -q main
 git -C "$REPO" worktree add -q "$CASE/wt-b" feat-b
 out=$(tidy "$REPO")
@@ -127,8 +130,8 @@ out=$(tidy "$REPO")
 check "merged worktree: listed as removed" "wt-b" "$out"
 is "merged worktree: its branch deleted after" "main " "$(branches)"
 
-# A dirty worktree: kept, listed, never removed.
-fresh; squash_merged feat-b
+# A dirty one: kept, listed, never removed.
+fresh; squash_merged feat-b; own feat-b
 git -C "$REPO" switch -q main
 git -C "$REPO" worktree add -q "$CASE/wt-b" feat-b
 printf 'wip\n' > "$CASE/wt-b/new.txt"
@@ -137,17 +140,59 @@ out=$(tidy "$REPO")
 check "dirty worktree: listed" "wt-b" "$out"
 check "dirty worktree: its branch stays" "feat-b" "$(branches)"
 
+# A worktree under .claude/worktrees/agent-* on a finished branch no plan names: removed.
+fresh; squash_merged feat-b
+git -C "$REPO" switch -q main
+git -C "$REPO" worktree add -q "$REPO/.claude/worktrees/agent-1" feat-b
+out=$(tidy "$REPO")
+[ ! -d "$REPO/.claude/worktrees/agent-1" ] && ok "agent worktree path: removed" || bad "agent worktree path: removed" "folder still there"
+check "agent worktree path: listed as removed" "agent-1" "$out"
+check "agent worktree path: its unnamed branch stays" "feat-b" "$(branches)"
+
+# A user's own worktree elsewhere on a finished, unnamed branch: untouched, unlisted.
+fresh; squash_merged feat-u
+git -C "$REPO" switch -q main
+git -C "$REPO" worktree add -q "$CASE/wt-u" feat-u
+out=$(tidy "$REPO")
+[ -d "$CASE/wt-u" ] && ok "user worktree: untouched" || bad "user worktree: untouched" "folder gone"
+refute "user worktree: not listed" "wt-u" "$out"
+check "user worktree: branch stays" "feat-u" "$(branches)"
+
 # THE BRANCHES
-# Squash-merged, local tip equals the PR's head: deleted, though git says unmerged.
-fresh; squash_merged feat-c
+# Squash-merged, named by a plan, tip equals the PR's head: deleted.
+fresh; squash_merged feat-c; own feat-c
 git -C "$REPO" switch -q main
 out=$(tidy "$REPO")
 is "squash-merged, tip matches: deleted" "main " "$(branches)"
 check "squash-merged, tip matches: listed as deleted" "feat-c" "$out"
 is "remote branches never deleted" "main" "$(git --git-dir="$GH/acme/api.git" for-each-ref --format='%(refname:short)' refs/heads | tr '\n' ' ' | sed 's/ $//')"
 
-# The same with one more local commit after the PR's head: kept, listed.
+# The same branch no plan names: not deleted, not listed.
 fresh; squash_merged feat-c
+git -C "$REPO" switch -q main
+out=$(tidy "$REPO")
+is "not Executor's: branch stays" "feat-c main " "$(branches)"
+refute "not Executor's: not listed" "feat-c" "$out"
+is "not Executor's: nothing to tidy" "Nothing to tidy." "$(printf '%s' "$out" | head -n 1)"
+
+# A worktree-agent-* branch is Executor's with no plan.
+fresh; squash_merged worktree-agent-abc
+git -C "$REPO" switch -q main
+out=$(tidy "$REPO")
+is "worktree-agent branch: deleted" "main " "$(branches)"
+
+# A worktree-agent-* branch whose tip is only in HEAD, not in origin/main: kept.
+fresh
+git -C "$REPO" switch -q -c worktree-agent-xyz
+printf 'x\n' > "$REPO/x.txt"; git -C "$REPO" add x.txt; git -C "$REPO" commit -q -m x
+git -C "$REPO" switch -q main
+git -C "$REPO" merge -q --ff-only worktree-agent-xyz
+out=$(tidy "$REPO")
+check "tip only in HEAD: branch kept" "worktree-agent-xyz" "$(branches)"
+refute "tip only in HEAD: not listed as deleted" "Deleted" "$out"
+
+# One more local commit after the PR's head: kept, listed.
+fresh; squash_merged feat-c; own feat-c
 printf 'more\n' >> "$REPO/feat-c.txt"
 git -C "$REPO" commit -q -am "after the PR"
 git -C "$REPO" switch -q main
@@ -156,9 +201,9 @@ check "extra local commit: branch kept" "feat-c" "$(branches)"
 check "extra local commit: listed" "feat-c" "$out"
 
 # DRY RUN
-fresh; squash_merged feat-a
+fresh; squash_merged feat-a; own feat-a
 git -C "$REPO" switch -q main
-squash_merged feat-b
+squash_merged feat-b; own feat-b
 git -C "$REPO" switch -q main
 git -C "$REPO" worktree add -q "$CASE/wt-a" feat-a
 before=$(snapshot "$REPO")
@@ -168,9 +213,9 @@ check "dry run: says what it would do" "feat-a" "$out"
 check "dry run: exit 0" "rc=0" "$out"
 
 # GITHUB UNREACHABLE
-fresh; squash_merged feat-a
+fresh; squash_merged feat-a; own feat-a
 git -C "$REPO" switch -q main
-squash_merged feat-b
+squash_merged feat-b; own feat-b
 touch "$PRS/down"
 before=$(snapshot "$REPO")
 out=$(tidy "$REPO")

@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
-# repo-tidy.sh - tidies one repo after merges. No AI. In this order:
-#   1. Return the checkout: on a finished branch (scripts/branch-finished.sh), with
-#      a clean tree and no process in the folder, switch to the default branch and
-#      fast-forward it, through pull-repos.sh --repo.
-#   2. Remove finished worktrees: a linked worktree on a finished branch, clean and
-#      unused, goes with `git worktree remove`; a dirty one is listed and stays.
-#      Then `git worktree prune`.
-#   3. Delete merged local branches checked out nowhere: with -D only when GitHub
-#      reports the PR MERGED and the local tip is the PR's head commit (a squash
-#      merge leaves the branch unmerged in git's eyes), otherwise with -d, which
-#      git itself must accept. A branch with commits after the PR's head stays.
-# Never deletes a remote branch, touches the default branch, stashes, resets,
-# forces, rebases or touches anything with changes.
+# repo-tidy.sh - tidies one repo after merges, touching only Executor's own
+# worktrees and branches (scripts/executor-owned.sh: a branch a plan names by PR,
+# or worktree-agent-*; a worktree on such a branch or under
+# .claude/worktrees/agent-). No AI. Anything else is neither touched nor listed.
+# In this order:
+#   1. Remove finished worktrees: a linked worktree of Executor's on a finished
+#      branch (scripts/branch-finished.sh), clean and unused, goes with
+#      `git worktree remove`; a dirty one is listed and stays. Then
+#      `git worktree prune`.
+#   2. Delete Executor's finished local branches checked out nowhere: with -D only
+#      when GitHub reports the PR MERGED and the local tip is the PR's head commit
+#      (a squash merge leaves the branch unmerged in git's eyes), otherwise with
+#      -d, only when the tip is in origin/<default>, which git itself must accept.
+#      A branch with commits after the PR's head stays.
+# Never switches the checkout, fast-forwards the default branch, deletes a remote
+# branch or the default branch, stashes, resets, forces, rebases or touches
+# anything with changes.
 #
 # Usage: repo-tidy.sh [--dry-run] <repo>
 # --dry-run prints what it would do and changes nothing (it still fetches).
-# Prints one short list at the end: switched, removed, deleted, kept and why.
+# Prints one short list at the end: removed, deleted, kept and why.
 # Every gh and git failure goes to tidy.log in $EOW_HOME/executor (EOW_HOME defaults
 # to ~/.engineer-of-wealth). When GitHub can't be asked, it stops, so nothing is
 # deleted on a guess. The exit code is always 0.
@@ -36,6 +40,7 @@ tidy_log() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG"; }
 
 . "$SELF_DIR/folder-state.sh"
 . "$SELF_DIR/branch-finished.sh"
+. "$SELF_DIR/executor-owned.sh"
 
 dry=0
 if [ "${1:-}" = "--dry-run" ]; then dry=1; shift; fi
@@ -82,7 +87,7 @@ def=${def#refs/remotes/origin/}
 [ -n "$def" ] || def=$(cd "$repo" && . "$SELF_DIR/default-branch.sh" && printf '%s' "$def")
 [ -n "$def" ] || def=main
 
-switched=""; removed=""; deleted=""; kept=""
+removed=""; deleted=""; kept=""
 gh_down=0
 say_kept() { kept="$kept- $1$NL"; }
 
@@ -96,31 +101,9 @@ finished() {
 
 read_worktrees || { printf 'Could not read the worktrees of %s, see tidy.log.\n' "$repo"; exit 0; }
 main_wt=${wt_path[0]}
-main_branch=${wt_branch[0]}
+executor_owned_load "$repo" || gh_down=1
 
-# 1. The checkout
-if [ "$is_bare" -eq 0 ] && [ -n "$main_branch" ] && [ "$main_branch" != "$def" ]; then
-  finished "$main_branch"; rc=$?
-  if [ "$rc" -eq 0 ]; then
-    if has_changes "$main_wt" || in_progress "$main_wt"; then
-      say_kept "$main_branch: changes in the checkout, left on it"
-    elif folder_in_use "$main_wt"; then
-      say_kept "$main_branch: checkout in use, left on it"
-    elif [ "$dry" -eq 1 ]; then
-      switched="$switched- $main_branch -> $def$NL"
-    else
-      run "$SELF_DIR/pull-repos.sh" --repo "$main_wt"
-      if [ "$(git -C "$main_wt" branch --show-current)" = "$def" ]; then
-        switched="$switched- $main_branch -> $def$NL"
-      else
-        tidy_log "could not switch $main_wt to $def"
-        say_kept "$main_branch: could not switch to $def"
-      fi
-    fi
-  fi
-fi
-
-# 2. The worktrees
+# 1. The worktrees
 if [ "$gh_down" -eq 0 ]; then
   read_worktrees
   i=1
@@ -128,6 +111,7 @@ if [ "$gh_down" -eq 0 ]; then
     p=${wt_path[$i]}; b=${wt_branch[$i]}
     i=$((i+1))
     [ -n "$b" ] && [ "$b" != "$def" ] || continue
+    executor_worktree_owned "$main_wt" "$p" "$b" || continue
     finished "$b" || continue
     if has_changes "$p" || in_progress "$p"; then
       say_kept "worktree $p ($b): changes, not removed"
@@ -144,7 +128,7 @@ if [ "$gh_down" -eq 0 ]; then
   [ "$dry" -eq 1 ] || run git -C "$repo" worktree prune
 fi
 
-# 3. The branches
+# 2. The branches
 if [ "$gh_down" -eq 0 ]; then
   read_worktrees
   held=$NL
@@ -153,6 +137,7 @@ if [ "$gh_down" -eq 0 ]; then
   while IFS= read -r b; do
     [ -n "$b" ] && [ "$b" != "$def" ] || continue
     case "$held" in *"$NL$b$NL"*) continue ;; esac
+    executor_branch_owned "$b" || continue
     prs=$(branch_prs "$repo" "$b") || { gh_down=1; break; }
     case "$prs" in OPEN" "*|*"${NL}OPEN "*) continue ;; esac
     tip=$(git -C "$repo" rev-parse "refs/heads/$b")
@@ -165,8 +150,7 @@ if [ "$gh_down" -eq 0 ]; then
       else
         say_kept "$b: git would not delete it"
       fi
-    elif git -C "$repo" merge-base --is-ancestor "$tip" "refs/remotes/origin/$def" 2>/dev/null \
-        || git -C "$repo" merge-base --is-ancestor "$tip" HEAD 2>/dev/null; then
+    elif git -C "$repo" merge-base --is-ancestor "$tip" "refs/remotes/origin/$def" 2>/dev/null; then
       if [ "$dry" -eq 1 ] || git -C "$repo" branch -d "$b" >/dev/null 2>&1; then
         deleted="$deleted- $b$NL"
       else
@@ -179,10 +163,9 @@ if [ "$gh_down" -eq 0 ]; then
 fi
 
 # The final list
-verb_s=Switched; verb_r=Removed; verb_d=Deleted
-if [ "$dry" -eq 1 ]; then verb_s="Would switch"; verb_r="Would remove"; verb_d="Would delete"; fi
+verb_r=Removed; verb_d=Deleted
+if [ "$dry" -eq 1 ]; then verb_r="Would remove"; verb_d="Would delete"; fi
 list=""
-[ -z "$switched" ] || list="$list$verb_s:$NL$switched"
 [ -z "$removed" ] || list="$list$verb_r:$NL$removed"
 [ -z "$deleted" ] || list="$list$verb_d branches:$NL$deleted"
 [ -z "$kept" ] || list="$list""Kept:$NL$kept"
