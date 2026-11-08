@@ -35,6 +35,9 @@ refute "stacked fix never checks the branch out in the checkout" 'gh stack check
 check "rebases the branches above from the worktree" 'gh stack rebase --upstack' "$fixstep"
 check "pushes from the worktree" 'gh stack push' "$fixstep"
 check "removes the worktree" 'git worktree remove' "$REVIEW"
+check "checkout already on the PR's branch and clean: fix in place" "already on the PR's own branch" "$fixstep"
+check "in place: no worktree, no switch" "fix in place there instead" "$fixstep"
+check "checkout on the PR's branch and dirty: findings left open" "When it is on that branch and the tree has uncommitted changes, touch nothing: leave the findings open" "$fixstep"
 check "last step asserts the checkout's branch" 'branch --show-current' "$report"
 
 # B. The behaviour, against gh-stack.
@@ -83,6 +86,27 @@ if command -v gh >/dev/null 2>&1 && gh stack --help >/dev/null 2>&1; then
   is "rebase and push succeed with the checkout on the upper branch" 0 "$rc"
   is "the checkout stays on the upper branch" up "$(git -C "$T/w" branch --show-current)"
   is "and carries the fix" "f" "$(cat "$T/w/f" 2>/dev/null | tr -d '\n')"
+
+  # The checkout is on the PR's own branch: git refuses the worktree, so the fix
+  # runs in place, and the checkout ends on that branch with the fix.
+  fixture
+  git -C "$T/w" checkout -q low
+  if git -C "$T/w" worktree add -q "$T/fix" low 2>/dev/null; then wt=added; else wt=refused; fi
+  is "on the PR's branch: git refuses a second worktree on it" refused "$wt"
+  echo f > "$T/w/f"; git -C "$T/w" add f; git -C "$T/w" commit -qm "fix the defect"
+  rc=$( (cd "$T/w" && gh stack rebase --upstack >/dev/null 2>&1 && gh stack push >/dev/null 2>&1); echo $?)
+  is "in place: rebase and push succeed" 0 "$rc"
+  is "in place: the checkout stays on the PR's branch" low "$(git -C "$T/w" branch --show-current)"
+  is "in place: the checkout is clean" "" "$(git -C "$T/w" status --short)"
+  is "in place: the upper branch carries the fix" "f" "$(git -C "$T/w" ls-tree --name-only up | grep -x f)"
+  is "in place: the remote's upper branch carries the fix" "$(git -C "$T/w" rev-parse up)" "$(git -C "$T/o.git" rev-parse up)"
+
+  # The same but dirty: the review touches nothing, so the change and branch stay.
+  fixture
+  git -C "$T/w" checkout -q low
+  echo wip > "$T/w/a"
+  is "dirty, on the PR's branch: the change is untouched" "wip" "$(cat "$T/w/a")"
+  is "dirty, on the PR's branch: still on it" low "$(git -C "$T/w" branch --show-current)"
 else
   ok "skipped: the gh-stack extension is not installed"
 fi
