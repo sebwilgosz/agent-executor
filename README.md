@@ -1,8 +1,18 @@
 # Executor
 
-The engineer on your team, for Claude Code: you give it a spec, it hands back a stack of reviewed pull requests. It writes the spec with you, plans and builds it feature by feature, reviews every pull request, fixes the bugs the review confirms, ships your branches and shows what is left to merge. You approve twice: the plan, and the merge. Executor does the rest.
+The engineer on your team, for Claude Code. Give it a spec and get back a stack of reviewed pull requests. You approve twice: the plan, and the merge.
 
 Free and open source (MIT).
+
+| Skill | What you get |
+|---|---|
+| `/executor:spec` | A spec drafted from your notes and the repo, saved where your specs live |
+| `/executor:build` | A spec planned with you, built in parallel: one reviewed draft PR per feature, in stacks |
+| `/executor:review` | A PR or branch built, reviewed and its bugs fixed, even another repo's |
+| `/executor:ship` | The current branch committed, pushed and opened as a draft PR |
+| `/executor:status` | What to merge now, across every repo |
+| `/executor:init` | Setup |
+| `/executor:help` | What Executor does, and the right skill for what you type |
 
 ## Install
 
@@ -13,103 +23,56 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)) where your build plans live (see [Where plans live](#where-plans-live)) and where your specs live (see [Where specs live](#where-specs-live)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
+Then type `/executor:init`. It checks the GitHub CLI, its sign-in and the [gh-stack](https://github.com/github/gh-stack) extension, and offers to install the extension. In a build repository it offers to enable Executor in the committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. Init also asks for your [search roots](#search-roots), [plans folder](#where-plans-live) and [spec home](#where-specs-live), then ends with a setup check, `scripts/self-audit.sh`, rerunnable any time.
 
-## What it does
+## Spec and build
 
-- **Spec.** `/executor:spec` drafts a spec from your notes and the repo.
-- **Build.** `/executor:build` plans a spec with you and builds it in parallel, one draft PR per feature, in stacks.
-- **Review.** Every pull request is built, reviewed, its Criticals verified and the confirmed bugs fixed.
-- **Ship.** `/executor:ship` commits, pushes and opens a draft PR.
-- **Status.** `/executor:status` shows what to merge now, across every repo.
+Type `/executor:spec` with your notes for a spec, then type `/executor:build` with it (a path, URL, issue or the text), or ask in plain words ("build docs/rfc-12.md"). A thin spec gets questions, each with a suggested answer, before anything is built.
 
-Review is described first below; [Build from a spec](#build-from-a-spec) follows it.
+1. **Plan.** Executor splits the spec into features and stacks and writes a checklist, one item per feature, linked to the spec. You approve it.
+2. **Foundation.** Shared groundwork (schema, auth, skeleton) is built alone first. Merge its PR and run `/executor:build` again.
+3. **Build.** One `executor:builder` agent per stack, on Sonnet, in parallel, each in its own worktree with only its feature's requirements. It first writes tests from the spec (manual scenarios where a test can't be automated) so the code can't drift, then builds in the repo's patterns, a commit per step.
+4. **Open.** Once the spec tests and the build pass, the feature becomes a draft PR in a GitHub stack, on top of the one it depends on: a few bullets, a diagram when the change has a shape, and a Testing section. A needed refactor gets its own PR below.
+5. **Review.** Every PR is [reviewed](#review). A ✅ or ⚠️ marks it ready and starts the next feature of its stack. A builder stuck on a question stops only its stack.
+6. **Report.** The checklist, the open questions, and what to merge, bottom of each stack first. Run `/executor:build` again to carry on.
+
+### Tickets
+
+When the spec home names a tracker (`Tickets: GitHub`, `Jira project TRAV`, `Linear`), build offers, after you approve the plan, one ticket per plan item: a sub-issue of the spec's parent issue on GitHub, or via your Linear or Jira connector. It holds the builder's brief and a spec link; the PR closes it (`Closes #n`, or the key). A rerun never duplicates one; an unreachable tracker never stops the build.
 
 ## Review
 
-Type `/executor:review` with a PR number, a PR URL, a branch, or nothing for the current branch. It also starts on its own:
+Type `/executor:review` with a PR number or URL, a branch, or nothing for the current branch. It also starts on its own when Claude opens a PR, or when you ask for a review. It runs on Opus, in five steps:
 
-- whenever Claude creates a pull request in your session (a hook watches for `gh pr create`, `gh stack submit` and `gh stack link`), and
-- whenever you ask Claude for a code review or name a pull request.
+1. **Build.** Install, build, lint and tests, with your repo's commands, must pass. A PR is built in a throwaway worktree, never in yours.
+2. **Review** the diff for duplication, correctness against your spec, test coverage, security, best practices (including needless inline comments) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around). A doc the diff makes false, like a removed flag, is Critical and gets corrected.
+3. **Verify.** Each Critical finding goes to its own `executor:verifier` agent, on Sonnet, which tries to disprove it. Debunked ones are dropped.
+4. **Fix**, on your own PRs. A confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits and reviews again, at most three rounds, without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports. `--fix` and `--no-fix` override that; a fork stays report-only.
+5. **Report**, always in the same shape: verdict, build, CI, spec, mode and bugs fixed, then what is still Critical and the Suggestions. Each finding links to the line, says when it fails and how to fix it.
 
-A review runs on Opus, in five steps:
+Suggestions are listed as drafted, never verified or fixed. Nothing is posted to GitHub unless you ask.
 
-1. **Build.** Install, build, lint and tests, with the commands your repo already defines. The build must pass. A PR is built in a throwaway worktree, never over your working tree.
-2. **Review** the diff in six dimensions: duplication, correctness against your spec, test coverage, security, best practices (including inline comments that can go or be shorter) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around the change, and for a PR its description). It also checks your docs against the diff (`scripts/docs-mentions.sh`, no AI): a doc that now states something false, like a removed flag still documented, is Critical and gets corrected.
-3. **Verify.** Every Critical finding goes to its own `executor:verifier` agent, on Sonnet, which tries to disprove it. Each comes back confirmed, debunked or reclassified. Debunked findings are dropped from the report. Suggestions are not verified: they are listed as drafted, and never fixed.
-4. **Fix**, on your own PRs. Every confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits it on the PR's branch and reviews again, at most three rounds and without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports: nothing is committed or pushed. `--fix` and `--no-fix` override that, and a fork stays report-only either way.
-5. **Report**, always in the same shape: verdict, build, CI, spec, which mode ran and how many bugs were fixed, then what is still Critical and the Suggestions. Each finding links to the file and line and says when it fails and how to fix it.
+On ✅ or ⚠️ your own draft PR, one opened by hand too, is marked ready. A review by branch does so only when it saw exactly the PR's head commit, nothing uncommitted. A teammate's draft stays a draft, as does yours under `--no-fix`.
 
-On ✅ or ⚠️ it marks your own draft PR ready (`scripts/review-ready.sh`), a draft you opened by hand too. A review by branch does so only when it saw exactly what the PR holds: its head commit, nothing uncommitted. A teammate's draft stays a draft, and so does yours under `--no-fix`.
-
-Suggestions are listed, never fixed for you. Nothing is posted to GitHub unless you ask.
+Every PR Claude opens is assigned to you, a stacked one once its head branch matches what `gh stack` reported.
 
 ### Review from any folder
 
-Name a pull request of another repository as `owner/repo#N` or by its URL, in any session: "let's review acme/api#7", or `/executor:review https://github.com/acme/api/pull/7`. A review always runs in the repository's own checkout, so Executor finds that first (`scripts/find-checkout.sh`, no AI):
+In any session, name another repository's PR as `owner/repo#N` or by URL: "let's review acme/api#7". A bare number or a branch name always means the current repository. A review runs in the repository's own checkout. If the current folder's `origin` is that repository, it reviews here. Otherwise:
 
-1. **Already there.** When the current folder's `origin` is the PR's repository, it reviews here, as above.
-2. **Find the checkout** under your search roots, two levels deep, so a bare repository with its worktrees (`~/Projects/api/main`) is found, as one checkout.
-3. **Update it.** It fetches `origin`, then fast-forwards the default branch only where it is checked out clean. Uncommitted work, local commits and the branch someone is on are left alone; the review then works from `origin/<default>` and its summary says so.
-4. **Hand off.** It proposes a new session in that checkout running `/executor:review <url>`. Where your client can't start one, it prints the one command to run:
+1. **Find the checkout** under your [search roots](#search-roots), two levels deep. A bare repository with its worktrees (`~/Projects/api/main`) counts as one.
+2. **Update it.** It fetches `origin` and fast-forwards the default branch only where checked out clean. Uncommitted work, local commits and the branch someone is on are left alone; the review works from `origin/<default>`.
+3. **Hand off.** It proposes a new session there running the review, or prints the command:
 
    ```
    cd "/home/you/Projects/api" && claude "/executor:review https://github.com/acme/api/pull/7"
    ```
 
-5. **No checkout.** It lists where it looked and asks before cloning into the first root (`gh repo clone acme/api ~/Projects/api`). On no, nothing is cloned.
+4. **No checkout.** It asks before cloning into the first root (`gh repo clone acme/api ~/Projects/api`). On no, nothing is cloned.
 
-The search roots are a setting in `~/.engineer-of-wealth/executor/config.md`, searched in order. `/executor:init` asks for them, `~/Projects` by default, and the setup check warns about a root that doesn't exist:
+## Status
 
-```markdown
-## Roots
-- ~/Projects
-- ~/code
-```
-
-A bare PR number or a branch name always means the current repository.
-
-Every PR Claude opens is also assigned to you, its author. That one is plain shell, not AI: a second hook runs `gh pr edit --add-assignee @me` in the background, so your session never waits on GitHub. A stacked PR is assigned only once its head branch matches the branch `gh stack` reported. If it fails or is refused, the reason is in `~/.engineer-of-wealth/executor/assign.log`.
-
-| Skill | What it does |
-|---|---|
-| `/executor:help` | What Executor does; routes what you type to the right skill |
-| `/executor:spec` | Draft a spec from your notes, the repo and its history, and save it where your specs live (see [Where specs live](#where-specs-live)) |
-| `/executor:build` | Plan a spec with you, build it in parallel, review every PR |
-| `/executor:review` | Review, verify, fix and re-review a PR or a branch; another repo's PR opens in its checkout |
-| `/executor:ship` | Commit the current branch, push it and open a draft PR; the review starts on its own |
-| `/executor:status` | Across every repo, what to merge now, what waits on you, what is still moving. You type it |
-| `/executor:init` | Setup: gh, its sign-in, gh stack (offers to install it), the per-repo enable, the search roots, the plans folder and the spec home. You type it |
-
-## Build from a spec
-
-Type `/executor:build` with a spec (a path, a URL, an issue, or the text itself), or ask in plain words ("build docs/rfc-12.md"). You write the spec; a thin one gets questions, each with a suggested answer, before anything is built.
-
-1. **Plan.** Executor splits the spec into features and stacks and writes the plan as a checklist: one item per feature, linked to its part of the spec. The file stays on your machine, outside the repository (see [Where plans live](#where-plans-live)). You approve it before anything is built.
-2. **Foundation.** Shared groundwork (schema, auth, skeleton) is built alone first. Executor stops after its PR; merge it and run `/executor:build` again.
-3. **Build.** One `executor:builder` agent per stack, on Sonnet, all in parallel, each in its own worktree. A builder gets only its own feature's requirements. It starts by writing high-level tests from the spec (or manual scenarios where a test can't be automated) so the code can't drift from it, builds in the repo's own patterns with a commit per finished step, and opens a draft PR.
-4. **Review.** Every PR is reviewed as above. A ✅ or ⚠️ marks it ready and starts the next feature of its stack. A builder that stops on a question stops only its own stack.
-5. **Report.** The checklist as it stands, the open questions in one message, and what is yours to merge, bottom of each stack first. Run `/executor:build` again to carry on.
-
-A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. A refactor the feature needs gets its own PR below it. The rules are in `references/implementation.md`, `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
-
-## Faster worktrees and commit checks
-
-Optional, per repo, and macOS with APFS only for the clones:
-
-```
-bash <plugin root>/scripts/git-hooks.sh install <repo>
-```
-
-- **New worktree:** `node_modules` and `.next/cache` are cloned from the main checkout, the worktree on the default branch, for each package up to two folders down. Clones take almost no disk. Bare repos work the same way. If the main checkout has no `node_modules`, install there once.
-- **After a commit:** the type check and lint of each package the commit touched run, for up to 60 seconds each. Errors print in the commit's output and the commit stands. Commits of only Markdown or images run nothing.
-- **Off again:** `git-hooks.sh uninstall <repo>` removes only what `install` wrote. A hook from another tool is never overwritten, and a repo with `core.hooksPath` set is left as it is.
-
-Runs are logged in `git-hooks.log` in `~/.engineer-of-wealth/executor/`, without any check's output.
-
-## Where your builds are
-
-Type `/executor:status`, or ask "where are my builds" or "what's in flight". It reads every live plan and each PR's state on GitHub (`scripts/status.sh`, no AI) and prints what is yours to merge now, what waits on you and what is still moving, across every repo:
+Type `/executor:status`, or ask "where are my builds". It reads every live plan and its PRs:
 
 ```
 EXECUTOR STATUS
@@ -124,41 +87,64 @@ acme/api
       Stack A: 1 not started
 ```
 
-The bare command prints this with no model turn. Text after it ("what blocks acme/api?") gets an answer from the same output. It only reads: it never marks a plan, pushes or posts. A plan whose items are all merged or closed but which isn't marked yet ends with `finished, not marked: run scripts/plan-sweep.sh`. A repo that still holds Executor's own worktrees or branches from finished builds gets a `DRIFT` line under its name, counting them, with the command that clears them, `scripts/repo-tidy.sh <repo>`; your own branches and a checkout on a finished branch are not drift; `scripts/self-audit.sh -v` reports the same for the current repo. Finished plans stay in their folder: there is no archive step.
+The bare command needs no model turn; text after it ("what blocks acme/api?") is answered from the same output. It only reads: it never marks a plan, pushes or posts.
 
-### Tickets
+- A finished, unmarked plan ends with `finished, not marked: run scripts/plan-sweep.sh`.
+- Executor's own leftover worktrees and branches from finished builds show as a `DRIFT` line with the clearing command, `scripts/repo-tidy.sh <repo>`. Your own branches and a finished-branch checkout are not drift. `scripts/self-audit.sh -v` reports the same for the current repo.
 
-When the spec home names a tracker (`Tickets: GitHub`, `Jira project TRAV`, `Linear`), build offers, once per run and after you approve the plan, one ticket per plan item: a sub-issue of the spec's parent issue on GitHub, an issue or ticket through your Linear or Jira connector. The ticket holds what that item's builder is given plus a link to the spec, and the PR closes it (`Closes #n`, or the key). The plan records each ticket, so a rerun never creates one twice. An unreachable tracker never stops the build; `scripts/ticket-github.sh` logs to `~/.engineer-of-wealth/executor/tickets.log`.
+## Settings
 
-## Where plans live
+### Search roots
 
-Plans never go in your repository. Each is one dated file in a folder of its own for that repository, shared by all its worktrees:
+Where Executor looks for checkouts, in order, in `~/.engineer-of-wealth/executor/config.md`. Default `~/Projects`; the setup check warns about a missing root:
+
+```markdown
+## Roots
+- ~/Projects
+- ~/code
+```
+
+### Where plans live
+
+Plans never go in your repository. Each is a dated file in one folder per repository, shared by its worktrees:
 
 ```
 ~/.engineer-of-wealth/executor/plans/<org>/<repo>/<YYYY-MM-DD> - <title>.md
 ```
 
-`<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan stays live until its header says `Status: done <date>`, and two live plans in one repository never share a file. Executor adds that line itself once every item's PR is merged or closed, when a build runs in the repository or a stack syncs after a merge; `scripts/plan-sweep.sh` does it for every repository at once, and `--dry-run` only shows what it would mark.
+`<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan is live until its header says `Status: done <date>`, added once every item's PR is merged or closed. `scripts/plan-sweep.sh` does that for every repository at once; `--dry-run` only shows. Finished plans stay put; there is no archive step.
 
-Plans from an older version sit in a legacy `.executor/` folder in the repository. `scripts/plans-migrate.sh` moves every legacy `.executor/` under `~/Projects`, or the folder you name, to this layout, and `--dry-run` only shows what it would move. It never overwrites: a clash is reported and that file stays. A folder inside a repository means that repository alone, and a build moves its own repository's on its first run.
+To move plans, init writes a `## Plans` section in `config.md`; the `EXECUTOR_PLANS` environment variable wins over it. Moving it moves nothing: init prints the `mv` to run. `/executor:help` shows the folder. For a notes app, link the folder: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.
 
-To put them elsewhere, run `/executor:init`, which writes a `## Plans` section in `~/.engineer-of-wealth/executor/config.md`. The `EXECUTOR_PLANS` environment variable wins over it. Moving the folder moves nothing: init prints the `mv` to run. `/executor:help` shows the folder in use, where the setting comes from and this repository's live plans.
+Older plans sit in a legacy `.executor/` folder in the repository; a build moves its own on its first run. `scripts/plans-migrate.sh` moves every one under `~/Projects`, or the folder you name (`--dry-run` only shows). It never overwrites: a clash is reported and that file stays.
 
-To keep plans in a notes app, link the folder in: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.
+### Where specs live
 
-## Where specs live
-
-A spec is rarely kept in the repo: it may be a Notion RFC, a note in a vault, a GitHub parent issue. Executor never decides where. It reads a short section from the nearest `AGENTS.md` or `CLAUDE.md`, from the folder you work in upwards and then the target repo's own:
+A spec may be a Notion RFC, a vault note or a GitHub issue. Executor never decides where; it reads a short section from the nearest `AGENTS.md` or `CLAUDE.md`, from your working folder upwards, then the target repo's own:
 
 ```markdown
 ## Specs
 Specs: Notion, the "RFCs" database. Tickets: Jira project TRAV.
 ```
 
-Other examples: `Specs: GitHub, a parent issue in this repo, one sub-issue per feature.` and `Specs: docs/specs/ in this repo.`, the only case where a spec is committed. The nearest file that names a home wins, so each folder keeps its own. Where nothing names one, `/executor:init` asks once, shows the section and the files it goes into, and writes it only on a yes, left uncommitted. Declined, specs stay in `~/.engineer-of-wealth/executor/specs/<org>/<repo>/`. `scripts/spec-home.sh` does the finding and the writing; `scripts/self-audit.sh -v` reports the file that names the home for the current folder.
+Others: `Specs: GitHub, a parent issue in this repo` and `Specs: docs/specs/ in this repo`, the only case where a spec is committed.
+
+Where nothing names a home, init asks once and writes the section only on a yes, uncommitted. Declined, specs stay in `~/.engineer-of-wealth/executor/specs/<org>/<repo>/`.
+
+## Faster worktrees and commit checks
+
+Optional, per repo; the clones need macOS with APFS:
+
+```
+bash <plugin root>/scripts/git-hooks.sh install <repo>
+```
+
+- **New worktree:** `node_modules` and `.next/cache` are cloned from the main checkout, for each package up to two folders down, at almost no disk cost; bare repos work too. If it has none, install there once.
+- **After a commit:** the type check and lint of each touched package run, up to 60 seconds each. Errors print; the commit stands. Markdown- or image-only commits run nothing.
+- **Off again:** `git-hooks.sh uninstall <repo>` removes only what `install` wrote. Another tool's hook is never overwritten, and a repo with `core.hooksPath` set is left alone.
 
 ## Requirements
 
-- [GitHub CLI](https://cli.github.com) (`gh`), signed in, for pull requests
-- For stacked PRs: the [gh-stack](https://github.com/github/gh-stack) extension (`gh extension install github/gh-stack`) and stacked PRs enabled on the repository; without them Executor opens plain PRs chained by base branch
+- [GitHub CLI](https://cli.github.com) (`gh`), signed in
+- For stacked PRs: the [gh-stack](https://github.com/github/gh-stack) extension (`gh extension install github/gh-stack`) and stacked PRs enabled on the repository. Without them, plain PRs chained by base branch.
 - `jq` is used when present; the hook works without it
