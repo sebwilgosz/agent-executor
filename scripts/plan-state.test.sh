@@ -307,6 +307,51 @@ state --mark "$PLANS/acme/linkfile/2026-01-01 - x.md" >/dev/null
 is "a linked plan: the target is marked" "1" "$(marks "$REAL/target.md")"
 [ -L "$PLANS/acme/linkfile/2026-01-01 - x.md" ] && ok "a linked plan stays a link" || bad "a linked plan stays a link" "replaced"
 
+# C2. Marking tidies the repo, detached: --mark returns without waiting for it.
+TIDY_STUB="$TMP/repo-tidy-stub.sh"
+cat > "$TIDY_STUB" <<'STUB_EOF'
+#!/bin/sh
+sleep 2
+printf '%s\n' "$*" > "$TIDY_MARK"
+STUB_EOF
+chmod +x "$TIDY_STUB"
+export TIDY_MARK="$TMP/tidy-mark"
+export EXECUTOR_REPO_TIDY="$TIDY_STUB"
+now() { perl -MTime::HiRes=time -e 'printf "%.2f", time'; }
+
+prs "local/scratch 1 MERGED"
+rm -f "$TIDY_MARK"
+P=$(plan "local/scratch" tidy-done "$(item x Login 'branch plans/merged ✅ ready')")
+T0=$(now)
+OUT=$(in_local --mark "$P")
+T1=$(now)
+is "tidy: --mark on a finished plan prints DONE" "DONE 1 items" "$OUT"
+FAST=$(perl -e 'print(($ARGV[1]-$ARGV[0]) < 1.5 ? "fast" : "slow")' "$T0" "$T1")
+is "tidy: --mark returns without waiting for it" "fast" "$FAST"
+[ ! -e "$TIDY_MARK" ] && ok "tidy: not finished when --mark returned" || bad "tidy: not finished when --mark returned" "marker already there"
+i=0; while [ ! -e "$TIDY_MARK" ] && [ "$i" -lt 50 ]; do sleep 0.2; i=$((i+1)); done
+is "tidy: it ran later, on this repo" "$(cd -P "$LOCAL" && pwd)" "$(cat "$TIDY_MARK" 2>/dev/null)"
+
+rm -f "$TIDY_MARK"
+P=$(plan "local/scratch" tidy-open "$(item x Login 'branch plans/merged ✅ ready')" "$(item ' ' Export 'branch plans/unmerged ⏳')")
+OUT=$(in_local --mark "$P")
+check "tidy: an unfinished plan is OPEN" "OPEN 1 of 2" "$OUT"
+sleep 3
+[ ! -e "$TIDY_MARK" ] && ok "tidy: an unfinished plan starts no tidy" || bad "tidy: an unfinished plan starts no tidy" "tidy ran"
+
+rm -f "$TIDY_MARK"
+P=$(plan "local/scratch" tidy-readonly "$(item x Login 'branch plans/merged ✅ ready')")
+in_local "$P" >/dev/null
+sleep 3
+[ ! -e "$TIDY_MARK" ] && ok "tidy: read-only (no --mark) starts no tidy" || bad "tidy: read-only (no --mark) starts no tidy" "tidy ran"
+
+rm -f "$TIDY_MARK"
+P=$(plan "local/scratch" tidy-elsewhere "$(item x Login 'branch plans/merged ✅ ready')")
+(cd "$TMP" && "$SHELL_BIN" "$STATE" --mark "$P" >/dev/null 2>&1)
+sleep 3
+[ ! -e "$TIDY_MARK" ] && ok "tidy: outside the plan's checkout, no repo to tidy" || bad "tidy: outside the plan's checkout" "tidy ran"
+unset EXECUTOR_REPO_TIDY
+
 # D. The sweep.
 rm -rf "$PLANS"
 is "sweep: no plans folder, nothing to do" "No live plans in $PLANS" "$(sweep)"
@@ -383,6 +428,7 @@ check "build step 0: OPEN as before" '`OPEN`' "$STEP0"
 check "build step 5: runs plan-state" 'plan-state.sh --mark' "$(sed -n '/^## 5\./,$p' skills/build/SKILL.md)"
 STACKS=$(sed -n '/^## Keeping a stack healthy/,/^## Titles/p' references/stacks.md)
 check "stacks: after the sync" 'plan-state.sh --mark' "$STACKS"
+check "stacks: tidies the repo, detached, after the sync" 'repo-tidy.sh' "$STACKS"
 check "plan.md: how a plan is marked" 'plan-state.sh --mark' "$(cat references/plan.md)"
 check "plan.md: names the sweep" 'plan-sweep.sh' "$(cat references/plan.md)"
 check "plan.md: the Host line" 'Host: <host>' "$(cat references/plan.md)"

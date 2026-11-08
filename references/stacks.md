@@ -31,7 +31,7 @@ Every `gh stack` command runs non-interactively. Without these flags and argumen
 | Go to a branch | `gh stack checkout <branch>` (never without an argument) |
 | Fix a lower branch without leaving your checkout | `git worktree add "$TMPDIR/executor-fix-<n>" <branch>`, commit there, run the next row from it, then `git worktree remove` it |
 | After changing a lower branch | `gh stack rebase --upstack`, then `gh stack push` |
-| After a lower PR was merged | `gh stack sync --prune` |
+| After a lower PR was merged | `gh stack sync --prune`, then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/repo-tidy.sh <repo>` detached |
 | A rebase conflict (exit 3) | resolve, `git add`, `gh stack rebase --continue`; or `gh stack rebase --abort` |
 
 Commit with plain `git add <paths>` and `git commit`, never `-A`: each branch takes only its own feature's files.
@@ -42,6 +42,7 @@ The stack stays rooted in live branches, never in merged ones. The ship and revi
 
 - **Use `gh stack` whenever it's available.** It keeps the chain's bases consistent; the manual `gh pr create --base <the branch below>` fallback is only for a repo without stacked PRs (exit 9).
 - **After any PR in the stack merges, run `gh stack sync --prune`.** It restacks every branch above the merged one onto the live base, up to the default branch, and drops the merged branch (see the Commands table).
+- **Then tidy the repo, detached.** Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/repo-tidy.sh <repo>` in the background (`run_in_background`) and carry on; it returns the checkout to the default branch and removes what the merge finished, and the session never waits on it.
 - **Then see whether a plan just finished.** For each plan `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --live` prints, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh --mark "<plan>"`. On `DONE`, the plan is now marked done; say so in one line.
 - **Never leave a branch based on a merged branch.** A branch whose base merged is restacked with `gh stack sync --prune` before any more work lands on it.
 - **Never merge in a way that bypasses the restack.** No manual merge that strands the branches above it; let the sync move them onto the live base.

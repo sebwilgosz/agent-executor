@@ -20,7 +20,8 @@
 # Usage:
 #   plan-state.sh <plan>          read-only
 #   plan-state.sh --mark <plan>   the same, and on DONE adds "Status: done <today>"
-#                                 to the header, once
+#                                 to the header, once, and starts repo-tidy.sh for the
+#                                 repo detached (from a checkout of the plan's repo)
 # Prints one line; the exit code is always 0:
 #   NONE                              no plan
 #   DONE <n> items[ (closed unmerged: PR #n <item>, ...)]
@@ -142,6 +143,7 @@ SUFFIX=""
 mark_done() {
   local lines=() l i end ins
   [ "$(plan_path --is-done "$PLAN")" = done ] && return 0
+  NEWLY_DONE=1
   while IFS= read -r l || [ -n "$l" ]; do
     lines[${#lines[@]}]=$l
   done < "$PLAN"
@@ -169,7 +171,20 @@ mark_done() {
   { cat "$TMP_PLAN" > "$PLAN"; } 2>/dev/null
 }
 
+# Tidies the plan's repo once the plan is marked: detached, so --mark never waits.
+# Only from a checkout of the plan's repo; anywhere else there is no repo to tidy.
+# EXECUTOR_REPO_TIDY replaces the script (the spec tests use it).
+start_tidy() {
+  local repo tidy="${EXECUTOR_REPO_TIDY:-$SELF_DIR/repo-tidy.sh}"
+  in_plan_checkout "$PLAN" || return 0
+  repo=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+  [ -n "$repo" ] && [ -f "$tidy" ] || return 0
+  nohup bash "$tidy" "$repo" >/dev/null 2>&1 </dev/null &
+}
+
 if [ "$MARK" -eq 1 ]; then
+  NEWLY_DONE=0
   mark_done || unknown "every item is finished, but $PLAN cannot be marked"
+  [ "$NEWLY_DONE" -eq 0 ] || start_tidy
 fi
 say "DONE $TOTAL items$SUFFIX"
