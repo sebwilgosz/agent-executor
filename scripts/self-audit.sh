@@ -192,6 +192,14 @@ e=$ERRS
   && ok "integrity: the repo updater is present" \
   || err "integrity: scripts/pull-repos.sh missing - local repos cannot be updated → $REINSTALL"
 
+# -- tidying a repo after merges: repo-tidy.sh and what it sources (branch-finished.sh,
+#    folder-state.sh), plus drift.sh, which status.sh and this audit share.
+e=$ERRS
+for s in repo-tidy branch-finished folder-state drift; do
+  [ -s "$ROOT/scripts/$s.sh" ] || err "integrity: scripts/$s.sh missing - repos cannot be tidied or checked for drift → $REINSTALL"
+done
+[ "$e" = "$ERRS" ] && ok "integrity: the repo tidy scripts are present"
+
 # -- init's per-repo enable: the engine behind E2. Without it /executor:init
 #    cannot detect or add the repo's .claude/settings.json enable.
 [ -s "$ROOT/scripts/init-plugin-enable.sh" ] \
@@ -265,5 +273,15 @@ for f in .claude-plugin/plugin.json skills/help/SKILL.md; do
     || warn "integrity: the copy in $f has a description that omits build → say what it does now: spec, build, review, ship, status"
 done
 [ "$e" = "$WARNS" ] && ok "integrity: the copy names what Executor does"
+
+# -- drift: the current repo, judged by drift.sh, the same check status.sh runs. Shown
+#    with -v only; drift is a nudge, not a finding, so it never changes the result.
+if [ "$VERBOSE" -eq 1 ] && [ -s "$ROOT/scripts/drift.sh" ] && . "$ROOT/scripts/drift.sh"; then
+  here=$(git rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$here" ]; then
+    if repo_drift "$here"; then info "$DRIFT"
+    else info "drift: none in this repo"; fi
+  fi
+fi
 
 DONE=1

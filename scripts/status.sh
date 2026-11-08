@@ -18,6 +18,10 @@
 # closed items aren't printed but count in the position. A repo whose every lookup
 # fails gets one "UNKNOWN: <why>" line and its plans' names.
 #
+# A repo whose local checkout (found under the roots, scripts/roots.sh) has drifted gets
+# one "DRIFT: <what> - fix: repo-tidy.sh <repo>" line under its name, from drift.sh,
+# which is also what self-audit.sh -v reports. No line when GitHub can't be asked.
+#
 # Failures are logged to ~/.engineer-of-wealth/executor/status.log (EOW_HOME overrides
 # the root). Takes no arguments; the exit code is always 0.
 set -u
@@ -49,6 +53,14 @@ log() {
 if ! . "$SELF_DIR/plan-items.sh"; then
   log "scripts/plan-items.sh is missing"
   say "UNKNOWN: scripts/plan-items.sh is missing, so no plan can be read"
+fi
+
+DRIFT_OK=0
+if . "$SELF_DIR/roots.sh" && . "$SELF_DIR/repo-discovery.sh" && . "$SELF_DIR/remote-slug.sh" \
+    && . "$SELF_DIR/drift.sh"; then
+  DRIFT_OK=1
+else
+  log "scripts/drift.sh or what it needs is missing"
 fi
 
 ALL=$(plan_path --all-live)
@@ -393,14 +405,50 @@ render_plan() {
   [ "$DONE_COUNT" -ne "${#items[@]}" ] || BUF="$BUF    finished, not marked: run scripts/plan-sweep.sh"$'\n'
 }
 
+# The drift checks run in the background while the plan lookups run, one per repo,
+# from a single scan of the roots (each scan costs seconds, and so does each gh call).
+has_origin() { git -C "$1" config --get remote.origin.url >/dev/null 2>&1; }
+
+start_drift() {
+  local i r s slug want=() found=()
+  DRIFT_PIDS=()
+  [ "$DRIFT_OK" -eq 1 ] && [ -n "$WORK" ] || return 0
+  discover_repos has_origin ${roots[@]+"${roots[@]}"}
+  i=0
+  for r in ${repos[@]+"${repos[@]}"}; do
+    s=$(slug_from_url "$(git -C "$r" config --get remote.origin.url 2>/dev/null)")
+    found[$i]="$(printf '%s' "$s" | tr '[:upper:]' '[:lower:]') $r"; i=$((i+1))
+  done
+  i=0
+  while IFS= read -r slug; do
+    i=$((i+1))
+    case "$slug" in ""|local/*) continue ;; esac
+    s=$(printf '%s' "$slug" | tr '[:upper:]' '[:lower:]')
+    for r in ${found[@]+"${found[@]}"}; do
+      [ "${r%% *}" = "$s" ] || continue
+      ( repo_drift "${r#* }" && printf '  %s\n' "$DRIFT" > "$WORK/drift-$i" ) &
+      DRIFT_PIDS+=($!)
+      break
+    done
+  done <<< "$SLUGS"
+}
+
+# Sets DRIFT_LINE: the DRIFT line of the <n>th repo, or nothing.
+drift_line() {
+  DRIFT_LINE=""
+  [ -s "$WORK/drift-$1" ] && DRIFT_LINE=$(cat "$WORK/drift-$1")$'\n'
+  return 0
+}
+
 render_repo() {
-  local slug=$1 p=0
+  local slug=$1 n=$2 p=0
   BUF=""; NAMES=""; REPO_LOOKUPS=0; REPO_FAILED=0; REPO_WHY=""
   while [ "$p" -lt "${#plan_files[@]}" ]; do
     [ "${plan_slugs[$p]}" != "$slug" ] || render_plan "$p"
     p=$((p+1))
   done
-  OUT="$OUT$slug"$'\n'
+  drift_line "$n"
+  OUT="$OUT$slug"$'\n'"$DRIFT_LINE"
   if [ "$REPO_LOOKUPS" -gt 0 ] && [ "$REPO_FAILED" -eq "$REPO_LOOKUPS" ]; then
     OUT="$OUT  UNKNOWN: $REPO_WHY"$'\n'"$NAMES"
   else
@@ -409,15 +457,19 @@ render_repo() {
 }
 
 queue_lookups
+SLUGS=$(printf '%s\n' "${plan_slugs[@]}" | sort -f | uniq)
+start_drift
 run_lookups
+for pid in ${DRIFT_PIDS[@]+"${DRIFT_PIDS[@]}"}; do wait "$pid"; done
 
 OUT=""
-SLUGS=$(printf '%s\n' "${plan_slugs[@]}" | sort -f | uniq)
 FIRST=1
+n=0
 while IFS= read -r slug; do
   [ "$FIRST" -eq 1 ] || OUT="$OUT"$'\n'
   FIRST=0
-  render_repo "$slug"
+  n=$((n+1))
+  render_repo "$slug" "$n"
 done <<< "$SLUGS"
 
 printf 'EXECUTOR STATUS\n\n%s' "${OUT//$EM/-}"
