@@ -124,7 +124,7 @@ acme/api
       Stack A: 1 not started
 ```
 
-The bare command prints this with no model turn. Text after it ("what blocks acme/api?") gets an answer from the same output. It only reads: it never marks a plan, pushes or posts. A plan whose items are all merged or closed but which isn't marked yet ends with `finished, not marked: run scripts/plan-sweep.sh`. A repo whose main checkout has drifted (on a finished branch, its default behind `origin`, or more than 3 worktrees on finished branches) gets a `DRIFT` line under its name with the command that fixes it, `scripts/repo-tidy.sh <repo>`; `scripts/self-audit.sh -v` reports the same for the current repo. Finished plans stay in their folder: there is no archive step.
+The bare command prints this with no model turn. Text after it ("what blocks acme/api?") gets an answer from the same output. It only reads: it never marks a plan, pushes or posts. A plan whose items are all merged or closed but which isn't marked yet ends with `finished, not marked: run scripts/plan-sweep.sh`. A repo that still holds Executor's own worktrees or branches from finished builds gets a `DRIFT` line under its name, counting them, with the command that clears them, `scripts/repo-tidy.sh <repo>`; your own branches and a checkout on a finished branch are not drift; `scripts/self-audit.sh -v` reports the same for the current repo. Finished plans stay in their folder: there is no archive step.
 
 ### Tickets
 
