@@ -192,10 +192,10 @@ e=$ERRS
   && ok "integrity: the repo updater is present" \
   || err "integrity: scripts/pull-repos.sh missing - local repos cannot be updated → $REINSTALL"
 
-# -- tidying a repo after merges: repo-tidy.sh and what it sources (branch-finished.sh,
+# -- tidying a repo after merges: repo-tidy.sh and what it sources (branch-finished.sh, executor-owned.sh,
 #    folder-state.sh), plus drift.sh, which status.sh and this audit share.
 e=$ERRS
-for s in repo-tidy branch-finished folder-state drift; do
+for s in repo-tidy branch-finished executor-owned folder-state drift; do
   [ -s "$ROOT/scripts/$s.sh" ] || err "integrity: scripts/$s.sh missing - repos cannot be tidied or checked for drift → $REINSTALL"
 done
 [ "$e" = "$ERRS" ] && ok "integrity: the repo tidy scripts are present"
