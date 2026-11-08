@@ -65,6 +65,28 @@ Run `bash <plugin root>/scripts/init-plugin-enable.sh` once — the deterministi
 
 Running E2 again after the enable is in place reports `STATE: enabled` and writes nothing: the step is idempotent.
 
+## E2b: Delete head branches after merge
+
+A merged PR leaves its branch behind unless the repository deletes it. GitHub's "Automatically delete head branches" does that. Run this only when the current folder is a repository with an `origin` on GitHub; otherwise skip it with one line.
+
+Run `bash <plugin root>/scripts/init-delete-branches.sh` once and read its tagged lines (`TARGET:`, `STATE:`, `STOP:`). It only reads.
+
+- `STATE: on` — say nothing, or one line that it is on.
+- `STATE: off` — this changes a GitHub setting, so always ask, in these words:
+
+  ```
+  <owner>/<repo> keeps the branch of every merged PR. GitHub can delete it
+  on merge ("Automatically delete head branches"). It needs admin rights on
+  the repository and deletes no branch that exists today.
+
+  Turn it on?
+  - YES — turn it on
+  - NO  — leave it; /executor:init offers it again
+  ```
+
+  On YES run `bash <plugin root>/scripts/init-delete-branches.sh --apply` and show its line. On NO go on.
+- `STOP: <reason>` — show the line as it is and carry on with E3.
+
 ## E3: Search roots
 
 Executor finds a PR's local checkout under these folders, up to two levels deep, and clones into the first one only when you say yes.
@@ -148,7 +170,7 @@ Run `bash <plugin root>/scripts/self-audit.sh` once, exactly that command with t
 
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1, the read-only detect in E2 and reading `config.md` in E3 and E4 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E3, E4 and E5 writes run only on YES.
+- Ask before installing or configuring anything; the table in E1, the read-only detects in E2 and E2b and reading `config.md` in E3 and E4 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E2b, E3, E4 and E5 writes run only on YES.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
 - Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
-- Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2 and, in the folder you name, the `## Specs` section in E5. That file is left uncommitted.
+- Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2 and, on GitHub, the repository's delete-head-branches setting in E2b and, in the folder you name, the `## Specs` section in E5. That file is left uncommitted.
