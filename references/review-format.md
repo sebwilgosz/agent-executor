@@ -37,6 +37,7 @@ CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 **Rounds:** fix · <why> · <n> · <f> bugs auto-fixed | fix · <why> · no fixes needed | report-only · <why>
 [**Docs:** ⚪ not checked · <why>]
 [**Ready:** ✅ marked ready | ⚪ not marked · <why>]
+[**Checkout:** ⚠️ left on `<branch>`, not `<start>` · <why>]
 
 ### Critical (<n>)
 
@@ -58,4 +59,5 @@ CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 - **A local diff has no PR**, so the header drops the link: `# Executor review · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
 - **The Docs line prints only when the docs check was skipped**, `<why>` as `docs-mentions.sh` printed it after `UNKNOWN:`.
 - **The Ready line prints only when `review-ready.sh` printed `READY:` or `UNKNOWN:`**, `<why>` as it printed it after `UNKNOWN:`.
+- **The Checkout line prints only when the checkout's branch at the end differs from the one at the start** (`git branch --show-current`), `<why>` saying what stopped the review from switching back, e.g. uncommitted changes.
 - **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · fork PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings are all still open and the verdict rule applies to them unchanged.

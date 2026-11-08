@@ -29,6 +29,7 @@ Every `gh stack` command runs non-interactively. Without these flags and argumen
 | Push every branch, open draft PRs for new ones | `gh stack submit --auto` |
 | Read the stack | `gh stack view --json` (never without `--json`) |
 | Go to a branch | `gh stack checkout <branch>` (never without an argument) |
+| Fix a lower branch without leaving your checkout | `git worktree add "$TMPDIR/executor-fix-<n>" <branch>`, commit there, run the next row from it, then `git worktree remove` it |
 | After changing a lower branch | `gh stack rebase --upstack`, then `gh stack push` |
 | After a lower PR was merged | `gh stack sync --prune` |
 | A rebase conflict (exit 3) | resolve, `git add`, `gh stack rebase --continue`; or `gh stack rebase --abort` |
