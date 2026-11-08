@@ -1,9 +1,5 @@
 # Changelog
 
-## 0.9.1 — 2026-11-08
-
-- `/executor:review` fixes a stacked PR in a worktree on its branch (`$TMPDIR/executor-fix-<n>`), runs `gh stack rebase --upstack` and `gh stack push` from there, and removes it. Your checkout is no longer switched to the PR's branch and left there. Checked against the real gh-stack extension: rebase and push from a linked worktree work, because the stack is stored in the shared git directory. The review notes your checkout's branch at the start and checks it at the end; if it differs, the summary gets a Checkout line.
-
 ## 0.9.0 — 2026-11-08
 
 - `/executor:review` verifies only Critical findings. Each Critical finding still goes to its own `executor:verifier`, which confirms, debunks or reclassifies it; Suggestions get no verifier, since the review only lists them and never fixes them. A Critical brought down to a Suggestion is listed among the Suggestions with the verifier's wording. A finding whose severity the review can't settle is drafted as Critical, so a verifier judges it and a real bug can't escape by being drafted as a Suggestion. A verifier run costs about 34k weighted tokens, and a six-PR build that drafts 2 Critical and 6 Suggestions per PR drops from 48 verifiers to 12, saving about 1.2M weighted tokens.
