@@ -245,5 +245,19 @@ for s in build ship init; do
   elif [ -n "$pv" ] && [ "$bv" != "$pv" ]; then err "integrity: skill $s asserts version $bv but the plugin is $pv — bump its version-check.sh call → $REINSTALL"; fi
 done
 [ "$e" = "$ERRS" ] && ok "integrity: build, ship and init assert the installed version"
+# -- the copy: every user-facing description must list what Executor does, not
+#    just review. No AI: a stale phrase, or a description without "build".
+e=$WARNS
+for f in README.md .claude-plugin/plugin.json skills/help/SKILL.md; do
+  [ -f "$ROOT/$f" ] || continue
+  grep -qiE 'today: review|Today that is code review' "$ROOT/$f" \
+    && warn "integrity: the copy in $f still describes Executor as review only → say what it does now: spec, build, review, ship, status"
+done
+for f in .claude-plugin/plugin.json skills/help/SKILL.md; do
+  [ -f "$ROOT/$f" ] || continue
+  grep -m1 '"\?description"\?:' "$ROOT/$f" | grep -qi 'build' \
+    || warn "integrity: the copy in $f has a description that omits build → say what it does now: spec, build, review, ship, status"
+done
+[ "$e" = "$WARNS" ] && ok "integrity: the copy names what Executor does"
 
 DONE=1

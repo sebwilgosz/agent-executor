@@ -1,7 +1,7 @@
 {
   "name": "executor",
   "version": "0.9.0",
-  "description": "Executor: reviews every pull request against your spec and your repo's conventions, builds it, verifies each Critical finding with its own agent, fixes the confirmed bugs on your own PRs and reviews again. Free.",
+  "description": "Executor: a spec in, a stack of reviewed pull requests out. It builds the spec in parallel, reviews every PR against your spec and conventions, fixes the confirmed bugs and ships. Free.",
   "author": {
     "name": "Sebastian Wilgosz",
     "url": "https://sebwilgosz.com"
@@ -11,6 +11,10 @@
   "keywords": [
     "code-review",
     "pull-requests",
+    "spec",
+    "build",
+    "stacked-prs",
+    "agents",
     "testing",
     "security",
     "ci"

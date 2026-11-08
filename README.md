@@ -1,6 +1,6 @@
 # Executor
 
-The engineer on your team who reviews every pull request, builds it, fixes the bugs it finds and reviews again, for Claude Code. You approve twice: the plan, and the merge. Executor does the rest.
+The engineer on your team, for Claude Code: you give it a spec, it hands back a stack of reviewed pull requests. It writes the spec with you, plans and builds it feature by feature, reviews every pull request, fixes the bugs the review confirms, ships your branches and shows what is left to merge. You approve twice: the plan, and the merge. Executor does the rest.
 
 Free and open source (MIT).
 
@@ -15,7 +15,17 @@ In Claude Code:
 
 Then type `/executor:init`. It checks the GitHub CLI and its sign-in, and the [gh-stack](https://github.com/github/gh-stack) extension: Executor works best with it, and init offers to install it. In a build repository it also offers to enable Executor there — Claude Code settings don't inherit down the tree, so the enable goes in the repo's committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks where your local checkouts live (see [Review from any folder](#review-from-any-folder)) where your build plans live (see [Where plans live](#where-plans-live)) and where your specs live (see [Where specs live](#where-specs-live)). It ends with a setup check, `scripts/self-audit.sh` in the plugin, which you can run again any time something looks off.
 
-## What it does today: review
+## What it does
+
+- **Spec.** `/executor:spec` drafts a spec from your notes and the repo.
+- **Build.** `/executor:build` plans a spec with you and builds it in parallel, one draft PR per feature, in stacks.
+- **Review.** Every pull request is built, reviewed, its Criticals verified and the confirmed bugs fixed.
+- **Ship.** `/executor:ship` commits, pushes and opens a draft PR.
+- **Status.** `/executor:status` shows what to merge now, across every repo.
+
+Review is described first below; [Build from a spec](#build-from-a-spec) follows it.
+
+## Review
 
 Type `/executor:review` with a PR number, a PR URL, a branch, or nothing for the current branch. It also starts on its own:
 
