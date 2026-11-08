@@ -37,7 +37,9 @@ Before the first line of the feature's code, turn the requirements this feature 
 
 ## 3. Commit every finished step
 
-Commit each self-contained change as soon as it is complete: it builds, its tests pass, and it makes sense on its own. Never a pile of changes at the end.
+Commit each self-contained change as soon as it is complete: its tests pass and it makes sense on its own. Never a pile of changes at the end.
+
+- **The full build runs once**, before the PR opens, as `references/feature-done.md` says. Between commits the commit check is enough: with `scripts/git-hooks.sh` installed, each commit runs the type check and lint of what it touched and prints any errors in its own output. Fix those before the next step. Where the hook is not installed, run the repo's type check and lint yourself.
 
 - **The message explains.** A subject that says what changed, and a body that says why when it isn't obvious. That's where reasoning lives, not in the code.
 - **Grade the commit before the next step**, in this order:

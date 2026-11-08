@@ -83,6 +83,20 @@ Type `/executor:build` with a spec (a path, a URL, an issue, or the text itself)
 
 A feature always ends in an open pull request: once its spec tests and the whole build pass, Executor opens it as a draft in a GitHub stack, on top of the feature it depends on, and the review starts on its own. The PR is short and readable: what changes in a few bullets, a diagram when the change has a shape, and a Testing section with the spec tests. A ✅ or ⚠️ review marks it ready: then it's yours to merge, bottom of the stack first. A refactor the feature needs gets its own PR below it. The rules are in `references/implementation.md`, `references/feature-done.md`, `references/pull-request.md` and `references/stacks.md`.
 
+## Faster worktrees and commit checks
+
+Optional, per repo, and macOS with APFS only for the clones:
+
+```
+bash <plugin root>/scripts/git-hooks.sh install <repo>
+```
+
+- **New worktree:** `node_modules` and `.next/cache` are cloned from the main checkout, the worktree on the default branch, for each package up to two folders down. Clones take almost no disk. Bare repos work the same way. If the main checkout has no `node_modules`, install there once.
+- **After a commit:** the type check and lint of each package the commit touched run, for up to 60 seconds each. Errors print in the commit's output and the commit stands. Commits of only Markdown or images run nothing.
+- **Off again:** `git-hooks.sh uninstall <repo>` removes only what `install` wrote. A hook from another tool is never overwritten, and a repo with `core.hooksPath` set is left as it is.
+
+Runs are logged in `git-hooks.log` in `~/.engineer-of-wealth/executor/`, without any check's output.
+
 ## Where your builds are
 
 Type `/executor:status`, or ask "where are my builds" or "what's in flight". It reads every live plan and each PR's state on GitHub (`scripts/status.sh`, no AI) and prints what is yours to merge now, what waits on you and what is still moving, across every repo:
