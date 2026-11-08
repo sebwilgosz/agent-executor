@@ -4,7 +4,8 @@
 # Archive; a bare repo or a clone and all its worktrees count once. Asks each
 # remote what its default branch is, then only ever fast-forwards: never stash,
 # reset, force, rebase, clean, delete a branch, remove a worktree or push, and
-# never touch a feature-branch worktree.
+# never touch a feature-branch worktree. Deleting merged branches and removing
+# finished worktrees is scripts/repo-tidy.sh's job, never this script's.
 #
 #   Bare, a worktree on the default          fast-forward in that worktree
 #   Bare, no worktree on the default         update or create the branch ref
@@ -15,6 +16,7 @@
 #   Plain, elsewhere, default in a worktree  fast-forward there, stay, name it
 #
 # Usage: pull-repos.sh [group]
+#        pull-repos.sh --repo <folder>   just that one repo, roots and groups ignored
 # With no group, every repo. A group is a "## Group <name>" section in
 # $EOW_HOME/executor/config.md (EOW_HOME defaults to ~/.engineer-of-wealth), each
 # "- <line>" an owner or an owner/repo, ignoring case. A name with no such section
@@ -44,6 +46,7 @@ mkdir -p "$STATE"
 . "$SELF_DIR/roots.sh"
 . "$SELF_DIR/repo-discovery.sh"
 . "$SELF_DIR/remote-slug.sh"
+. "$SELF_DIR/folder-state.sh"
 
 # Sessions run in these repos, so a status check must not take their index lock.
 export GIT_OPTIONAL_LOCKS=0
@@ -162,28 +165,6 @@ read_worktrees() {
   [ -n "$main_wt" ] || main_wt=$folder
 }
 
-in_progress() {
-  local gd
-  gd=$(git -C "$1" rev-parse --absolute-git-dir) || return 0
-  [ -e "$gd/MERGE_HEAD" ] || [ -d "$gd/rebase-merge" ] || [ -d "$gd/rebase-apply" ]
-}
-
-has_changes() {
-  [ -n "$(git -C "$1" status --porcelain)" ]
-}
-
-# True when a process has its working directory in the folder, or nobody can say.
-folder_in_use() {
-  local dir out l
-  dir=$(cd -P "$1" && pwd) || return 0
-  out=$(lsof -d cwd -Fn -n -P)
-  [ -n "$out" ] || return 0
-  while IFS= read -r l; do
-    case "$l" in "n$dir"|"n$dir"/*) return 0 ;; esac
-  done <<< "$out"
-  return 1
-}
-
 # Fast-forwards the default branch's ref with no checkout. A non-forced refspec, so
 # git refuses anything else, and refuses a branch a live worktree holds.
 update_default_ref() {
@@ -281,10 +262,12 @@ update_repo() {
 }
 
 # ------------------------------------------------------------------ the run
+single=""
+if [ "${1:-}" = "--repo" ]; then single=${2:-}; shift; shift; fi
 group=${1:-}
 group_has_section=0
 group_lines=()
-if [ -n "$group" ]; then
+if [ -n "$group" ] && [ -z "$single" ]; then
   config_section "Group $group"
   group_has_section=$section_found
   i=0
@@ -294,7 +277,12 @@ if [ -n "$group" ]; then
   done
 fi
 
-discover_repos is_repo "${roots[@]}"
+repos=()
+if [ -n "$single" ]; then
+  repos=("$single")
+else
+  discover_repos is_repo "${roots[@]}"
+fi
 
 picked=(); names=(); skipped=0
 i=0
@@ -307,7 +295,7 @@ while [ "$i" -lt "${#repos[@]}" ]; do
     continue
   fi
   slug=$(slug_from_url "$origin")
-  if [ -n "$group" ] && ! group_selects "$slug"; then
+  if [ -n "$group" ] && [ -z "$single" ] && ! group_selects "$slug"; then
     continue
   fi
   name=${slug##*/}
