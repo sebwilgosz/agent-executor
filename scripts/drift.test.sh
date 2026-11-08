@@ -57,7 +57,14 @@ while [ $# -gt 0 ]; do
   [ "$1" != "--head" ] || head=$2
   shift
 done
-[ -z "$head" ] || [ ! -f "$PRS/$head" ] || cat "$PRS/$head"
+if [ -n "$head" ]; then
+  [ ! -f "$PRS/$head" ] || cat "$PRS/$head"
+else
+  for f in "$PRS"/*; do
+    [ -f "$f" ] && [ "${f##*/}" != down ] || continue
+    sed "s|^|${f##*/} |" "$f"
+  done
+fi
 exit 0
 STUB
 chmod +x "$BIN/gh"

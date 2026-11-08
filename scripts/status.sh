@@ -405,38 +405,49 @@ render_plan() {
   [ "$DONE_COUNT" -ne "${#items[@]}" ] || BUF="$BUF    finished, not marked: run scripts/plan-sweep.sh"$'\n'
 }
 
-# Is the folder a checkout of the repo named in DRIFT_SLUG (any case)?
-slug_checkout_is() {
-  local o s rc
-  o=$(git -C "$1" config --get remote.origin.url 2>/dev/null) || return 1
-  s=$(slug_from_url "$o")
-  shopt -s nocasematch
-  [[ $s == "$DRIFT_SLUG" ]]
-  rc=$?
-  shopt -u nocasematch
-  return $rc
+# The drift checks run in the background while the plan lookups run, one per repo,
+# from a single scan of the roots (each scan costs seconds, and so does each gh call).
+has_origin() { git -C "$1" config --get remote.origin.url >/dev/null 2>&1; }
+
+start_drift() {
+  local i r s slug want=() found=()
+  DRIFT_PIDS=()
+  [ "$DRIFT_OK" -eq 1 ] && [ -n "$WORK" ] || return 0
+  discover_repos has_origin ${roots[@]+"${roots[@]}"}
+  i=0
+  for r in ${repos[@]+"${repos[@]}"}; do
+    s=$(slug_from_url "$(git -C "$r" config --get remote.origin.url 2>/dev/null)")
+    found[$i]="$(printf '%s' "$s" | tr '[:upper:]' '[:lower:]') $r"; i=$((i+1))
+  done
+  i=0
+  while IFS= read -r slug; do
+    i=$((i+1))
+    case "$slug" in ""|local/*) continue ;; esac
+    s=$(printf '%s' "$slug" | tr '[:upper:]' '[:lower:]')
+    for r in ${found[@]+"${found[@]}"}; do
+      [ "${r%% *}" = "$s" ] || continue
+      ( repo_drift "${r#* }" && printf '  %s\n' "$DRIFT" > "$WORK/drift-$i" ) &
+      DRIFT_PIDS+=($!)
+      break
+    done
+  done <<< "$SLUGS"
 }
 
-# Sets DRIFT_LINE: the DRIFT line of <slug>'s checkout under the roots, or nothing.
+# Sets DRIFT_LINE: the DRIFT line of the <n>th repo, or nothing.
 drift_line() {
   DRIFT_LINE=""
-  [ "$DRIFT_OK" -eq 1 ] || return 0
-  case "$1" in local/*) return 0 ;; esac
-  DRIFT_SLUG=$1
-  discover_repos slug_checkout_is "${roots[@]}"
-  [ "${#repos[@]}" -gt 0 ] || return 0
-  repo_drift "${repos[0]}" || return 0
-  DRIFT_LINE="  $DRIFT"$'\n'
+  [ -s "$WORK/drift-$1" ] && DRIFT_LINE=$(cat "$WORK/drift-$1")$'\n'
+  return 0
 }
 
 render_repo() {
-  local slug=$1 p=0
+  local slug=$1 n=$2 p=0
   BUF=""; NAMES=""; REPO_LOOKUPS=0; REPO_FAILED=0; REPO_WHY=""
   while [ "$p" -lt "${#plan_files[@]}" ]; do
     [ "${plan_slugs[$p]}" != "$slug" ] || render_plan "$p"
     p=$((p+1))
   done
-  drift_line "$slug"
+  drift_line "$n"
   OUT="$OUT$slug"$'\n'"$DRIFT_LINE"
   if [ "$REPO_LOOKUPS" -gt 0 ] && [ "$REPO_FAILED" -eq "$REPO_LOOKUPS" ]; then
     OUT="$OUT  UNKNOWN: $REPO_WHY"$'\n'"$NAMES"
@@ -446,15 +457,19 @@ render_repo() {
 }
 
 queue_lookups
+SLUGS=$(printf '%s\n' "${plan_slugs[@]}" | sort -f | uniq)
+start_drift
 run_lookups
+for pid in ${DRIFT_PIDS[@]+"${DRIFT_PIDS[@]}"}; do wait "$pid"; done
 
 OUT=""
-SLUGS=$(printf '%s\n' "${plan_slugs[@]}" | sort -f | uniq)
 FIRST=1
+n=0
 while IFS= read -r slug; do
   [ "$FIRST" -eq 1 ] || OUT="$OUT"$'\n'
   FIRST=0
-  render_repo "$slug"
+  n=$((n+1))
+  render_repo "$slug" "$n"
 done <<< "$SLUGS"
 
 printf 'EXECUTOR STATUS\n\n%s' "${OUT//$EM/-}"

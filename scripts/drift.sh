@@ -5,15 +5,27 @@
 #                         nothing did. Returns 0 when the repo has drifted, else 1.
 # A repo has drifted when
 #   (a) its main checkout is on a non-default branch whose PR is merged or closed
-#       (scripts/branch-finished.sh);
+#       (scripts/branch-finished.sh's rule, from one `gh pr list` for the repo);
 #   (b) its local default branch is behind origin/<default>;
 #   (c) more than 3 linked worktrees sit on finished branches.
 # When GitHub can't be asked, (a) and (c) say nothing: no guess. The line ends with
 # the one command that fixes it, repo-tidy.sh <repo>.
 
 DRIFT_WORKTREES_MAX=3
-DRIFT_DIR=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-. "$DRIFT_DIR/branch-finished.sh"
+NL=$'\n'
+
+# branch_finished's rule, judged from the one PR listing in DRIFT_PRS: 0 finished,
+# 1 not, 2 when GitHub could not be asked.
+drift_finished() {
+  local states
+  [ "$DRIFT_GH" -eq 0 ] || return 2
+  states=$(printf '%s\n' "$DRIFT_PRS" | awk -v b="$2" '$1 == b { print $2 }')
+  case "$NL$states$NL" in
+    *"${NL}OPEN$NL"*) return 1 ;;
+    *"${NL}MERGED$NL"*|*"${NL}CLOSED$NL"*) return 0 ;;
+  esac
+  git -C "$1" merge-base --is-ancestor "refs/heads/$2" "refs/remotes/origin/$3" 2>/dev/null
+}
 
 repo_drift() {
   local repo=$1 def l p="" b="" i n=0 why="" main_branch="" behind
@@ -35,8 +47,17 @@ repo_drift() {
   [ -z "$p" ] || { wt_path+=("$p"); wt_branch+=("$b"); }
   main_branch=${wt_branch[0]:-}
 
+  # One gh call for every branch: a call per branch costs most of a second each.
+  DRIFT_PRS=""; DRIFT_GH=0
+  for b in "${wt_branch[@]}"; do
+    [ -n "$b" ] && [ "$b" != "$def" ] || continue
+    DRIFT_PRS=$(cd "$repo" && gh pr list --state all --limit 200 \
+        --json headRefName,state,headRefOid --jq '.[] | "\(.headRefName) \(.state)"' 2>/dev/null) || DRIFT_GH=2
+    break
+  done
+
   if [ -n "$main_branch" ] && [ "$main_branch" != "$def" ]; then
-    branch_finished "$repo" "$main_branch" "$def"
+    drift_finished "$repo" "$main_branch" "$def"
     [ $? -ne 0 ] || why="the checkout is on $main_branch, whose PR is finished"
   fi
 
@@ -51,7 +72,7 @@ repo_drift() {
   while [ "$i" -lt "${#wt_path[@]}" ]; do
     b=${wt_branch[$i]}; i=$((i+1))
     [ -n "$b" ] && [ "$b" != "$def" ] || continue
-    branch_finished "$repo" "$b" "$def"
+    drift_finished "$repo" "$b" "$def"
     case $? in 0) n=$((n+1)) ;; 2) n=0; break ;; esac
   done
   [ "$n" -le "$DRIFT_WORKTREES_MAX" ] || why="${why:+$why; }$n worktrees on finished branches"
