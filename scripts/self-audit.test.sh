@@ -235,6 +235,29 @@ out=$(ROOT="$PLUG" audit)
 check "ticket script missing: integrity error" "✗ integrity: scripts/ticket-github.sh missing" "$out"
 check "ticket script missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/ticket-github.sh")"
 
+# 19. INTEGRITY: the copy lists what Executor does. A README that still says
+#     "What it does today: review", or a description that omits build, warns.
+copy_ok(){ rm -rf "$PLUG"; mkdir -p "$PLUG"; for d in .claude-plugin agents hooks references scripts skills; do cp -R "$REPO/$d" "$PLUG/"; done; cp "$REPO/README.md" "$PLUG/"; }
+copy_ok
+out=$(ROOT="$PLUG" audit -v)
+refute "product copy current: no copy warning" "⚠ integrity: the copy" "$out"
+check  "product copy current: ok line" "✓ integrity: the copy names what Executor does" "$out"
+printf '## What it does today: review\n' >> "$PLUG/README.md"
+out=$(ROOT="$PLUG" audit)
+check "stale README: warned" "⚠ integrity: the copy in README.md" "$out"
+check "stale README: says what to do" "→ " "$(printf '%s\n' "$out" | grep -F 'the copy in README.md')"
+copy_ok
+sed -i.bak 's/Today that is code review of a pull request/Today that is code review/; s/^description: ".*"/description: "Executor front door: code review of a pull request."/' "$PLUG/skills/help/SKILL.md"
+check "help description omits build: warned" "⚠ integrity: the copy in skills/help/SKILL.md" "$(ROOT="$PLUG" audit)"
+copy_ok
+sed -i.bak 's/"description": ".*"/"description": "Executor reviews every pull request. Free."/' "$PLUG/.claude-plugin/plugin.json"
+check "plugin.json description omits build: warned" "⚠ integrity: the copy in .claude-plugin/plugin.json" "$(ROOT="$PLUG" audit)"
+copy_ok
+printf 'Today that is code review of a PR\n' >> "$PLUG/README.md"
+check "old help phrase in README: warned" "⚠ integrity: the copy in README.md" "$(ROOT="$PLUG" audit)"
+audit_rc=$(ROOT="$PLUG" audit >/dev/null; echo $?)
+[ "$audit_rc" -eq 0 ] && ok "stale copy: exit 0" || bad "stale copy: exit 0" "exit $audit_rc"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
