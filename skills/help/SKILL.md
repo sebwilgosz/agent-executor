@@ -1,6 +1,6 @@
 ---
 name: help
-description: "Executor front door: shows what Executor does and routes to the right skill. Today that is code review of a pull request, from any folder, or of the current branch, plus setup and its check."
+description: "Executor front door: shows what Executor does and routes to the right skill. It specs, builds, reviews and ships: a spec in, a stack of reviewed pull requests out, plus status across your repos and setup with its check."
 disable-model-invocation: true
 allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-sweep.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/status.sh)
 ---
