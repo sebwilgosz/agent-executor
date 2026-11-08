@@ -29,3 +29,7 @@ Use `gh stack` whenever it is available. When any PR in a stack merges, restack 
 ## 7. Two approvals
 
 You act between the plan and the merge. Never merge, push to the default branch, force-push (outside a stack restack), or post to GitHub unless the user asks.
+
+## 8. Never leave the user's checkout on another branch
+
+Executor never leaves the user's checkout on another branch. Work happens in worktrees; a skill that must switch the checkout switches it back before it ends. After a merge, the checkout returns to the default branch and what the merge finished is cleaned up (`scripts/repo-tidy.sh`).
