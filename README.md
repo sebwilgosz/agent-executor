@@ -23,7 +23,7 @@ In Claude Code:
 /plugin install executor@engineer-of-wealth
 ```
 
-Then type `/executor:init`. It checks the GitHub CLI, its sign-in and the [gh-stack](https://github.com/github/gh-stack) extension, and offers to install the extension. In a build repository it offers to enable Executor in the committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. Init also asks for your [search roots](#search-roots), [plans folder](#where-plans-live) and [spec home](#where-specs-live), then ends with a setup check, `scripts/self-audit.sh`, rerunnable any time.
+Then type `/executor:init`. It checks the GitHub CLI, its sign-in and the [gh-stack](https://github.com/github/gh-stack) extension, offering to install it. In a build repository it offers to enable Executor in the committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks for your [search roots](#search-roots), [plans folder](#where-plans-live) and [spec home](#where-specs-live), then ends with a setup check, `scripts/self-audit.sh`, rerunnable any time.
 
 ## Spec and build
 
@@ -42,7 +42,7 @@ When the spec home names a tracker (`Tickets: GitHub`, `Jira project TRAV`, `Lin
 
 ## Review
 
-Type `/executor:review` with a PR number or URL, a branch, or nothing for the current branch. It also starts on its own when Claude opens a PR, or when you ask for a review. It runs on Opus, in five steps:
+Type `/executor:review` with a PR number or URL, a branch, or nothing for the current branch. It also starts on its own when Claude opens a PR or you ask for one. It runs on Opus, in five steps:
 
 1. **Build.** Install, build, lint and tests, with your repo's commands, must pass. A PR is built in a throwaway worktree, never in yours.
 2. **Review** the diff for duplication, correctness against your spec, test coverage, security, best practices (including needless inline comments) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around). A doc the diff makes false, like a removed flag, is Critical and gets corrected.
@@ -114,9 +114,9 @@ Plans never go in your repository. Each is a dated file in one folder per reposi
 
 `<org>/<repo>` comes from the `origin` URL, or is `local/<name>` without one. A plan is live until its header says `Status: done <date>`, added once every item's PR is merged or closed. `scripts/plan-sweep.sh` does that for every repository at once; `--dry-run` only shows. Finished plans stay put; there is no archive step.
 
-To move plans, init writes a `## Plans` section in `config.md`; the `EXECUTOR_PLANS` environment variable wins over it. Moving it moves nothing: init prints the `mv` to run. `/executor:help` shows the folder. For a notes app, link the folder: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.
+To move plans, init writes a `## Plans` section in `config.md`; the `EXECUTOR_PLANS` environment variable wins over it. Moving it moves nothing: init prints the `mv` to run. `/executor:help` shows the folder, its source and live plans. For a notes app, link the folder: `ln -s ~/.engineer-of-wealth/executor/plans ~/Notes/plans`.
 
-Older plans sit in a legacy `.executor/` folder in the repository; a build moves its own on its first run. `scripts/plans-migrate.sh` moves every one under `~/Projects`, or the folder you name (`--dry-run` only shows). It never overwrites: a clash is reported and that file stays.
+Older plans in a repository's legacy `.executor/` folder move on its first build. `scripts/plans-migrate.sh` moves every one under `~/Projects`, or the folder you name (`--dry-run` only shows). It never overwrites: a clash is reported and that file stays.
 
 ### Where specs live
 
@@ -127,7 +127,7 @@ A spec may be a Notion RFC, a vault note or a GitHub issue. Executor never decid
 Specs: Notion, the "RFCs" database. Tickets: Jira project TRAV.
 ```
 
-Others: `Specs: GitHub, a parent issue in this repo` and `Specs: docs/specs/ in this repo`, the only case where a spec is committed.
+Others: `Specs: GitHub, a parent issue in this repo` and `Specs: docs/specs/ in this repo`, the only case where a spec is committed. `scripts/self-audit.sh -v` names the file in use.
 
 Where nothing names a home, init asks once and writes the section only on a yes, uncommitted. Declined, specs stay in `~/.engineer-of-wealth/executor/specs/<org>/<repo>/`.
 
