@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 — 2026-11-08
+
+- The copy says what Executor does: spec in, a stack of reviewed PRs out. The README lead and headings, the `/executor:help` description and `plugin.json`'s description and keywords name spec, build, review, ship and status, not review alone. `scripts/self-audit.sh` warns when any of them falls back to review-only copy.
+- Your main checkout no longer drifts. `/executor:review` fixes a stacked PR in a throwaway worktree, or in place when the checkout is already on that PR's branch and clean, and asserts at the end that your checkout is on the branch it started on. `scripts/repo-tidy.sh <repo>` switches a clean checkout on a finished branch to the default branch and fast-forwards it, removes worktrees on finished branches and deletes merged branches; `--dry-run` only lists what it would do. It runs detached after `gh stack sync --prune` and when `plan-state.sh --mark` marks a plan done. `/executor:status` prints a `DRIFT` line, with the fix, for a repo whose checkout sits on a finished branch, whose default is behind `origin`, or that has more than 3 worktrees on finished branches; `scripts/self-audit.sh -v` reports the same for the current repo. `/executor:init` offers to turn on GitHub's "Automatically delete head branches" for a build repo. `CONTRIBUTING.md` gains rule 8: leave the user's checkout where it was.
+- **Upgrading:** run the plugin's `bash scripts/repo-tidy.sh --dry-run <repo>` once on each repo you build in, check what it lists, then run it again without `--dry-run`.
+
 ## 0.9.0 — 2026-11-08
 
 - `/executor:review` verifies only Critical findings. Each Critical finding still goes to its own `executor:verifier`, which confirms, debunks or reclassifies it; Suggestions get no verifier, since the review only lists them and never fixes them. A Critical brought down to a Suggestion is listed among the Suggestions with the verifier's wording. A finding whose severity the review can't settle is drafted as Critical, so a verifier judges it and a real bug can't escape by being drafted as a Suggestion. A verifier run costs about 34k weighted tokens, and a six-PR build that drafts 2 Critical and 6 Suggestions per PR drops from 48 verifiers to 12, saving about 1.2M weighted tokens.
