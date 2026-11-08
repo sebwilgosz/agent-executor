@@ -18,8 +18,8 @@
 # closed items aren't printed but count in the position. A repo whose every lookup
 # fails gets one "UNKNOWN: <why>" line and its plans' names.
 #
-# A repo whose local checkout (found under the roots, scripts/roots.sh) has drifted gets
-# one "DRIFT: <what> - fix: repo-tidy.sh <repo>" line under its name, from drift.sh,
+# A repo holding Executor's own worktrees or branches left from finished builds gets
+# one "DRIFT: <n> worktrees and <m> branches left from finished builds - fix: repo-tidy.sh <repo>" line under its name, from drift.sh,
 # which is also what self-audit.sh -v reports. No line when GitHub can't be asked.
 #
 # Failures are logged to ~/.engineer-of-wealth/executor/status.log (EOW_HOME overrides
