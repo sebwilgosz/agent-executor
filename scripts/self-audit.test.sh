@@ -258,6 +258,18 @@ check "old help phrase in README: warned" "⚠ integrity: the copy in README.md"
 audit_rc=$(ROOT="$PLUG" audit >/dev/null; echo $?)
 [ "$audit_rc" -eq 0 ] && ok "stale copy: exit 0" || bad "stale copy: exit 0" "exit $audit_rc"
 
+# 20. INTEGRITY: the tidy scripts, and the drift check they share with status.sh.
+copy_ok
+refute "tidy scripts present: no integrity error" "repos cannot be tidied" "$(ROOT="$PLUG" audit)"
+for s in repo-tidy branch-finished folder-state drift; do
+  copy_ok
+  rm -f "$PLUG/scripts/$s.sh"
+  out=$(ROOT="$PLUG" audit); rc=$?
+  check "$s missing: integrity error" "✗ integrity: scripts/$s.sh missing" "$out"
+  check "$s missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F "scripts/$s.sh")"
+  [ "$rc" -eq 0 ] && ok "$s missing: exit 0" || bad "$s missing: exit 0" "exit $rc"
+done
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

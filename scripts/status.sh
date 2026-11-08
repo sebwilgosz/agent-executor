@@ -18,6 +18,10 @@
 # closed items aren't printed but count in the position. A repo whose every lookup
 # fails gets one "UNKNOWN: <why>" line and its plans' names.
 #
+# A repo whose local checkout (found under the roots, scripts/roots.sh) has drifted gets
+# one "DRIFT: <what> - fix: repo-tidy.sh <repo>" line under its name, from drift.sh,
+# which is also what self-audit.sh -v reports. No line when GitHub can't be asked.
+#
 # Failures are logged to ~/.engineer-of-wealth/executor/status.log (EOW_HOME overrides
 # the root). Takes no arguments; the exit code is always 0.
 set -u
@@ -49,6 +53,14 @@ log() {
 if ! . "$SELF_DIR/plan-items.sh"; then
   log "scripts/plan-items.sh is missing"
   say "UNKNOWN: scripts/plan-items.sh is missing, so no plan can be read"
+fi
+
+DRIFT_OK=0
+if . "$SELF_DIR/roots.sh" && . "$SELF_DIR/repo-discovery.sh" && . "$SELF_DIR/remote-slug.sh" \
+    && . "$SELF_DIR/drift.sh"; then
+  DRIFT_OK=1
+else
+  log "scripts/drift.sh or what it needs is missing"
 fi
 
 ALL=$(plan_path --all-live)
@@ -393,6 +405,30 @@ render_plan() {
   [ "$DONE_COUNT" -ne "${#items[@]}" ] || BUF="$BUF    finished, not marked: run scripts/plan-sweep.sh"$'\n'
 }
 
+# Is the folder a checkout of the repo named in DRIFT_SLUG (any case)?
+slug_checkout_is() {
+  local o s rc
+  o=$(git -C "$1" config --get remote.origin.url 2>/dev/null) || return 1
+  s=$(slug_from_url "$o")
+  shopt -s nocasematch
+  [[ $s == "$DRIFT_SLUG" ]]
+  rc=$?
+  shopt -u nocasematch
+  return $rc
+}
+
+# Sets DRIFT_LINE: the DRIFT line of <slug>'s checkout under the roots, or nothing.
+drift_line() {
+  DRIFT_LINE=""
+  [ "$DRIFT_OK" -eq 1 ] || return 0
+  case "$1" in local/*) return 0 ;; esac
+  DRIFT_SLUG=$1
+  discover_repos slug_checkout_is "${roots[@]}"
+  [ "${#repos[@]}" -gt 0 ] || return 0
+  repo_drift "${repos[0]}" || return 0
+  DRIFT_LINE="  $DRIFT"$'\n'
+}
+
 render_repo() {
   local slug=$1 p=0
   BUF=""; NAMES=""; REPO_LOOKUPS=0; REPO_FAILED=0; REPO_WHY=""
@@ -400,7 +436,8 @@ render_repo() {
     [ "${plan_slugs[$p]}" != "$slug" ] || render_plan "$p"
     p=$((p+1))
   done
-  OUT="$OUT$slug"$'\n'
+  drift_line "$slug"
+  OUT="$OUT$slug"$'\n'"$DRIFT_LINE"
   if [ "$REPO_LOOKUPS" -gt 0 ] && [ "$REPO_FAILED" -eq "$REPO_LOOKUPS" ]; then
     OUT="$OUT  UNKNOWN: $REPO_WHY"$'\n'"$NAMES"
   else
