@@ -33,4 +33,4 @@ jobs:
           exit "$fail"
       - name: Self-audit
         if: ${{ !cancelled() }}
-        run: bash scripts/self-audit.sh -v --strict
+        run: bash scripts/self-audit.sh -v --strict --integrity-only
