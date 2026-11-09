@@ -3,6 +3,7 @@
 #
 # Usage:   git-hooks.sh install [<repo>]     write the hooks into the repo's shared folder
 #          git-hooks.sh uninstall [<repo>]   remove only what install wrote
+#          git-hooks.sh status [<repo>]      "HOOKS: installed" or "HOOKS: off", read-only
 #          git-hooks.sh post-checkout ...    called by the hook
 #          git-hooks.sh post-commit          called by the hook
 #
@@ -164,26 +165,37 @@ run_check() { # <name> <package> <command...>
   rm -f "$out"
 }
 
+# The checks the commit hook runs in the current package folder, one name per line.
+package_checks() {
+  local names
+  names=$(perl -MJSON::PP -0777 -ne '
+    my $s = eval { JSON::PP->new->decode($_)->{scripts} };
+    print "$_\n" for ref $s eq "HASH" ? keys %$s : ();
+  ' package.json 2>/dev/null)
+  has() { printf '%s\n' "$names" | grep -qx "$1"; }
+  if has typecheck; then
+    echo typecheck
+  elif has type-check; then
+    echo type-check
+  elif [ -f tsconfig.json ] && [ -x node_modules/.bin/tsc ]; then
+    echo tsc
+  fi
+  if has lint; then echo lint; fi
+}
+
 check_package() { # <package folder>
-  local pkg=$1 names
+  local pkg=$1 kind
   (
     cd "$pkg" 2>/dev/null || exit 0
     [ -e node_modules ] || exit 0
-    names=$(perl -MJSON::PP -0777 -ne '
-      my $s = eval { JSON::PP->new->decode($_)->{scripts} };
-      print "$_\n" for ref $s eq "HASH" ? keys %$s : ();
-    ' package.json 2>/dev/null)
-    has() { printf '%s\n' "$names" | grep -qx "$1"; }
-    if has typecheck; then
-      run_check type-check "$pkg" npm run --silent typecheck
-    elif has type-check; then
-      run_check type-check "$pkg" npm run --silent type-check
-    elif [ -f tsconfig.json ] && [ -x node_modules/.bin/tsc ]; then
-      run_check type-check "$pkg" node_modules/.bin/tsc --noEmit --incremental false
-    fi
-    if has lint; then
-      run_check lint "$pkg" npm run --silent lint
-    fi
+    for kind in $(package_checks); do
+      case "$kind" in
+        typecheck) run_check type-check "$pkg" npm run --silent typecheck ;;
+        type-check) run_check type-check "$pkg" npm run --silent type-check ;;
+        tsc) run_check type-check "$pkg" node_modules/.bin/tsc --noEmit --incremental false ;;
+        lint) run_check lint "$pkg" npm run --silent lint ;;
+      esac
+    done
   )
 }
 
@@ -271,8 +283,26 @@ uninstall() {
   done
 }
 
+# Read-only: HOOKS: installed only when the post-commit hook this script wrote is in
+# place and runs, core.hooksPath doesn't bypass it, and a package has a check to run.
+status() { # [<repo>]
+  local repo=${1:-.} folder pkg
+  folder=$(hooks_folder "$repo" 2>/dev/null) || { echo "HOOKS: off"; return 0; }
+  if ours "$folder/post-commit" && [ -x "$folder/post-commit" ] \
+      && [ -z "$(git -C "$repo" config core.hooksPath 2>/dev/null)" ]; then
+    while IFS= read -r pkg; do
+      [ -n "$pkg" ] || continue
+      if [ -n "$(cd "$repo/$pkg" 2>/dev/null && package_checks)" ]; then
+        echo "HOOKS: installed"
+        return 0
+      fi
+    done < <(cd "$repo" 2>/dev/null && packages)
+  fi
+  echo "HOOKS: off"
+}
+
 case "${1:-}" in
-  install | uninstall | post-checkout | post-commit)
+  install | uninstall | status | post-checkout | post-commit)
     step=$1
     shift
     case "$step" in
@@ -281,6 +311,6 @@ case "${1:-}" in
       *) "$step" "$@" ;;
     esac
     ;;
-  *) note "usage: git-hooks.sh install|uninstall [<repo>]" ;;
+  *) note "usage: git-hooks.sh install|uninstall|status [<repo>]" ;;
 esac
 exit 0
