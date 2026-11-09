@@ -32,6 +32,7 @@ case "$1 $2" in
     case "$*" in *"--json headRefOid"*) echo abc123; exit 0 ;; esac
     reply "${GH_VIEW:-}" ;;
   "api --paginate")
+    [ "${GH_CI:-}" = FAIL ] && { echo "gh: HTTP 502" >&2; exit 1; }
     case "$3" in
       */check-runs*)
         case "${GH_CI:-}" in
@@ -94,6 +95,10 @@ is "CI running: no flip"         ""                     "$(calls)"
 is "CI red: skipped, named"      "SKIP: CI red: test"   "$(GH_CI=red GH_VIEW='me false true OPEN' run 7)"
 is "CI red: no flip"             ""                     "$(calls)"
 is "CI red, a PR URL: skipped"   "SKIP: CI red: test"   "$(GH_CI=red GH_VIEW='me false true OPEN' run "$URL")"
+is "CI unreadable: not flipped"  "UNKNOWN: could not read CI on the PR's head" "$(GH_CI=FAIL GH_VIEW='me false true OPEN' run 7)"
+is "CI unreadable: no flip"      ""                     "$(calls)"
+is "a URL ending past the number: not flipped" "UNKNOWN: could not read CI on the PR's head" "$(GH_VIEW='me false true OPEN' run "$URL/files")"
+is "a URL ending past the number: no flip" ""           "$(calls)"
 is "a teammate's PR: not checked for CI" "SKIP: PR by @mate" "$(GH_CI=red GH_VIEW='mate false true OPEN' run 7)"
 is "already ready: not checked for CI"   "SKIP: already ready" "$(GH_CI=red GH_VIEW='me false false OPEN' run 7)"
 
