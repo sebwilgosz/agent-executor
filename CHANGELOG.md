@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Every review is saved as a file under `~/.engineer-of-wealth/executor/reviews/<owner>/<repo>/` (`PR-<n>.md`, or `<branch>.md` with no PR; `local/<folder>` with no remote), never in the repository. A re-review overwrites it.
-- `scripts/review-post.sh` names that file (`--path`) and posts it only when `executor/config.md` says `Post: own PRs` under `## Reviews` (default `off`): as a comment on your own open PR, headed as an Executor review by Claude, edited in place on a re-review through a hidden marker. Someone else's PR is never posted. `/executor:init` asks once in E7.
-
 ## 0.12.0 — 2026-11-09
 
 CI takes the test suite off the model. On the 0.10.0 build (9 PRs) the main thread ran 57 test and build commands, about 6 per PR; their output was small, the cost was the turns, each of which re-reads the thread's whole context: up to about 0.7M weighted tokens, about 18% of the main thread. Where a repo has CI, the full suite now runs there while the review reads the diff. A repo with no CI keeps the local full build everywhere.
