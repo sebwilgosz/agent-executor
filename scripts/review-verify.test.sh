@@ -19,7 +19,7 @@ bad()   { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; printf '       %s\n' "$2"
 check() { case "$3" in *"$2"*) ok "$1" ;; *) bad "$1" "want substring: $2" ;; esac; }
 lacks() { case "$3" in *"$2"*) bad "$1" "unwanted substring: $2" ;; *) ok "$1" ;; esac; }
 
-SKILL="$REPO/skills/review/SKILL.md"
+SKILL="$REPO/references/review-steps.md"
 STEP4=$(awk '/^## 4\. /{f=1; print; next} /^## /{f=0} f' "$SKILL")
 STEP5=$(awk '/^## 5\. /{f=1; print; next} /^## /{f=0} f' "$SKILL")
 FORMAT=$(cat "$REPO/references/review-format.md")

@@ -26,7 +26,7 @@ before(){ # before <name> <first> <second> <text>: first appears earlier in the 
 
 BUILD=$(cat skills/build/SKILL.md)
 STEP1=$(printf '%s\n' "$BUILD" | awk '/^## 1\. The spec/{f=1;next} /^## 2\./{f=0} f')
-REVIEW=$(cat skills/review/SKILL.md)
+REVIEW=$(cat skills/review/SKILL.md references/review-steps.md)
 FIND=$(printf '%s\n' "$REVIEW" | awk '/^Find the spec/{f=1} /^If No spec found/{f=0} f')
 HOME_DOC=$(cat references/spec-home.md)
 IMPL=$(cat references/implementation.md)

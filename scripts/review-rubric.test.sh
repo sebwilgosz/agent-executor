@@ -21,7 +21,7 @@ bad()   { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; printf '       %s\n' "$2"
 check() { case "$3" in *"$2"*) ok "$1" ;; *) bad "$1" "want substring: $2" ;; esac; }
 is()    { [ "$2" = "$3" ] && ok "$1" || bad "$1" "want: $2 | got: $3"; }
 
-STEP3=$(awk '/^## 3\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
+STEP3=$(awk '/^## 3\. /{f=1; print; next} /^## /{f=0} f' "$REPO/references/review-steps.md")
 dimension() { printf '%s\n' "$STEP3" | grep "^$1\. \*\*"; }
 CORRECTNESS=$(dimension 2)
 SECURITY=$(dimension 4)
@@ -70,7 +70,7 @@ check "severity: the verifier's rule keeps false docs Critical" "$FALSE_DOCS" "$
 check "the summary has a line for a skipped docs check" '**Docs:**' "$(cat "$REPO/references/review-format.md")"
 
 # D. The review marks your PR ready, and it is the only place that does.
-STEP7=$(awk '/^## 7\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
+STEP7=$(awk '/^## 7\. /{f=1; print; next} /^## /{f=0} f' "$REPO/references/review-steps.md")
 check "step 7 runs the ready script" 'scripts/review-ready.sh' "$STEP7"
 check "step 7: only in fix mode" 'Fix mode' "$STEP7"
 check "step 7: a review by branch too" 'review-ready.sh --branch' "$STEP7"
@@ -81,8 +81,8 @@ for f in skills/build/SKILL.md skills/ship/SKILL.md agents/builder.md references
 done
 
 # E. The review uses CI: step 2 asks ci-checks.sh, step 6 reuses the answer.
-STEP2=$(awk '/^## 2\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
-STEP6=$(awk '/^## 6\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
+STEP2=$(awk '/^## 2\. /{f=1; print; next} /^## /{f=0} f' "$REPO/references/review-steps.md")
+STEP6=$(awk '/^## 6\. /{f=1; print; next} /^## /{f=0} f' "$REPO/references/review-steps.md")
 check "step 2 asks ci-checks.sh for a PR, waiting"  'scripts/ci-checks.sh <n> --wait 20' "$STEP2"
 check "step 2: runs in the background"              'background' "$(printf '%s\n' "$STEP2" | grep 'ci-checks.sh')"
 check "step 2: red is a Critical Build finding"     'Critical finding, category Build' "$STEP2"

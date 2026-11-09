@@ -97,6 +97,8 @@ fi
 e=$ERRS; w=$WARNS
 [ -f "$ROOT/agents/verifier.md" ] || err "integrity: agents/verifier.md missing — review findings cannot be verified → $REINSTALL"
 [ -f "$ROOT/agents/builder.md" ] || err "integrity: agents/builder.md missing — features cannot be built → $REINSTALL"
+[ -f "$ROOT/agents/reviewer.md" ] || err "integrity: agents/reviewer.md missing — pull requests cannot be reviewed → $REINSTALL"
+[ -f "$ROOT/agents/fixer.md" ] || err "integrity: agents/fixer.md missing — confirmed bugs cannot be fixed → $REINSTALL"
 for d in "$SK"/*/; do
   s=$(basename "$d"); [ "$s" = help ] && continue
   [ -f "$d/SKILL.md" ] || { err "integrity: skills/$s/ has no SKILL.md → $REINSTALL"; continue; }
