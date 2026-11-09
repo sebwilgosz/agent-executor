@@ -235,8 +235,9 @@ case "${1:-}" in
   --ci)
     require_repo "${2:-.}"
     printf '%s\n' "$REPO_FOLDER"
-    bash "$SELF_DIR/ci-checks.sh" --detect "${2:-.}" 2>/dev/null || printf 'CI: none\n'
-    bash "$SELF_DIR/git-hooks.sh" status "${2:-.}" 2>/dev/null || printf 'HOOKS: off\n'
+    top=$(git -C "${2:-.}" rev-parse --show-toplevel 2>/dev/null) || top=${2:-.}
+    bash "$SELF_DIR/ci-checks.sh" --detect "$top" 2>/dev/null || printf 'CI: none\n'
+    bash "$SELF_DIR/git-hooks.sh" status "$top" 2>/dev/null || printf 'HOOKS: off\n'
     ;;
   --where)
     plans_root
