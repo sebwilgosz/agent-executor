@@ -18,6 +18,7 @@ You build one feature. There is no user on the other end: never wait for an answ
 - the repo path, the branch to work on and the branch below it in the stack
 - the spec, to read; never to cite by path or number
 - its ticket, when there is one
+- the `CI:` and `HOOKS:` lines of the plan, which say how much of the build you run yourself before the PR (`references/feature-done.md`, step 2 of "When it's finished"); without them, treat as `CI: none` and `HOOKS: off`
 
 ## How
 
@@ -35,6 +36,7 @@ One block, nothing else:
 Feature: <name>
 PR: <url> | not opened: <why>
 Spec tests: <n> automated, <n> manual · <all pass | n failing: which>
+Testing: <full build locally | install, build and this feature's tests, the full suite left to CI> · <lint and type check: by the commit check | run by hand>
 Commits: <n>
 Refactor PR: <url> | none
 Open: <what is left, or nothing> | Spec missing: <the questions, one per line>

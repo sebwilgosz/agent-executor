@@ -14,7 +14,7 @@ Read before you start, from the plugin root: `references/implementation.md` (ste
 
 ## 0. Carry on, or start
 
-Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh`: this repo's plans folder. On a `STOP:` line, give the user that line and stop, so nothing moves outside a repository.
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --ci`: this repo's plans folder on its first line, then a `CI: configured <workflow file>` or `CI: none` line, then a `HOOKS: installed` or `HOOKS: off` line. On a `STOP:` line, give the user that line and stop, so nothing moves outside a repository. Keep the `CI:` and `HOOKS:` lines: they go in the plan's header and in every builder's brief, and nothing else in the build or in a builder detects them again.
 
 Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh .`, which moves a legacy `.executor/` this repo still holds to its plans folder, from the repo's top folder and not a repository nested in it. On `No legacy .executor/ under ...`, say nothing. Otherwise say in one line that it moved the legacy `.executor/`, naming any `clash:`, `left:`, `failed:` or `STOP:` line, and go on: what it reports stays where it is.
 
@@ -53,7 +53,7 @@ Run the spec check of `references/implementation.md`, step 0, on the whole spec.
 
 Split the spec into features and stacks as `references/stacks.md` maps them, each feature small enough to be one readable PR. Every requirement belongs to exactly one feature.
 
-Name the plan with the spec's title: for a spec that is a local file, `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --title "<spec file>"`; for an issue, a URL or text, its H1 or title. Then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --new "<title>"` prints the plan's path. Write the plan there in the shape of `references/plan.md`, creating the folder if it is missing. If `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --host` prints a host other than `github.com`, its header gets the `Host: <host>` line. Nothing goes in the repository. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
+Name the plan with the spec's title: for a spec that is a local file, `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --title "<spec file>"`; for an issue, a URL or text, its H1 or title. Then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --new "<title>"` prints the plan's path. Write the plan there in the shape of `references/plan.md`, creating the folder if it is missing. If `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --host` prints a host other than `github.com`, its header gets the `Host: <host>` line. Its header gets the `CI:` and `HOOKS:` lines from step 0, as `references/plan.md` shows. When either is `CI: none` or `HOOKS: off`, add one line to the plan you show: without CI every builder and the review run the full suite locally, and without the commit check each builder runs lint and type check by hand, and `/executor:init` sets it up. Nothing goes in the repository. Show the user the checklist and stop: **this is the first approval.** On changes, rewrite the file and show it again. Build nothing before a yes.
 
 ## 2b. Tickets
 
@@ -79,6 +79,7 @@ Branch names: `<stack>/<feature>`, short and in kebab case (`invites/send-email`
    - the repo path, its branch name and the branch below it: the previous item's branch, or the default branch for the bottom of a stack
    - the spec's path or link, to read for context
    - its ticket, when the plan records one: `Closes #<n>` on GitHub, the key on Jira and Linear
+   - the `CI:` and `HOOKS:` lines from the plan's header, as they are
 
    Never give a builder the plan, other features' requirements or your reasoning. Mark each item `🔨 building` in the plan.
 3. **As each builder reports**, read its report block (`agents/builder.md`) and update its item:
