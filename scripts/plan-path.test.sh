@@ -195,6 +195,31 @@ check "dated: a bad date" "STOP: not a date" "$(plan_path --dated nope "x" "$WEB
 check "dated: no title" "STOP: usage" "$(plan_path --dated 2026-01-02)"
 check "dated: an empty title" "STOP: a new plan needs a title" "$(plan_path --dated 2026-01-02 " " "$WEB")"
 
+# C3. --ci: the plans folder, then the CI line and the hooks line.
+CIR="$TMP/src/cirepo"
+new_repo "$CIR" "git@github.com:acme/cirepo.git"
+out=$(plan_path --ci "$CIR")
+is "ci: three lines" "3" "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+is "ci: first the plans folder" "$DEFAULT/acme/cirepo" "$(printf '%s\n' "$out" | sed -n 1p)"
+is "ci: no workflow, none" "CI: none" "$(printf '%s\n' "$out" | sed -n 2p)"
+is "ci: no hook, off" "HOOKS: off" "$(printf '%s\n' "$out" | sed -n 3p)"
+mkdir -p "$CIR/.github/workflows"
+printf 'name: t\non: push\njobs:\n  a:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n' > "$CIR/.github/workflows/ci.yml"
+printf '{"scripts":{"lint":"echo ok"}}\n' > "$CIR/package.json"
+bash "$SELF_DIR/git-hooks.sh" install "$CIR" >/dev/null 2>&1
+out=$(plan_path --ci "$CIR")
+is "ci: a workflow, configured" "CI: configured .github/workflows/ci.yml" "$(printf '%s\n' "$out" | sed -n 2p)"
+is "ci: the hook in place, installed" "HOOKS: installed" "$(printf '%s\n' "$out" | sed -n 3p)"
+is "ci: the folder line is unchanged" "$DEFAULT/acme/cirepo" "$(printf '%s\n' "$out" | sed -n 1p)"
+is "ci: a bare call stays one line" "$DEFAULT/acme/cirepo" "$(plan_path "$CIR")"
+is "ci: defaults to the current folder" "CI: configured .github/workflows/ci.yml" "$(cd "$CIR" && "$SHELL_BIN" "$SCRIPT" --ci 2>&1 | sed -n 2p)"
+is "ci: not a repo is a STOP alone" "STOP: not a git repository: $TMP/nowhere" "$(plan_path --ci "$TMP/nowhere")"
+check "ci: build's first call uses it" 'scripts/plan-path.sh --ci' "$(cat "$REPO_ROOT/skills/build/SKILL.md")"
+check "ci: the plan header holds the CI line" 'CI: ' "$(cat "$REPO_ROOT/references/plan.md")"
+check "ci: the plan header holds the hooks line" 'HOOKS: ' "$(cat "$REPO_ROOT/references/plan.md")"
+check "ci: the builder's brief carries both" 'the `CI:` and `HOOKS:` lines' "$(cat "$REPO_ROOT/skills/build/SKILL.md")"
+check "ci: the plan shown says init sets it up" '/executor:init' "$(cat "$REPO_ROOT/skills/build/SKILL.md")"
+
 # D. Live plans.
 L="$DEFAULT/acme/web"
 is "live: the folder is missing" "" "$(plan_path --live "$WEB")"

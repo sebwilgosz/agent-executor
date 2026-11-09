@@ -33,6 +33,16 @@ has   "ship runs pr-open.sh"                           'scripts/pr-open.sh' skil
 has   "ship acts on the STOP: line"                   'STOP:' skills/ship/SKILL.md
 lacks "ship has no by-hand gh pr create"              'gh pr create' skills/ship/SKILL.md
 
+# E. Step 2 depends on the CI line the build puts in the brief.
+has   "step 2 reads the CI line from the brief"       'CI: configured' references/feature-done.md
+has   "step 2 keeps the full local build for no CI"   'CI: none' references/feature-done.md
+has   "step 2 leaves the full suite to CI"            'full suite is left to CI' references/feature-done.md
+has   "step 2 reads the HOOKS line"                   'HOOKS: installed' references/feature-done.md
+has   "step 2: no brief line means no CI"             'treat as `CI: none`' references/feature-done.md
+has   "the builder's brief has the lines"             '`CI:` and `HOOKS:`' agents/builder.md
+detect=$(grep -rnF 'ci-checks.sh --detect' "$REPO/skills" "$REPO/agents" "$REPO/references")
+[ -z "$detect" ] && ok "no skill, agent or reference runs --detect itself" || bad "no skill, agent or reference runs --detect itself" "$detect"
+
 echo
 printf 'feature-done: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
