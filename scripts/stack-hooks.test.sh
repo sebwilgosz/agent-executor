@@ -364,6 +364,25 @@ fresh
 event 'grep "gh stack submit" notes' "$REAL" "$REPO_A" | PATH="$NOJQ" "$NOJQ/bash" "$REVIEW" >/dev/null
 is "no jq, a grep: no git or ssh" "" "$(cat "$TOOLS")"
 
+# pr-open.sh: an "opened" line is a new PR and starts the review; "updated" never does.
+PO_URL=https://github.com/acme/b/pull/31
+PO_OPENED="PR: #31 $PO_URL base=feat-a opened"
+PO_UPDATED="PR: #31 $PO_URL base=feat-a updated"
+PO_CMD='bash "${CLAUDE_PLUGIN_ROOT}/scripts/pr-open.sh" --branch feat-b --below feat-a --title T --body-file /tmp/b.md'
+is "pr-open.sh opened: prs is its URL" "pr|$PO_URL|" "$(probe "$PO_CMD" "$PO_OPENED" "$NOREPO")"
+is "pr-open.sh opened after a RETARGETED line" "pr|$PO_URL|" \
+  "$(probe "$PO_CMD" "RETARGETED: feat-a merged, based on main instead
+$PO_OPENED" "$NOREPO")"
+out=$(review "$PO_CMD" "$PO_OPENED" "$NOREPO")
+check "pr-open.sh opened: the review context names it" "$PO_URL" "$(context "$out")"
+mention "$PO_CMD" "$PO_UPDATED" "pr-open.sh updated"
+mention "$PO_CMD" "STOP: feat-a has no open PR - open it first" "pr-open.sh STOP"
+mention 'grep -n pr-open notes' "$PO_OPENED" "pr-open.sh only mentioned"
+fresh
+assign "$PO_CMD" "$PO_OPENED" "$NOREPO"
+wait_lines "$CALLS" '^pr edit' 1
+is "pr-open.sh opened: assigned by URL" "pr edit $PO_URL --add-assignee @me" "$(edits)"
+
 # The second fast check and the locale: real PR creation is untouched.
 locale_probe(){
   printf '%s' "$1" | env "${@:2}" bash -c '. "$1"; printf "%s" "${LC_ALL-unset}"' probe "$NEW_PRS"
