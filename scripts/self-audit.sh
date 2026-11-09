@@ -14,12 +14,15 @@
 #   executor: PASS|WARN|FAIL — N passed, N errors, N warnings
 # -v      also print what passed
 # --strict exit 0 clean, 1 warnings, 2 errors (for hooks and cron)
+# --integrity-only skip SETUP (gh sign-in, gh stack, search roots), which only a
+#        configured machine can satisfy; CI runs this so the plugin's own files
+#        are still checked in full
 
 exec 2>/dev/null
 
-VERBOSE=0; STRICT=0
+VERBOSE=0; STRICT=0; INTEGRITY_ONLY=0
 for a in "$@"; do
-  case "$a" in -v) VERBOSE=1 ;; --strict) STRICT=1 ;; esac
+  case "$a" in -v) VERBOSE=1 ;; --strict) STRICT=1 ;; --integrity-only) INTEGRITY_ONLY=1 ;; esac
 done
 ERRS=0; WARNS=0; OKS=0; DONE=0
 err()  { printf '  ✗ %s\n' "$1"; ERRS=$((ERRS+1)); }
@@ -49,6 +52,9 @@ LOG="$EOW/executor/assign.log"
 USER_ONLY="help init status"
 
 # ===================================================================== SETUP
+if [ "$INTEGRITY_ONLY" -eq 1 ]; then
+  info "setup: skipped, --integrity-only checks the plugin itself"
+else
 if command -v gh >/dev/null; then
   ok "setup: gh $(gh --version | head -1 | awk '{print $3}')"
   if gh auth status >/dev/null; then ok "setup: gh is signed in"
@@ -76,6 +82,7 @@ if [ -s "$ROOT/scripts/roots.sh" ]; then
     warn "setup: search root $r is missing, so Executor finds no checkouts there → create the folder, or change the roots with /executor:init"
   done
   [ "$e" = "$WARNS" ] && ok "setup: search roots present (${#roots[@]})"
+fi
 fi
 
 # ================================================================= INTEGRITY
@@ -182,6 +189,14 @@ e=$ERRS
 [ -s "$ROOT/scripts/status.sh" ] \
   && ok "integrity: the status script is present" \
   || err "integrity: scripts/status.sh missing - /executor:status has nothing to run → $REINSTALL"
+
+# -- CI state: ci-checks.sh reports the checks of one commit, and status.sh and it both
+#    source ci-state.sh to read a check's state.
+e=$ERRS
+[ -s "$ROOT/scripts/ci-checks.sh" ] || err "integrity: scripts/ci-checks.sh missing - the checks of a commit cannot be read → $REINSTALL"
+[ -s "$ROOT/scripts/ci-state.sh" ] || err "integrity: scripts/ci-state.sh missing - status.sh and ci-checks.sh source it to read a check's state → $REINSTALL"
+[ -s "$ROOT/scripts/git-hooks.sh" ] || err "integrity: scripts/git-hooks.sh missing - the commit check cannot be installed or asked about → $REINSTALL"
+[ "$e" = "$ERRS" ] && ok "integrity: the CI scripts are present"
 
 # -- finding a PR's checkout: without find-checkout.sh a review of another
 #    repo's PR has no way to its local checkout.

@@ -141,6 +141,7 @@ bash <plugin root>/scripts/git-hooks.sh install <repo>
 
 - **New worktree:** `node_modules` and `.next/cache` are cloned from the main checkout, for each package up to two folders down, at almost no disk cost; bare repos work too. If it has none, install there once.
 - **After a commit:** the type check and lint of each touched package run, up to 60 seconds each. Errors print; the commit stands. Markdown- or image-only commits run nothing.
+- **Is it on:** `git-hooks.sh status <repo>` prints `HOOKS: installed` only when the post-commit hook is in place, not bypassed by `core.hooksPath`, and a package has a lint or type check to run; otherwise `HOOKS: off`. It changes nothing.
 - **Off again:** `git-hooks.sh uninstall <repo>` removes only what `install` wrote. Another tool's hook is never overwritten, and a repo with `core.hooksPath` set is left alone.
 
 ## Requirements
