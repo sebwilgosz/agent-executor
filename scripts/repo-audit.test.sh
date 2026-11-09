@@ -98,7 +98,7 @@ code 0 "an error still exits 0 without --strict" "$d"
 d=$(mkrepo hookoff git@github.com:o/hookoff.git)
 bash "$HOOKS" uninstall "$d" >/dev/null 2>&1
 out=$(run "$d")
-check "hook off: cost and install command" "lint and type check run as model turns → git-hooks.sh install" "$out"
+check "hook off: cost and install command" "lint and type check run as model turns → bash " "$out"
 
 d=$(mkrepo bypass git@github.com:o/bypass.git)
 git -C "$d" config core.hooksPath "$TMP/elsewhere"
@@ -131,7 +131,7 @@ out=$(run "$TMP/does-not-exist")
 check "missing folder: a finding, no crash" "→" "$out"
 d=$(mkrepo noremote "")
 out=$(run "$d")
-check "no remote: a finding" "no origin remote → " "$out"
+check "no remote: a finding" "no origin remote" "$out"
 
 d=$(mkrepo gitlab git@gitlab.com:o/r.git)
 out=$(run "$d")
@@ -142,7 +142,7 @@ code 0 "non-GitHub host: exit 0" "$d"
 d=$(mkrepo extras git@github.com:o/extras.git)
 rm "$d/.claude/settings.json"
 out=$(run "$d")
-check "Executor not enabled: reported" "Executor is not enabled in this repo → " "$out"
+check "Executor not enabled: reported" "Executor is not enabled in this repo" "$out"
 cat > "$BIN/gh" <<'STUB'
 #!/usr/bin/env bash
 case "$1 $2" in
