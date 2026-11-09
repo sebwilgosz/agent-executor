@@ -336,6 +336,7 @@ heads=$(grep -E '^## E[0-9]' references/init.md | sed 's/^## //')
 is "init: the plans step follows the roots, the check follows it" "E1: Tools
 E2: Enable Executor in this repository
 E2b: Delete head branches after merge
+E2c: Repo audit
 E3: Search roots
 E4: Plans folder
 E5: Spec home
