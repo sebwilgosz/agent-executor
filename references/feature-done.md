@@ -11,7 +11,12 @@ Executor builds a spec one feature at a time, each on its own branch. A feature 
 All of these, checked, not assumed:
 
 1. Every spec requirement this feature owns has its spec test or manual scenario, and every one passes: tests run green, scenarios walked through where the session can, otherwise listed for you to check.
-2. The whole build passes: install, build, lint or type check, the full test suite, with the repo's own commands (the same ones `executor:review` runs, step 2).
+2. The build passes, as far as the brief's `CI:` line says (a brief without one, as when a builder runs outside a build: treat as `CI: none`). The repo's own commands, the same ones `executor:review` runs, step 2:
+   - `CI: none`: the whole build, locally: install, build, lint or type check, the full test suite.
+   - `CI: configured <file>`: install, build, and the tests covering this feature's code plus its spec tests, locally. The full suite is left to CI, and the review collects its result.
+   - Lint and type check, by the brief's `HOOKS:` line: `HOOKS: installed`, not run by hand: fix what the commit check printed after your commits. `HOOKS: off` (or no line): run them once before the PR.
+
+   The handback's Testing line says which of these ran.
 3. No spec test was weakened to pass, and none changed without the user's approval.
 4. The branch holds only this feature's commits, on top of the branch it depends on. A refactor it needed is in its own PR below it.
 

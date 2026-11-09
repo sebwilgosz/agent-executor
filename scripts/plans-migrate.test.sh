@@ -545,7 +545,7 @@ first_step=$(printf '%s\n' "$step0" | grep -n 'plans-migrate.sh' | head -1 | cut
 first_live=$(printf '%s\n' "$step0" | grep -n 'plan-path.sh --live' | head -1 | cut -d: -f1)
 [ "${first_step:-99}" -lt "${first_live:-0}" ] && ok "build: migrates before it looks for live plans" \
   || bad "build: migrates before it looks for live plans" "$first_step vs $first_live"
-first_guard=$(printf '%s\n' "$step0" | grep -n 'scripts/plan-path.sh`' | head -1 | cut -d: -f1)
+first_guard=$(printf '%s\n' "$step0" | grep -nE 'scripts/plan-path.sh( --ci)?`' | head -1 | cut -d: -f1)
 [ "${first_guard:-99}" -lt "${first_step:-0}" ] && ok "build: outside a repo it stops before anything moves" \
   || bad "build: outside a repo it stops before anything moves" "$first_guard vs $first_step"
 check "help: lists it" 'scripts/plans-migrate.sh [--dry-run] [<root>]' "$HELP"
