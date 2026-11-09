@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- `scripts/repo-audit.sh [<repo dir>]` audits one repository for what saves tokens and turns: CI (`ci-checks.sh --detect`, plus a warning when the workflow only lints while the repo has a test command), the commit hook (`git-hooks.sh status`, with a note when `core.hooksPath` bypasses it or no package has a lint or type check), gh stack, GitHub's automatic deletion of head branches, and Executor enabled in the repo. Read-only, with `self-audit.sh`'s contract: findings ending in `→ <what to do>`, a summary line, exit 0, `--strict` for hooks and cron. A missing repo, remote or GitHub host is a finding. `git-hooks.sh checks` reports whether a package has a lint or type check.
-- `/executor:init` gains E2c, which runs it and walks through each finding one at a time: the cost, the saving and the exact step, with a drafted `test.yml` shown in the chat. Executor applies none of it. E6 runs `repo-audit.sh` next to `self-audit.sh`. Only `/executor:init` runs it, and a spec test fails if anything else mentions it.
-
 ## 0.11.0 — 2026-11-09
 
 - A builder opens its PR in two calls: it writes the PR body to a file and runs `scripts/pr-open.sh`. The script puts the branch in its stack, pushes, opens the draft PR on the right base (or updates the one that exists), sets the title and body, and fills `Depends on` itself. Before, the builder worked this out step by step with `git`, `gh stack` and `gh pr`, which cost 12-61k weighted tokens per builder, typically about 30k, about 270k across the 0.10.0 build of 9 PRs. `references/feature-done.md` and `agents/builder.md` now point at the script, and a `STOP:` line is reported, never worked around by hand. `references/pull-request.md` notes that `Depends on` is the script's.
