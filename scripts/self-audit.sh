@@ -149,6 +149,7 @@ e=$ERRS
 [ -s "$ROOT/scripts/default-branch.sh" ] || err "integrity: scripts/default-branch.sh missing — ship and review source it for the base → $REINSTALL"
 [ -s "$ROOT/scripts/branch-guard.sh" ] || err "integrity: scripts/branch-guard.sh missing - ship.sh and pr-open.sh source it for the guards and the base → $REINSTALL"
 [ -s "$ROOT/scripts/pr-open.sh" ] || err "integrity: scripts/pr-open.sh missing - a finished branch cannot be turned into an open PR → $REINSTALL"
+grep -qF 'scripts/pr-open.sh' "$ROOT/references/feature-done.md" 2>/dev/null || err "integrity: references/feature-done.md no longer tells the builder to run pr-open.sh - it falls back to many git and gh calls per PR → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
 
 # -- the search roots: every script that looks for a PR's local checkout
