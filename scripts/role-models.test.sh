@@ -5,6 +5,7 @@
 #   C. the verifier runs on Sonnet, high effort.
 #   D. the fixer runs on Sonnet, high effort.
 #   E. the review and build skills name no model: they run on the session's.
+#   F. the spec skill runs on Opus.
 # Each agent names its own model.
 #
 # Run: bash scripts/role-models.test.sh   (exit 0 = all pass)
@@ -36,6 +37,7 @@ is "the fixer runs on Sonnet"          'model: sonnet'  "$(model_of agents/fixer
 is "the fixer runs at high effort"     'effort: high'   "$(field_of agents/fixer.md effort)"
 is "the review skill names no model"   ''               "$(model_of skills/review/SKILL.md)"
 is "the build skill names no model"    ''               "$(model_of skills/build/SKILL.md)"
+is "the spec skill runs on Opus"       'model: opus'    "$(model_of skills/spec/SKILL.md)"
 
 echo
 printf 'role-models: %d passed, %d failed\n' "$PASS" "$FAIL"
