@@ -21,7 +21,7 @@ is()    { [ "$2" = "$3" ] && ok "$1" || bad "$1" "want: $2 | got: $3"; }
 check() { case "$3" in *"$2"*) ok "$1" ;; *) bad "$1" "want substring: $2" ;; esac; }
 refute(){ case "$3" in *"$2"*) bad "$1" "must not hold: $2" ;; *) ok "$1" ;; esac; }
 
-REVIEW=$(cat "$REPO/skills/review/SKILL.md")
+REVIEW=$(cat "$REPO/skills/review/SKILL.md" "$REPO/references/review-steps.md")
 STACKS=$(cat "$REPO/references/stacks.md")
 FORMAT=$(cat "$REPO/references/review-format.md")
 fixstep=$(printf '%s\n' "$REVIEW" | awk '/^## 6\./{f=1;next} /^## 7\./{f=0} f')
