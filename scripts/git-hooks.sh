@@ -4,6 +4,7 @@
 # Usage:   git-hooks.sh install [<repo>]     write the hooks into the repo's shared folder
 #          git-hooks.sh uninstall [<repo>]   remove only what install wrote
 #          git-hooks.sh status [<repo>]      "HOOKS: installed" or "HOOKS: off", read-only
+#          git-hooks.sh checks [<repo>]      "CHECKS: yes" when a package has a lint or type check, else "CHECKS: none", read-only
 #          git-hooks.sh post-checkout ...    called by the hook
 #          git-hooks.sh post-commit          called by the hook
 #
@@ -301,8 +302,20 @@ status() { # [<repo>]
   echo "HOOKS: off"
 }
 
+checks() { # [<repo>]
+  local repo=${1:-.} pkg
+  while IFS= read -r pkg; do
+    [ -n "$pkg" ] || continue
+    if [ -n "$(cd "$repo/$pkg" 2>/dev/null && package_checks)" ]; then
+      echo "CHECKS: yes"
+      return 0
+    fi
+  done < <(cd "$repo" 2>/dev/null && packages)
+  echo "CHECKS: none"
+}
+
 case "${1:-}" in
-  install | uninstall | status | post-checkout | post-commit)
+  install | uninstall | status | checks | post-checkout | post-commit)
     step=$1
     shift
     case "$step" in
