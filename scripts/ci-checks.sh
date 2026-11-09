@@ -175,7 +175,9 @@ classify() {
     esac
   done <<< "$ROWS"
   ci_of "$values"
-  if [ "$CI" = none ] && ci_detect . >/dev/null; then CI=running; fi
+  if [ "$CI" = none ] && ci_detect "$(git rev-parse --show-toplevel 2>/dev/null || echo .)" >/dev/null; then
+    CI=running
+  fi
 }
 
 DEADLINE=$((WAIT * MINUTE))

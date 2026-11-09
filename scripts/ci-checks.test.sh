@@ -235,6 +235,8 @@ repo_with 'on: push'
 is "not registered yet: a workflow that runs on push reads running" "CI: running 0 checks" "$(in_repo 5)"
 repo_with 'on: pull_request'
 is "not registered yet: a workflow that runs on pull_request reads running" "CI: running 0 checks" "$(in_repo 5)"
+git -C "$R" init -q 2>/dev/null; mkdir -p "$R/pkg/web"
+is "not registered yet: run from a subfolder of the repo, still running" "CI: running 0 checks" "$(cd "$R/pkg/web" && bash "$CHECKS" 5 2>&1)"
 
 # D. --wait.
 reset; head_of 5 $A
