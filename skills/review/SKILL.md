@@ -50,13 +50,18 @@ If No spec found: correctness is judged against the PR description, and the summ
 
 ## 2. Build (start first, it runs while you review)
 
-The build must pass. Find its commands in this order: the repo's own docs (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README`)
+The build must pass. For a PR, CI is the build where the repo has it.
 
-- **Where.** If the working tree is clean and `HEAD` is the PR's head commit, build here. Otherwise build in a throwaway worktree: `git fetch origin pull/<n>/head` and `git worktree add --detach "$TMPDIR/executor-<n>" FETCH_HEAD`. Never check the PR out over the user's working tree.
-- **Long builds** run in the background; carry on with step 3 and collect the result before step 4.
-- **CI.** For a PR also read `gh pr checks <n>`. Report its state as it is; don't wait for it.
-- **A failed build** is a Critical finding, category Build, linked to the first failing file when the log names one. Its evidence is the command and the failing lines of the log, so it needs no verifier.
-- **Could not run** (no commands found, a missing service, a secret): say why in the Build line. Never report a build you didn't run as passed.
+- **CI first, for a PR.** Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/ci-checks.sh <n> --wait 20` in the background before anything else. That one call is also the detection: do not run `--detect`. Review the diff meanwhile and collect the result before step 4. Keep its first line as step 2's answer.
+  - `CI: green`: the Build line says CI passed.
+  - `CI: red <check> <url>`: a Critical finding, category Build, linked to the first failing file when the `LOG:` lines name one. Its evidence is the check name, the url and the `LOG:` lines, so it needs no verifier.
+  - `CI: running` after the wait: no Critical finding. The Build line says CI is still running, the CI line shows it, and the PR stays a draft (step 7).
+  - `CI: none`, `UNKNOWN:`, or a review of a branch with no PR: build locally, as below.
+- **Local build.** Find its commands in this order: the repo's own docs (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README`).
+  - **Where.** If the working tree is clean and `HEAD` is the PR's head commit, build here. Otherwise build in a throwaway worktree: `git fetch origin pull/<n>/head` and `git worktree add --detach "$TMPDIR/executor-<n>" FETCH_HEAD`. Never check the PR out over the user's working tree.
+  - **Long builds** run in the background; carry on with step 3 and collect the result before step 4.
+  - **A failed build** is a Critical finding, category Build, linked to the first failing file when the log names one. Its evidence is the command and the failing lines of the log, so it needs no verifier.
+  - **Could not run** (no commands found, a missing service, a secret): say why in the Build line. Never report a build you didn't run as passed.
 
 ## 3. Review: six dimensions
 Go through the diff once per dimension:
@@ -103,12 +108,13 @@ Every Critical finding left after step 5 is a bug, and Executor fixes it. Sugges
 1. **Where.** On top of the PR's head commit
 2. **Fix.** The smallest change that removes the failure. A bug with no test gets the failing test first, then the fix; a false doc is simply corrected. Never edit a test to make it pass. A spec test that looks wrong stays as it is: leave the finding open, say why and what you would change; it changes only with the user's approval.
 3. **Commit.** One commit per finding, the message naming the defect. Never amend or rewrite commits already on the branch unless explicitly asked.
-4. **Review again, without spawning agents.** In this context: rerun the build; check that each fix removes its "Fails when" scenario; review only the fix commits against the six dimensions.
+4. **Review again, without spawning agents.** In this context: check that each fix removes its "Fails when" scenario; review only the fix commits against the six dimensions. Reuse step 2's answer, with no new detection. With CI (`CI: green`, `red` or `running`), run only the tests that cover the round's fixes (the failing test it added, the test files of the code it touched), not the full build. Without CI (`CI: none`, `UNKNOWN:`, no PR), rerun the build as before.
 5. **Repeat** step 6 while Critical findings remain, at most **3 rounds**.
 6. **Push** the fix commits to the PR's own branch: `git push origin HEAD:<headRefName>`. Never force-push, never push to any other branch. For a local review with no PR, commit and don't push.
+7. **CI on the pushed head** (a PR with CI): after the last round and the push, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/ci-checks.sh <n> --wait 20`. `CI: red` with rounds left: another round on its `LOG:` lines. `CI: red` with none left: the finding stays open and the verdict is ❌, as today. `CI: running` after the wait: the CI line says so and the PR stays a draft.
 
 **A PR in a stack** (its branch is in `gh stack view --json`, or its base isn't the default branch) is fixed on its own branch, so the branches above it pick the fix up: in a worktree on that branch, so the user's checkout is never switched: `git worktree add "$TMPDIR/executor-fix-<n>" <headRefName>`, then run every fix, build, commit and `git push` below from there. Finish with `gh stack rebase --upstack` and `gh stack push`, also from the worktree. That push rebases the branches above with `--force-with-lease`, the one rewrite allowed; commits are never changed. Remove the worktree (`git worktree remove "$TMPDIR/executor-fix-<n>"`) when the fixes are pushed, and also when they fail or stop early. If the checkout is already on the PR's own branch (`<headRefName>`), git won't add a second worktree on it: when its tree is clean, fix in place there instead, with the same commits, rebase and push, and no worktree; no switch happens, so nothing drifts. When it is on that branch and the tree has uncommitted changes, touch nothing: leave the findings open and say why. If the checkout is on one of the branches above the PR's and has uncommitted changes, the rebase would move them: leave the findings open and say why. Commands and conflicts: `${CLAUDE_PLUGIN_ROOT}/references/stacks.md`.
 
 ## 7. Report
 
-Clean up any worktree you added (`git worktree remove`). Then assert the checkout is where the review found it: `git -C <checkout> branch --show-current` must equal the branch noted in step 1. If it doesn't, switch back when the tree is clean; either way, say so in the summary's Checkout line. **Fix mode and a verdict of ✅ or ⚠️:** run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-ready.sh <n|url>` for a PR, or `… review-ready.sh --branch [<name>]` for a branch. It marks your own draft ready and leaves any other PR as it is. Then print the summary exactly as `references/review-format.md` lays it out, and nothing after it but the commit links, if fix mode made any. Never post the review to GitHub unless the user asks.
+Clean up any worktree you added (`git worktree remove`). Then assert the checkout is where the review found it: `git -C <checkout> branch --show-current` must equal the branch noted in step 1. If it doesn't, switch back when the tree is clean; either way, say so in the summary's Checkout line. **Fix mode and a verdict of ✅ or ⚠️:** run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-ready.sh <n|url>` for a PR, or `… review-ready.sh --branch [<name>]` for a branch. It marks your own draft ready once CI is green or absent, and leaves any other PR, or one whose CI is still running or red, as it is. A `SKIP:` for CI goes in the Ready line; for a running CI it says to rerun `review-ready.sh <n>` once CI is green, because nothing flips the draft later. Then print the summary exactly as `references/review-format.md` lays it out, and nothing after it but the commit links, if fix mode made any. Never post the review to GitHub unless the user asks.

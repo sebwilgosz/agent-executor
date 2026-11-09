@@ -80,6 +80,23 @@ for f in skills/build/SKILL.md skills/ship/SKILL.md agents/builder.md references
   is "$f doesn't run gh pr ready itself" "0" "$(grep -c 'gh pr ready' "$REPO/$f")"
 done
 
+# E. The review uses CI: step 2 asks ci-checks.sh, step 6 reuses the answer.
+STEP2=$(awk '/^## 2\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
+STEP6=$(awk '/^## 6\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/review/SKILL.md")
+check "step 2 asks ci-checks.sh for a PR, waiting"  'scripts/ci-checks.sh <n> --wait 20' "$STEP2"
+check "step 2: runs in the background"              'background' "$(printf '%s\n' "$STEP2" | grep 'ci-checks.sh')"
+check "step 2: red is a Critical Build finding"     'Critical finding, category Build' "$STEP2"
+check "step 2: red evidence has the LOG lines"      'LOG:' "$STEP2"
+check "step 2: still running is no Critical"        'still running' "$STEP2"
+check "step 2: no CI builds locally"                'CI: none' "$STEP2"
+check "step 2: UNKNOWN builds locally"              'UNKNOWN' "$STEP2"
+check "step 2: no longer only reads gh pr checks"   'ci-checks.sh' "$STEP2"
+check "step 6 reuses step 2's answer"               "step 2's answer" "$STEP6"
+check "step 6: only the tests that cover the fixes" 'only the tests that cover' "$STEP6"
+check "step 6: CI on the pushed head"               'ci-checks.sh <n> --wait 20' "$STEP6"
+check "build step 5 lists a draft left for CI"      'review-ready.sh' "$(awk '/^## 5\. /{f=1; print; next} /^## /{f=0} f' "$REPO/skills/build/SKILL.md")"
+check "the Ready line says why a draft was left"    'CI still running' "$(cat "$REPO/references/review-format.md")"
+
 echo
 printf 'review-rubric: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
