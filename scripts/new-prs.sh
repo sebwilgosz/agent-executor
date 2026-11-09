@@ -11,6 +11,7 @@ event=$(cat)
 kind=
 prs=
 branches=
+via_script=
 
 # Fast exit for the ordinary tool call: these hooks run after every Bash call. Byte
 # matching, since bash's multibyte match is most of the cost on a large event. The
@@ -19,11 +20,11 @@ lc_was_set=${LC_ALL+1}
 lc_was=${LC_ALL-}
 LC_ALL=C
 case "$event" in
-  *"gh pr create"* | *"gh stack submit"* | *"gh stack link"* | *create_pull_request*) ;;
+  *"gh pr create"* | *"gh stack submit"* | *"gh stack link"* | *"pr-open.sh"* | *create_pull_request*) ;;
   *) exit 0 ;;
 esac
 case "$event" in
-  *"Created PR #"* | */pull/*) ;;
+  *"Created PR #"* | *"PR: #"* | */pull/*) ;;
   *) exit 0 ;;
 esac
 if [ -n "$lc_was_set" ]; then LC_ALL=$lc_was; else unset LC_ALL; fi
@@ -59,6 +60,9 @@ case "$tool" in
       kind=stack
     elif printf '%s' "$command" | grep -qE '(^|[;&|("[:space:]])gh +pr +create'; then
       kind=pr
+    elif printf '%s' "$command" | grep -qE '(^|[;&|("[:space:]])([^[:space:];&|(`"'\'']*/)?pr-open\.sh([[:space:]"]|$)'; then
+      kind=pr
+      via_script=1
     fi
     ;;
   mcp__*__create_pull_request) kind=pr ;;
@@ -99,6 +103,9 @@ read_created() {
 
 if [ "$kind" = stack ]; then
   read_created
+elif [ "$kind" = pr ] && [ -n "${via_script-}" ]; then
+  # pr-open.sh prints "PR: #<n> <url> base=<base> opened|updated"; only opened is new.
+  prs=$(printf '%s' "$response" | grep -aoE 'PR: #[0-9]+ https://[^ "\\]+ base=([^ "\\]|\\.)+ opened([^[:alnum:]]|$)' | tail -1 | grep -oE 'https://[^ "\\]+')
 elif [ "$kind" = pr ]; then
   prs=$(printf '%s' "$response" | grep -oE 'https://github\.com/[^/"[:space:]]+/[^/"[:space:]]+/pull/[0-9]+' | tail -1)
 fi
