@@ -74,3 +74,28 @@ Every review writes its full text, laid out as above, to a file under the Execut
 ```
 
 `scripts/review-post.sh --path pr <url>` or `--path branch [<name>]` prints the path and creates the folder. A re-review of the same PR overwrites its file, so a stacked PR re-reviewed after `gh stack rebase` keeps one file. `scripts/review-post.sh <pr-url> <file>` then follows the `Post:` setting in `## Reviews` of `executor/config.md`: `off` (the default) only prints `SAVED:`; `own PRs` posts the file as a comment on the user's own open PR, or edits the comment it posted before, and never posts on someone else's PR. A review with no findings is saved and posted as its short summary.
+
+## The line per PR
+
+In a build, the review file stays out of the build session's context. Each finished PR prints exactly one line instead of its summary:
+
+```text
+PR #41 · ✅ ready · 0 Critical · 4 suggestions · 2 rounds · <comment url | file path>
+```
+
+- **The mark** is the verdict: `✅ ready`, `⚠️ mergeable` or `❌ changes required`. A review that failed reads `PR #41 · ❌ review failed: <reason>`.
+- **The last field** is the comment's url when `review-post.sh` printed `POSTED:`, the review file otherwise. On a `STOP:` it is the file, followed by the reason in a few words.
+- **Standalone `/executor:review`** still prints the full summary above, read from the file: there it is the one review the user asked for.
+
+## The build block
+
+When no builder or review is left, a build prints one block for the whole build, instead of a checklist and a summary per PR. The plan file keeps its full checklist.
+
+```text
+Executor build · <spec title>
+<stack>: #41 ✅ · #42 ✅ · #43 ⚠️      (bottom first)
+<stack>: #44 ❌ 1 Critical open
+Suggestions: 23 across 9 PRs · reviews: <comment links, or the reviews folder>
+Open: <questions, wrong spec tests, or nothing>
+Merge: #41, #42, #43, then #44 once fixed
+```
