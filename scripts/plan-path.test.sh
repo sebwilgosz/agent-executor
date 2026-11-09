@@ -340,7 +340,8 @@ E2c: Repo audit
 E3: Search roots
 E4: Plans folder
 E5: Spec home
-E6: Check" "$heads"
+E6: Check
+E7: Review comments" "$heads"
 check "init: suggests the default"      '~/.engineer-of-wealth/executor/plans' "$INITDOC"
 check "init: writes a Plans section"    '## Plans' "$INITDOC"
 check "init: moving moves nothing"      'moves nothing' "$INITDOC"

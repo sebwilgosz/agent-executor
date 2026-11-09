@@ -8,6 +8,7 @@
 #   Post: off          (default, also with no file or no section) | own PRs
 #
 # Usage:   review-post.sh <pr-url> <file>
+#          review-post.sh --on <pr-url> <file>     as `own PRs` for this one call (the user asked)
 #          review-post.sh --path pr <pr-url>
 #          review-post.sh --path branch [<name>]   (no name: HEAD)
 # --path creates the folder and prints the file the review goes to:
@@ -57,6 +58,8 @@ if [ "${1:-}" = --path ]; then
   exit 0
 fi
 
+force=0
+[ "${1:-}" = --on ] && { force=1; shift; }
 url="${1:-}"; file="${2:-}"
 
 ERR=$(mktemp); BODY=$(mktemp)
@@ -74,6 +77,7 @@ if [ -f "$cfg" ]; then
   v=$(awk '/^## /{s=($0=="## Reviews")} s && /^[Pp]ost:/{sub(/^[Pp]ost:[ \t]*/,""); print; exit}' "$cfg" | tr '[:upper:]' '[:lower:]' | sed -E 's/[ \t]+$//')
   [ "$v" = "own prs" ] && post=own
 fi
+[ "$force" = 1 ] && post=own
 [ "$post" = off ] && { saved; exit 0; }
 
 slug=$(printf '%s' "$url" | sed -nE 's#^https?://[^/]+/([^/]+/[^/]+)/pull/[0-9]+.*$#\1#p')
