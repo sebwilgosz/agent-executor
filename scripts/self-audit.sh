@@ -190,6 +190,14 @@ e=$ERRS
   && ok "integrity: the status script is present" \
   || err "integrity: scripts/status.sh missing - /executor:status has nothing to run → $REINSTALL"
 
+# -- CI state: ci-checks.sh reports the checks of one commit, and status.sh and it both
+#    source ci-state.sh to read a check's state.
+e=$ERRS
+[ -s "$ROOT/scripts/ci-checks.sh" ] || err "integrity: scripts/ci-checks.sh missing - the checks of a commit cannot be read → $REINSTALL"
+[ -s "$ROOT/scripts/ci-state.sh" ] || err "integrity: scripts/ci-state.sh missing - status.sh and ci-checks.sh source it to read a check's state → $REINSTALL"
+[ -s "$ROOT/scripts/git-hooks.sh" ] || err "integrity: scripts/git-hooks.sh missing - the commit check cannot be installed or asked about → $REINSTALL"
+[ "$e" = "$ERRS" ] && ok "integrity: the CI scripts are present"
+
 # -- finding a PR's checkout: without find-checkout.sh a review of another
 #    repo's PR has no way to its local checkout.
 e=$ERRS
