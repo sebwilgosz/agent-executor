@@ -75,7 +75,7 @@ export GH_PR_LIST=""   # stub returns []
 out=$(run)
 check "open: pushes the branch"            "PUSHED" "$out"
 check "open: asks to open a draft PR"       "OPEN_PR" "$out"
-check "open: base is the default branch"    "base=main" "$out"
+check "open: below is default"    "below=default" "$out"
 
 # 4. Idempotence: a PR already exists → push only, never a second PR.
 printf '[{"number":42,"url":"https://github.com/o/r/pull/42"}]\n' > "$ROOT/prlist.json"
@@ -97,7 +97,7 @@ cat > "$ROOT/stack.json" <<'JSON'
 JSON
 export GH_STACK="$ROOT/stack.json"
 out=$(run)
-check  "stack: base is the branch below, resolved from its SHA" "base=feat/lower" "$out"
+check  "stack: base is the branch below, resolved from its SHA" "below=feat/lower" "$out"
 refute "stack: base is never a raw commit SHA" "222222222222" "$out"
 
 # 5b. Bottom of a stack: the current branch's base is the trunk commit, which no
@@ -109,7 +109,7 @@ cat > "$ROOT/stack-bottom.json" <<'JSON'
 JSON
 export GH_STACK="$ROOT/stack-bottom.json"
 out=$(run)
-check  "stack bottom: base is the default branch" "base=main" "$out"
+check  "stack bottom: base is the default branch" "below=default" "$out"
 refute "stack bottom: base is never a raw commit SHA" "111111111111" "$out"
 export GH_STACK=""
 
