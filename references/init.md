@@ -87,6 +87,19 @@ Run `bash <plugin root>/scripts/init-delete-branches.sh` once and read its tagge
   On YES run `bash <plugin root>/scripts/init-delete-branches.sh --apply` and show its line. On NO go on.
 - `STOP: <reason>` — show the line as it is and carry on with E3.
 
+## E2c: Repo audit
+
+CI, the commit hook, stacked PRs and branch cleanup each save tokens or turns, and every repository has a different mix. Run this only when the current folder is a git repository; otherwise skip it with one line.
+
+Run `bash <plugin root>/scripts/repo-audit.sh` once. It only reads. Each finding ends in `→ <what to do>`. Go through the findings with the user **one at a time**, in the output's order. For each, say three things: what it costs today, what the fix saves, and exactly how to do it. Then wait for the user before the next one.
+
+- **CI missing:** the full suite runs in model turns on every PR. Draft a `.github/workflows/test.yml` from the repo's own install, build, lint and test commands (the `package.json` scripts, the `Makefile`, its `CLAUDE.md` or `AGENTS.md`), running on `pull_request` and on push to the default branch. In a monorepo, cover the packages that have a test command. Show it in the chat for the user to add.
+- **CI only lints:** show the test step to add to the existing workflow, the same way.
+- **Commit hook off:** lint and type check run as model turns. Give the command for the user to run: `bash <plugin root>/scripts/git-hooks.sh install` with the absolute path. When the finding says `core.hooksPath` bypasses it, or that no package has a lint or type check, explain that and offer no install.
+- **gh stack, Automatically delete head branches, Executor not enabled:** name the fix the finding gives. E1, E2b and E2 offer to apply them.
+
+Executor applies none of it: no install, no file written, no commit, no PR. The user does each step, and a rerun of init shows what is now in place.
+
 ## E3: Search roots
 
 Executor finds a PR's local checkout under these folders, up to two levels deep, and clones into the first one only when you say yes.
@@ -166,11 +179,11 @@ Where specs are kept for the folder you run init in. Run `bash <plugin root>/scr
 
 ## E6: Check
 
-Run `bash <plugin root>/scripts/self-audit.sh` once, exactly that command with the absolute path and no quotes. Reply with its summary line and every `✗` and `⚠` line as it is: each one already says what to do.
+Run `bash <plugin root>/scripts/self-audit.sh` once, then `bash <plugin root>/scripts/repo-audit.sh` once, each exactly that command with the absolute path and no quotes. Reply with each summary line and every `✗` and `⚠` line as it is: each one already says what to do. A rerun of init shows in `repo-audit.sh` what is now in place.
 
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1, the read-only detects in E2 and E2b and reading `config.md` in E3 and E4 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E2b, E3, E4 and E5 writes run only on YES.
+- Ask before installing or configuring anything; the table in E1, the read-only detects in E2 and E2b, the read-only `repo-audit.sh` in E2c and reading `config.md` in E3 and E4 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E2b, E3, E4 and E5 writes run only on YES. E2c writes nothing at all: it never runs `git-hooks.sh install`, writes a workflow or opens a PR.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
 - Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
 - Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2 and, on GitHub, the repository's delete-head-branches setting in E2b and, in the folder you name, the `## Specs` section in E5. That file is left uncommitted.
