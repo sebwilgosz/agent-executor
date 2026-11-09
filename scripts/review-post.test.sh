@@ -119,6 +119,13 @@ out=$(bash "$POST" "not a url" "$REV" 2>&1)
 check "bad PR url: STOP" "STOP:" "$out"
 check "bad PR url: SAVED" "SAVED: $REV" "$out"
 
+cfg "## Reviews" "Post: off"
+: > "$GH_LOG"; out=$(bash "$POST" --on "$URL" "$REV" 2>&1)
+check "--on with the setting off: posted" "POSTED:" "$out"
+GH_VIEW="someone OPEN"; out=$(bash "$POST" --on "$URL" "$REV" 2>&1)
+check "--on on someone else's PR: still not posted" "NOTE: not posted, not your PR" "$out"
+GH_VIEW="me OPEN"
+
 echo "review-post.sh --path"
 p=$(bash "$POST" --path pr "$URL")
 if [ "$p" = "$EOW_HOME/executor/reviews/o/r/PR-7.md" ]; then ok "path: a PR"; else bad "path: a PR" "$p"; fi
@@ -136,6 +143,20 @@ if [ "$p" = "$EOW_HOME/executor/reviews/acme/widgets/main.md" ]; then ok "path: 
 NOREM="$ROOT/lonely"; git init -q -b main "$NOREM"
 p=$(cd "$NOREM" && bash "$POST" --path branch topic)
 if [ "$p" = "$EOW_HOME/executor/reviews/local/lonely/topic.md" ]; then ok "path: no remote goes to local/"; else bad "path: no remote goes to local/" "$p"; fi
+
+echo "docs"
+REPO=$(cd -P "$SELF_DIR/.." && pwd)
+INIT=$(cat "$REPO/references/init.md")
+FORMAT=$(cat "$REPO/references/review-format.md")
+SKILLDOC=$(cat "$REPO/skills/review/SKILL.md")
+AUDIT=$(cat "$REPO/scripts/self-audit.sh")
+check "init: E7 asks about posting" "## E7: Review comments" "$INIT"
+check "init: E7 writes ## Reviews" '## Reviews' "$INIT"
+check "init: E7 says whose account" "labelled as an Executor review by Claude" "$INIT"
+check "self-audit: knows ## Reviews" '## Reviews' "$AUDIT"
+check "review-format: where the file lives" 'executor/reviews/<owner>/<repo>/PR-<n>.md' "$FORMAT"
+check "review skill: posts only through review-post.sh" 'only through `review-post.sh`' "$SKILLDOC"
+refute "review skill: the old sentence is gone" 'unless the user asks' "$SKILLDOC"
 
 echo
 echo "$PASS passed, $FAIL failed"

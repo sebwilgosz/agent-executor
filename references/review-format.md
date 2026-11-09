@@ -62,3 +62,15 @@ CI: <✅ green | ❌ red | ⏳ running | ⚪ none>
 - **The Build line says where the build ran:** `✅ passed · CI` when CI passed, `⚪ not run · CI still running` while it is, the local command otherwise.
 - **The Checkout line prints only when the checkout's branch at the end differs from the one at the start** (`git branch --show-current`), `<why>` saying what stopped the review from switching back, e.g. uncommitted changes.
 - **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · fork PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings are all still open and the verdict rule applies to them unchanged.
+
+## Where the review lives
+
+Every review writes its full text, laid out as above, to a file under the Executor home, never in the repository (`EOW_HOME` overrides `~/.engineer-of-wealth`):
+
+```text
+~/.engineer-of-wealth/executor/reviews/<owner>/<repo>/PR-<n>.md      a PR
+~/.engineer-of-wealth/executor/reviews/<owner>/<repo>/<branch>.md    a branch with no PR (a / in the name becomes -)
+~/.engineer-of-wealth/executor/reviews/local/<folder name>/<branch>.md   no remote to read an owner and repo from
+```
+
+`scripts/review-post.sh --path pr <url>` or `--path branch [<name>]` prints the path and creates the folder. A re-review of the same PR overwrites its file, so a stacked PR re-reviewed after `gh stack rebase` keeps one file. `scripts/review-post.sh <pr-url> <file>` then follows the `Post:` setting in `## Reviews` of `executor/config.md`: `off` (the default) only prints `SAVED:`; `own PRs` posts the file as a comment on the user's own open PR, or edits the comment it posted before, and never posts on someone else's PR. A review with no findings is saved and posted as its short summary.
