@@ -14,12 +14,15 @@
 #   executor: PASS|WARN|FAIL — N passed, N errors, N warnings
 # -v      also print what passed
 # --strict exit 0 clean, 1 warnings, 2 errors (for hooks and cron)
+# --integrity-only skip SETUP (gh sign-in, gh stack, search roots), which only a
+#        configured machine can satisfy; CI runs this so the plugin's own files
+#        are still checked in full
 
 exec 2>/dev/null
 
-VERBOSE=0; STRICT=0
+VERBOSE=0; STRICT=0; INTEGRITY_ONLY=0
 for a in "$@"; do
-  case "$a" in -v) VERBOSE=1 ;; --strict) STRICT=1 ;; esac
+  case "$a" in -v) VERBOSE=1 ;; --strict) STRICT=1 ;; --integrity-only) INTEGRITY_ONLY=1 ;; esac
 done
 ERRS=0; WARNS=0; OKS=0; DONE=0
 err()  { printf '  ✗ %s\n' "$1"; ERRS=$((ERRS+1)); }
@@ -49,6 +52,9 @@ LOG="$EOW/executor/assign.log"
 USER_ONLY="help init status"
 
 # ===================================================================== SETUP
+if [ "$INTEGRITY_ONLY" -eq 1 ]; then
+  info "setup: skipped, --integrity-only checks the plugin itself"
+else
 if command -v gh >/dev/null; then
   ok "setup: gh $(gh --version | head -1 | awk '{print $3}')"
   if gh auth status >/dev/null; then ok "setup: gh is signed in"
@@ -76,6 +82,7 @@ if [ -s "$ROOT/scripts/roots.sh" ]; then
     warn "setup: search root $r is missing, so Executor finds no checkouts there → create the folder, or change the roots with /executor:init"
   done
   [ "$e" = "$WARNS" ] && ok "setup: search roots present (${#roots[@]})"
+fi
 fi
 
 # ================================================================= INTEGRITY
