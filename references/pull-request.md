@@ -37,6 +37,8 @@ Always these sections, in this order. A section with nothing to say is left out,
 <#PR it is stacked on, e.g. its refactor PR> | nothing
 ```
 
+`scripts/pr-open.sh` fills **Depends on** from the base it used, so a body file written for it leaves the section out.
+
 ## Readable, not long
 
 - **Bullets, not paragraphs.** One idea per bullet, one line per bullet. A paragraph is at most two sentences, and only where a bullet can't carry it.
