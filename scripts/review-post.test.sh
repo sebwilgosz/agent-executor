@@ -148,7 +148,7 @@ echo "docs"
 REPO=$(cd -P "$SELF_DIR/.." && pwd)
 INIT=$(cat "$REPO/references/init.md")
 FORMAT=$(cat "$REPO/references/review-format.md")
-SKILLDOC=$(cat "$REPO/skills/review/SKILL.md")
+SKILLDOC=$(cat "$REPO/skills/review/SKILL.md" "$REPO/references/review-steps.md")
 AUDIT=$(cat "$REPO/scripts/self-audit.sh")
 check "init: E7 asks about posting" "## E7: Review comments" "$INIT"
 check "init: E7 writes ## Reviews" '## Reviews' "$INIT"

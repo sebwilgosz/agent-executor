@@ -42,7 +42,7 @@ When the spec home names a tracker (`Tickets: GitHub`, `Jira project TRAV`, `Lin
 
 ## Review
 
-Type `/executor:review` with a PR number or URL, a branch, or nothing for the current branch. It also starts on its own when Claude opens a PR or you ask for one. It runs on Opus, in five steps:
+Type `/executor:review` with a PR number or URL, a branch, or nothing for the current branch. It also starts on its own when Claude opens a PR or you ask for one. An `executor:reviewer` agent (Opus) does the build and the review and writes the draft to a file, so a long review never fills your session; an `executor:fixer` agent (Sonnet) does the fixing. Five steps:
 
 1. **Build.** Install, build, lint and tests, with your repo's commands, must pass. A PR is built in a throwaway worktree, never in yours.
 2. **Review** the diff for duplication, correctness against your spec, test coverage, security, best practices (including needless inline comments) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around). A doc the diff makes false, like a removed flag, is Critical and gets corrected.

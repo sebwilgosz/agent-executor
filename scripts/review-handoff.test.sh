@@ -22,7 +22,7 @@ bad()   { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; printf '       %s\n' "$2"
 check() { case "$3" in *"$2"*) ok "$1" ;; *) bad "$1" "want substring: $2" ;; esac; }
 is()    { [ "$2" = "$3" ] && ok "$1" || bad "$1" "want: $2 | got: $3"; }
 
-REVIEW=$(cat "$REPO/skills/review/SKILL.md")
+REVIEW=$(cat "$REPO/skills/review/SKILL.md" "$REPO/references/review-steps.md")
 HELP=$(cat "$REPO/skills/help/SKILL.md")
 README=$(cat "$REPO/README.md")
 FORMAT=$(cat "$REPO/references/review-format.md")
@@ -78,7 +78,7 @@ done
 # E. Nothing local: no home paths beyond the fake /home/you, no wikilinks.
 # Personal names are not spelled out here, since this file ships too.
 local_re='/Users/|/home/[^y/]|\[\['
-for f in skills/review/SKILL.md skills/help/SKILL.md README.md references/review-format.md; do
+for f in skills/review/SKILL.md references/review-steps.md agents/reviewer.md agents/fixer.md skills/help/SKILL.md README.md references/review-format.md; do
   hit=$(grep -niE "$local_re" "$REPO/$f" | head -1)
   [ -z "$hit" ] && ok "$f names nothing local" || bad "$f names nothing local" "$hit"
 done
