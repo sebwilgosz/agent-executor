@@ -134,6 +134,19 @@ done
   && ok "integrity: the review's docs check is present" \
   || err "integrity: scripts/docs-mentions.sh missing - /executor:review cannot check the docs against the diff → $REINSTALL"
 
+# -- the review's file and opt-in posting: without review-post.sh a review has no
+#    saved file and the Post setting in config.md does nothing.
+[ -s "$ROOT/scripts/review-post.sh" ] \
+  && ok "integrity: the review's save and post step is present" \
+  || err "integrity: scripts/review-post.sh missing - /executor:review cannot save or post its review → $REINSTALL"
+if [ "$INTEGRITY_ONLY" -eq 0 ] && [ -f "$EOW/executor/config.md" ]; then
+  pv=$(awk '/^## /{s=($0=="## Reviews")} s && /^[Pp]ost:/{sub(/^[Pp]ost:[ \t]*/,""); print; exit}' "$EOW/executor/config.md" | tr '[:upper:]' '[:lower:]' | sed -E 's/[ \t]+$//')
+  case "$pv" in
+    ""|off|"own prs") ok "setup: review posting is ${pv:-off}" ;;
+    *) warn "setup: ## Reviews has Post: $pv, which is not off or own PRs, so reviews are not posted → set it with /executor:init" ;;
+  esac
+fi
+
 # -- the review's last step: without review-ready.sh a passing PR stays a draft.
 [ -s "$ROOT/scripts/review-ready.sh" ] \
   && ok "integrity: the review's ready step is present" \

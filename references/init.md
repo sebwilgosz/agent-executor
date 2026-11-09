@@ -37,7 +37,7 @@ On YES run exactly `gh extension install github/gh-stack`, then `gh stack --vers
 - Stacked PRs must be enabled on each GitHub repository. Where they are not, `gh stack submit` fails and Executor falls back to plain PRs on its own.
 - In each repository Executor builds in, two settings keep `gh stack` from stopping at a prompt: `git config rerere.enabled true` and `git config remote.pushDefault origin`. If the current folder is a git repository and either is unset, offer to set them here (YES / NO); never set them globally.
 
-**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3, and the plans folder, E4), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails or is refused.
+**Files to write:** `~/.engineer-of-wealth/executor/config.md`, Executor's settings (the search roots, E3, the plans folder, E4, and whether reviews are posted on your own PRs, E7), only on approval. Its other file, `~/.engineer-of-wealth/executor/assign.log`, is written by the hook when assigning a PR fails or is refused.
 
 ## E2: Enable Executor in this repository
 
@@ -181,9 +181,41 @@ Where specs are kept for the folder you run init in. Run `bash <plugin root>/scr
 
 Run `bash <plugin root>/scripts/self-audit.sh` once, then `bash <plugin root>/scripts/repo-audit.sh` once, each exactly that command with the absolute path and no quotes. Reply with each summary line and every `✗` and `⚠` line as it is: each one already says what to do. A rerun of init shows in `repo-audit.sh` what is now in place.
 
+## E7: Review comments
+
+Whether Executor posts its reviews as a comment on your own PRs. Every review is saved in `~/.engineer-of-wealth/executor/reviews/` either way; this only decides about the comment. It is asked once.
+
+Read the same file. The setting is the `Post:` line of its `## Reviews` section: `off` or `own PRs`.
+
+- **Setting present:** show it and ask **KEEP** (write nothing) or **CHANGE** (ask as below, with it as the default).
+- **No file, no `## Reviews` section or no `Post:` line:** ask.
+
+```
+REVIEW COMMENTS
+
+Post Executor's reviews as a comment on your own PRs? They are saved locally either way. (off / own PRs)
+Default: off
+```
+
+Say: the comment is posted from your GitHub account, labelled as an Executor review by Claude. It is only ever posted on your own PRs, and a re-review edits that comment instead of adding another. An empty answer takes `off`. Then show the section, for example:
+
+```markdown
+## Reviews
+Post: own PRs
+```
+
+and ask:
+
+```
+- YES - write it
+- FIX - tell me what to change
+```
+
+Write `## Reviews` only on YES, like E3 and E4: replace only that section and keep everything else; when the file has no such section, add it at the end. Under a central setup the file joins its one approval (S4) instead.
+
 ## Rules
 
-- Ask before installing or configuring anything; the table in E1, the read-only detects in E2 and E2b, the read-only `repo-audit.sh` in E2c and reading `config.md` in E3 and E4 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E2b, E3, E4 and E5 writes run only on YES. E2c writes nothing at all: it never runs `git-hooks.sh install`, writes a workflow or opens a PR.
+- Ask before installing or configuring anything; the table in E1, the read-only detects in E2 and E2b, the read-only `repo-audit.sh` in E2c and reading `config.md` in E3, E4 and E7 and `spec-home.sh` in E5 are the only things that run without asking. The E2, E2b, E3, E4, E5 and E7 writes run only on YES. E2c writes nothing at all: it never runs `git-hooks.sh install`, writes a workflow or opens a PR.
 - Never run `gh auth login` or any other interactive command: tell the user to run it.
 - Never commit `.claude/settings.json`, or anything else, without asking; never touch `settings.local.json`.
 - Write nothing outside `~/.engineer-of-wealth/` except, in the current repository and only on YES, the two git settings in E1 and the `.claude/settings.json` enable in E2 and, on GitHub, the repository's delete-head-branches setting in E2b and, in the folder you name, the `## Specs` section in E5. That file is left uncommitted.
