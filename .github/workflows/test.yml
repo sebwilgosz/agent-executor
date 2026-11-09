@@ -1,0 +1,36 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mount a disk that can clone files
+        run: |
+          sudo apt-get install -y -q xfsprogs
+          truncate -s 1G "$RUNNER_TEMP/clone.img"
+          mkfs.xfs -q -m reflink=1 "$RUNNER_TEMP/clone.img"
+          sudo mkdir -p /mnt/clone
+          sudo mount -o loop "$RUNNER_TEMP/clone.img" /mnt/clone
+          sudo chown "$USER" /mnt/clone
+          echo "TMPDIR=/mnt/clone" >> "$GITHUB_ENV"
+      - name: Run every script test
+        run: |
+          fail=0
+          for t in scripts/*.test.sh; do
+            echo "::group::$t"
+            if bash "$t"; then echo "PASS $t"; else echo "::error::$t failed"; fail=1; fi
+            echo "::endgroup::"
+          done
+          exit "$fail"
+      - name: Self-audit
+        if: ${{ !cancelled() }}
+        run: bash scripts/self-audit.sh -v --strict --integrity-only

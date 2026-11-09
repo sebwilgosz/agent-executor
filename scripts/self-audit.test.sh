@@ -270,6 +270,21 @@ for s in repo-tidy branch-finished folder-state drift; do
   [ "$rc" -eq 0 ] && ok "$s missing: exit 0" || bad "$s missing: exit 0" "exit $rc"
 done
 
+# --integrity-only: a machine with no gh and no roots passes; a broken plugin still fails.
+NOGH=$(mktemp -d)
+for t in bash dirname basename cat grep sed awk sort head tail tr wc cut jq date git uname mktemp rm cp mkdir; do
+  p=$(command -v "$t") && ln -s "$p" "$NOGH/$t"
+done
+out=$(PATH="$NOGH" EOW_HOME="$TMP/none" HOME="$TMP/none" bash "$AUDIT" --integrity-only --strict); rc=$?
+check  "integrity-only: PASS without gh or roots" "executor: PASS" "$out"
+refute "integrity-only: no setup finding" "setup:" "$out"
+[ "$rc" -eq 0 ] && ok "integrity-only: --strict exits 0" || bad "integrity-only: --strict exits 0" "exit $rc"
+copy_ok
+rm -f "$PLUG/scripts/ship.sh"
+out=$(ROOT="$PLUG" audit --integrity-only); rc=$?
+check  "integrity-only: a missing script is still an error" "✗ integrity: scripts/ship.sh missing" "$out"
+rm -rf "$NOGH"
+
 echo
 printf 'self-audit.sh: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

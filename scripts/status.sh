@@ -39,7 +39,6 @@ MAX_LOOKUPS=8
 ROW_CUT=40
 EM=$'\xe2\x80\x94'
 BUCKETS=("MERGE NOW" "WAITING ON YOU" "MOVING" "UNKNOWN")
-CHECKS_JQ='"\(.state) \(.isDraft) \([.statusCheckRollup[]? | if (.conclusion // "") != "" then .conclusion elif (.state // "") != "" then .state else (.status // "PENDING") end] | join(","))"'
 
 say() { printf '%s\n' "$1"; exit 0; }
 
@@ -53,6 +52,11 @@ log() {
 if ! . "$SELF_DIR/plan-items.sh"; then
   log "scripts/plan-items.sh is missing"
   say "UNKNOWN: scripts/plan-items.sh is missing, so no plan can be read"
+fi
+
+if ! . "$SELF_DIR/ci-state.sh"; then
+  log "scripts/ci-state.sh is missing"
+  say "UNKNOWN: scripts/ci-state.sh is missing, so no check can be read"
 fi
 
 DRIFT_OK=0
@@ -123,24 +127,6 @@ run_lookups() {
       >"$WORK/$1.out" 2>"$WORK/$1.err" </dev/null
     echo $? >"$WORK/$1.rc"
     exit 0' _ < "$WORK/jobs"
-}
-
-# Sets CI from the check values gh printed, comma-separated.
-ci_of() {
-  local v pending=0 old_ifs=$IFS
-  CI=none
-  [ -n "$1" ] || return 0
-  IFS=,
-  for v in $1; do
-    case "$v" in
-      FAILURE|ERROR|TIMED_OUT|CANCELLED|ACTION_REQUIRED|STARTUP_FAILURE) CI=red; IFS=$old_ifs; return 0 ;;
-      SUCCESS|NEUTRAL|SKIPPED) ;;
-      *) pending=1 ;;
-    esac
-  done
-  IFS=$old_ifs
-  CI=green
-  [ "$pending" -eq 0 ] || CI=running
 }
 
 # Sets LOOKUP_STATE, LOOKUP_DRAFT and CI; returns 1 with LOOKUP_WHY set.

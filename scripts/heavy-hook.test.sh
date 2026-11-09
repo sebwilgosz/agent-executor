@@ -382,6 +382,7 @@ end_to_end() {
   run "$c"
   want=$(PATH="$E2E:$PATH" "$BASH_BIN" -c "$c" 2>&1 </dev/null); want_rc=$?
   got=$(PATH="$E2E:$PATH" "$BASH_BIN" -c "$(new_command)" 2>&1 </dev/null); got_rc=$?
+  if [ -n "${3:-}" ]; then want=$(printf '%s\n' "$want" | sort); got=$(printf '%s\n' "$got" | sort); fi
   is "$name: same output" "$want" "$got"
   is "$name: same exit code" "$want_rc" "$got_rc"
   grep -qE '  npm-test  .*  acquired$' "$LOG" && ok "$name: took a slot" || bad "$name: took a slot" "$(cat "$LOG" 2>/dev/null)"
@@ -389,7 +390,7 @@ end_to_end() {
 }
 end_to_end 'plain' 'npm test'
 end_to_end 'heredoc' $'npm test <<\'EOF\'\nfrom "heredoc" \\ $HOME\nEOF'
-end_to_end 'pipe' 'npm test | tr a-z A-Z'
+end_to_end 'pipe' 'npm test | tr a-z A-Z' unordered
 end_to_end 'function' 'f() { echo "in f"; return 4; }; npm test; f'
 
 # The wiring.

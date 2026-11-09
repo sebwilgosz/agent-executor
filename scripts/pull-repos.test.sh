@@ -463,7 +463,9 @@ is "group run: selected repo updated" "$(remote_sha other/tools)" "$(sha_of "$P/
 is "group run: the rest untouched" "$api_before" "$(sha_of "$P/api")"
 is "group run: the rest not even fetched" "$api_before" "$(sha_of "$P/api" origin/main)"
 
-# Owner and repo come from the origin URL in any form.
+# Owner and repo come from the origin URL in any form. The stand-in GitHub
+# answers to ACME as GitHub does; a case-sensitive disk needs the alias.
+[ -e "$GH/ACME" ] || ln -s acme "$GH/ACME"
 for u in git@github.com:ACME/api.git https://github.com/acme/api ssh://git@github.com/acme/api.git; do
   fresh; clone_to acme/api "$P/x"; git -C "$P/x" remote set-url origin "$u"
   is "origin $u: matched by owner" "Pulled all 1 repo." "$(run acme)"
