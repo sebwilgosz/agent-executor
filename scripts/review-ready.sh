@@ -9,7 +9,7 @@
 # Usage:   review-ready.sh <number|url>
 #          review-ready.sh --branch [<name>]   (no name: HEAD)
 # Before it flips, CI on the PR's head is read with ci-checks.sh (no wait): green or
-# no CI flips, still running or red leaves the draft.
+# no CI flips; still running, red or unreadable leaves the draft.
 # Output is one line; the exit code is always 0:
 #   READY: marked ready
 #   SKIP: <why>       left as it is (CI still running, CI red: <check>, ...)
@@ -74,6 +74,8 @@ ci=$(bash "$(dirname "$0")/ci-checks.sh" "$num" 2>/dev/null | head -n 1)
 case "$ci" in
   "CI: running"*) say SKIP "CI still running" ;;
   "CI: red "*) ci=${ci#CI: red }; say SKIP "CI red: ${ci%% http*}" ;;
+  "CI: green"|"CI: none") ;;
+  *) say UNKNOWN "could not read CI on the PR's head" ;;
 esac
 
 if ! gh pr ready "$pr" >/dev/null 2>"$ERR"; then
