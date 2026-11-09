@@ -33,8 +33,16 @@ case "$1 $2" in
   "pr list")
     h=""; while [ $# -gt 0 ]; do [ "$1" = "--head" ] && h=$2; shift; done
     if [ -f "$(file "$h")" ]; then cat "$(file "$h")"; else printf '[]\n'; fi ;;
-  "stack view") echo "not in a stack" >&2; exit 2 ;;
-  "stack init") exit 0 ;;
+  "stack view")
+    grep -qx "$br" "$GH_DIR/stacked" 2>/dev/null && exit 0
+    echo "not in a stack" >&2; exit 2 ;;
+  "stack init") # like gh-stack: a branch already in a stack can't start another
+    shift 2
+    for b in "$@"; do grep -qx "$b" "$GH_DIR/stacked" 2>/dev/null && { echo "branch \"$b\" already exists in a stack" >&2; exit 5; }; done
+    printf '%s\n' "$@" >> "$GH_DIR/stacked" ;;
+  "stack add") # only from the top of a stack; adopts the branch, checkout unchanged
+    [ "$(tail -1 "$GH_DIR/stacked" 2>/dev/null)" = "$br" ] || { echo "can only add branches to the top of the stack" >&2; exit 5; }
+    echo "$3" >> "$GH_DIR/stacked"; echo "add-from $br" >> "$GH_CALLS" ;;
   "stack submit")
     [ -n "${GH_SUBMIT_EXIT:-}" ] && { echo "stacked PRs not enabled" >&2; exit "$GH_SUBMIT_EXIT"; }
     git push -q origin "$br" || exit 1
@@ -97,6 +105,21 @@ out=$(GH_NEW_BASE=feat/lower run feat/top feat/lower)
 check "on top: base is the branch below" "base=feat/lower opened" "$out"
 check "on top: adopts both branches into a stack" "stack init feat/lower feat/top" "$(cat "$GH_CALLS")"
 check "on top: Depends on is the PR below" "#5" "$(depends)"
+
+# added on top of a branch already in a stack (the build case: the builder below stacked it)
+fresh; feature feat/lower main l.txt; git -C "$WORK" push -q origin feat/lower
+printf '[{"number":5,"url":"https://github.com/o/r/pull/5","state":"OPEN","baseRefName":"main"}]\n' > "$GH_DIR/pr-feat_lower.json"
+echo feat/lower > "$GH_DIR/stacked"
+feature feat/top feat/lower t.txt
+out=$(GH_NEW_BASE=feat/lower run feat/top feat/lower)
+check "stacked below: base is the branch below" "base=feat/lower opened" "$out"
+check "stacked below: adopted on top of that stack, from the branch below" "stack add feat/top
+add-from feat/lower" "$(cat "$GH_CALLS")"
+check "stacked below: now in the stack" "feat/top" "$(cat "$GH_DIR/stacked")"
+check "stacked below: opened through the stack" "stack submit --auto" "$(cat "$GH_CALLS")"
+refute "stacked below: no plain PR outside the stack" "pr create" "$(cat "$GH_CALLS")"
+[ "$(git -C "$WORK" branch --show-current)" = feat/top ] && ok "stacked below: checkout stays on the branch" || bad "stacked below: checkout stays on the branch" "$(git -C "$WORK" branch --show-current)"
+[ "$(git -C "$WORK" worktree list | wc -l | tr -d ' ')" = 1 ] && ok "stacked below: no worktree left behind" || bad "stacked below: no worktree left behind" "$(git -C "$WORK" worktree list)"
 
 # base merged: retarget onto the default branch
 fresh; feature feat/lower main l.txt; git -C "$WORK" push -q origin feat/lower

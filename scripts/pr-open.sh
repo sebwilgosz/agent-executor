@@ -123,10 +123,26 @@ fi
 
 if [ "$rebased" = 1 ]; then push_branch --force-with-lease; else push_branch; fi
 
+# Adopt $branch on top of the stack $below is already in. `gh stack add` runs
+# from a checkout of $below; since $branch is checked out here, it leaves that
+# checkout as it is. A worktree that already has $below is used, else a temporary one.
+stack_add_on_below() {
+  local wt rc
+  wt=$(git worktree list --porcelain | awk -v b="branch refs/heads/$below" '/^worktree /{p=substr($0,10)} $0==b{print p; exit}')
+  if [ -z "$wt" ]; then
+    wt="$TMP/below"
+    try git worktree add -q "$wt" "$below" || return 1
+  fi
+  (cd "$wt" && try gh stack add "$branch"); rc=$?
+  [ "$wt" = "$TMP/below" ] && git worktree remove --force "$wt" >/dev/null 2>&1
+  return $rc
+}
+
 # Put the branch in its stack, then open the PR.
 stacked=1
 if ! gh stack view --json >/dev/null 2>&1; then
-  if [ -n "$below_pr" ]; then try gh stack init "$below" "$branch" || stacked=0
+  if [ -n "$below_pr" ]; then
+    try gh stack init "$below" "$branch" || stack_add_on_below || stacked=0
   else try gh stack init "$branch" || stacked=0; fi
 fi
 
