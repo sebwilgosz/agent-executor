@@ -3,6 +3,7 @@
 #   A. feature-done.md tells the builder to run pr-open.sh and act on its tagged line.
 #   B. feature-done.md no longer hands the builder the git and gh steps.
 #   C. the builder agent points at it, and STOP is reported, not worked around.
+#   E. ship's skill opens through pr-open.sh and never runs gh pr create.
 #   D. pull-request.md says the script fills Depends on.
 #
 # Run: bash scripts/feature-done.test.sh   (exit 0 = all pass)
@@ -28,6 +29,9 @@ lacks "feature-done has no by-hand gh pr edit"        'gh pr edit' references/fe
 has   "the builder points at the opening step"        'pr-open.sh' agents/builder.md
 has   "the builder reports a STOP, not git by hand"   'STOP' agents/builder.md
 has   "pull-request says the script fills Depends on" 'pr-open.sh' references/pull-request.md
+has   "ship runs pr-open.sh"                           'scripts/pr-open.sh' skills/ship/SKILL.md
+has   "ship acts on the STOP: line"                   'STOP:' skills/ship/SKILL.md
+lacks "ship has no by-hand gh pr create"              'gh pr create' skills/ship/SKILL.md
 
 echo
 printf 'feature-done: %d passed, %d failed\n' "$PASS" "$FAIL"

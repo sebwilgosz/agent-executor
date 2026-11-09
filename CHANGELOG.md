@@ -5,7 +5,7 @@
 - A builder opens its PR in two calls: it writes the PR body to a file and runs `scripts/pr-open.sh`. The script puts the branch in its stack, pushes, opens the draft PR on the right base (or updates the one that exists), sets the title and body, and fills `Depends on` itself. Before, the builder worked this out step by step with `git`, `gh stack` and `gh pr`, which cost 12-61k weighted tokens per builder, typically about 30k, about 270k across the 0.10.0 build of 9 PRs. `references/feature-done.md` and `agents/builder.md` now point at the script, and a `STOP:` line is reported, never worked around by hand. `references/pull-request.md` notes that `Depends on` is the script's.
 - The review hook treats a `pr-open.sh` call whose output has a `PR: ... opened` line as a new PR, so the review starts and the PR is assigned as for `gh pr create` and `gh stack submit`. An `updated` line or a `STOP:` never re-triggers it.
 - `scripts/self-audit.sh` reports an error when `references/feature-done.md` loses the `pr-open.sh` instruction; `scripts/feature-done.test.sh` fails the same way.
-- `/executor:ship` is unchanged and still uses `ship.sh`.
+- `/executor:ship` opens its PR through the same `pr-open.sh`, so ship and builders can't drift. `ship.sh` still guards, pushes and looks for an existing PR; for a branch with none it now prints `OPEN_PR: below=<branch|default> head=<branch>`, and the model writes the title and body and makes one `pr-open.sh` call instead of running `gh pr create` itself. The review still starts on its own, through the hook's `pr-open.sh ... opened` rule.
 
 ## 0.10.0 — 2026-11-08
 
