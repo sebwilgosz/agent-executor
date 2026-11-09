@@ -287,6 +287,31 @@ commit_file "$W" src/a.js
 check "worktree commit: the check runs" "WT-LINT" "$OUT"
 check "worktree commit: in the worktree's own folder" "$W" "$OUT"
 
+# 6. status: is the commit check really in place.
+repo
+scripts '{"lint":"echo ok"}'
+is "status: off before install" "HOOKS: off" "$(bash "$HOOKS" status "$R" 2>&1)"
+bash "$HOOKS" install "$R" >/dev/null 2>&1
+is "status: installed" "HOOKS: installed" "$(bash "$HOOKS" status "$R" 2>&1)"
+is "status: read-only, it writes nothing" "" "$(git -C "$R" status --short)"
+scripts '{"typecheck":"echo ok"}'
+is "status: a type check alone is enough" "HOOKS: installed" "$(bash "$HOOKS" status "$R" 2>&1)"
+scripts '{"test":"echo ok"}'
+is "status: no lint or type check, the hook would check nothing" "HOOKS: off" "$(bash "$HOOKS" status "$R" 2>&1)"
+scripts '{"lint":"echo ok"}'
+chmod -x "$R/.git/hooks/post-commit"
+is "status: a hook that cannot run is off" "HOOKS: off" "$(bash "$HOOKS" status "$R" 2>&1)"
+chmod +x "$R/.git/hooks/post-commit"
+git -C "$R" config core.hooksPath "$ROOT/elsewhere"
+is "status: bypassed by core.hooksPath" "HOOKS: off" "$(bash "$HOOKS" status "$R" 2>&1)"
+git -C "$R" config --unset core.hooksPath
+is "status: back once the bypass is gone" "HOOKS: installed" "$(bash "$HOOKS" status "$R" 2>&1)"
+bash "$HOOKS" uninstall "$R" >/dev/null 2>&1
+printf '#!/bin/sh\necho theirs\n' > "$R/.git/hooks/post-commit"
+chmod +x "$R/.git/hooks/post-commit"
+is "status: another tool's hook is not ours" "HOOKS: off" "$(bash "$HOOKS" status "$R" 2>&1)"
+is "status: not a repo" "HOOKS: off" "$(bash "$HOOKS" status "$ROOT/nowhere" 2>/dev/null)"
+
 # 5. The builder's rule.
 IMPL=$(cat "$SELF_DIR/../references/implementation.md")
 check "builder rule: the full build runs once, before the PR" "The full build runs once" "$IMPL"
