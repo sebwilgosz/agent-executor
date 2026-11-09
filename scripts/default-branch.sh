@@ -1,4 +1,4 @@
-# Sourced by ship.sh and review-mode.sh, so both agree on the base. Sets:
+# Sourced by branch-guard.sh (so ship.sh and pr-open.sh) and review-mode.sh, so all agree on the base. Sets:
 #   def — the default branch's name: the local origin/HEAD, else what gh
 #         reports, else a local main/master, else main
 #   cmp — the ref to compare with: origin/<def> when it exists, else <def>
