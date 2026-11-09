@@ -147,6 +147,8 @@ e=$ERRS
 [ -f "$SK/ship/SKILL.md" ] || err "integrity: skills/ship/SKILL.md missing — /executor:ship cannot run → $REINSTALL"
 [ -s "$ROOT/scripts/ship.sh" ] || err "integrity: scripts/ship.sh missing — /executor:ship has no engine → $REINSTALL"
 [ -s "$ROOT/scripts/default-branch.sh" ] || err "integrity: scripts/default-branch.sh missing — ship and review source it for the base → $REINSTALL"
+[ -s "$ROOT/scripts/branch-guard.sh" ] || err "integrity: scripts/branch-guard.sh missing - ship.sh and pr-open.sh source it for the guards and the base → $REINSTALL"
+[ -s "$ROOT/scripts/pr-open.sh" ] || err "integrity: scripts/pr-open.sh missing - a finished branch cannot be turned into an open PR → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: ship skill and its engine are present"
 
 # -- the search roots: every script that looks for a PR's local checkout
