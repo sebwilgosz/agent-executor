@@ -1,6 +1,7 @@
 ---
 name: spec
 description: "Executor: draft a spec for what you want built, from every relevant source (your notes, the repo, its CHANGELOG, issues), and save it where your specs live. Use when the user asks to write a spec or plan something from sources: 'write a spec for X', 'plan X from my notes', 'draft an RFC for X'."
+model: opus
 allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh:*)
 ---
 

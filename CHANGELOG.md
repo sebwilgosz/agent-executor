@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0 — 2026-11-09
+
+The build orchestrates the review agents and prints one compact summary. On the 0.10.0 build (9 PRs) the main thread carried 3.98M of 7.1M weighted tokens, 56%, most of it the reviews run inline and a full summary printed per PR. The reviews now run in agents that return a line each, and the build prints one line per PR and one block at the end.
+
+- `/executor:build` step 4 runs reviewer, verifiers, fixer and `review-post.sh` for each PR instead of `/executor:review` inline, and keeps only the agents' return lines, never the review file. Reviews of different stacks may run at the same time (a stack has at most one review, and one fixer). When it passes the fixer its inputs it tells it to read the CI and Spec lines from the review file header and to take head and base from `gh pr view`.
+- Each finished PR prints one line: `PR #41 · ✅ ready · 0 Critical · 4 suggestions · 2 rounds · <comment url | file path>`. A `review-post.sh` `STOP:` links the file and adds the reason. An agent that returns nothing usable marks the PR `❌ review failed: <reason>`, stops its stack and is never retried silently.
+- Step 5 prints one block for the whole build: a line per stack, bottom first, the suggestion count, what is open and the merge order. The plan file keeps its full checklist. Standalone `/executor:review` still prints the full summary, read from the file. `references/review-format.md` documents the review file, the line per PR and the block; `scripts/build-summary.test.sh` fails if the build runs `/executor:review` inline or prints a full summary per PR.
+- `/executor:spec` runs on Opus (`model: opus`): with no spec found, the build offers it, and a fresh session's context is short, so the uncached switch is cheap. Planning stays in the build session, with no planner agent.
+- Every review is saved to a file under the Executor home, never in the repository. `scripts/review-post.sh` posts it to GitHub only when `## Reviews` in the config says `Post: own PRs` (set in `/executor:init`, E7), as a comment on your own PR, edited on a re-review; the default is `off`.
+- The review runs in an Opus `executor:reviewer` agent and a Sonnet `executor:fixer` agent, with the verifiers as before. `/executor:review` is the caller that spawns them and prints the result, and the steps they share live once in `references/review-steps.md`.
+
 ## 0.12.0 — 2026-11-09
 
 CI takes the test suite off the model. On the 0.10.0 build (9 PRs) the main thread ran 57 test and build commands, about 6 per PR; their output was small, the cost was the turns, each of which re-reads the thread's whole context: up to about 0.7M weighted tokens, about 18% of the main thread. Where a repo has CI, the full suite now runs there while the review reads the diff. A repo with no CI keeps the local full build everywhere.
