@@ -34,26 +34,28 @@ It prints one of (exit code is always 0 — a stop is a note, not a failure):
 |---|---|---|
 | `STOP: <reason>` | the branch can't ship | tell the user the reason in one line; stop |
 | `PUSHED: <branch>` then `PR_EXISTS: #<n> <url>` | pushed; a PR is already open | tell the user it is pushed and the PR already exists (#n); stop — never open a second, never re-review |
-| `PUSHED: <branch>` then `OPEN_PR: base=<base> head=<branch>` | pushed; no PR yet | go to step 3 with that `base` and `head` |
+| `PUSHED: <branch>` then `OPEN_PR: below=<below> head=<branch>` | pushed; no PR yet | go to step 3 with that `below` and `head` |
 
 Idempotent by design: a branch that already has a PR is only pushed. The review
 of follow-up edits is the user's own explicit `/executor:review`.
 
 ## 3. Open the draft PR
 
-Only on `OPEN_PR`. Write the title and body as
-`${CLAUDE_PLUGIN_ROOT}/references/pull-request.md` and
-`${CLAUDE_PLUGIN_ROOT}/references/feature-done.md` lay them out — short and
-readable, the spec tests under **Testing**, a diagram when the change has a
-shape. Write the body to a file, then:
+Only on `OPEN_PR`. Two calls, nothing else: write the body, run the script.
 
-```bash
-gh pr create --draft --base <base> --head <head> --title "<title>" --body-file <file>
-```
+1. Write the title and body as `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md` and
+   `${CLAUDE_PLUGIN_ROOT}/references/feature-done.md` lay them out - short and
+   readable, the spec tests under **Testing**, a diagram when the change has a
+   shape. Leave out **Depends on**; the script fills it. Write the body to a file.
+2. Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/pr-open.sh" --branch <head> --below <below> --title "<title>" --body-file <file>`.
+3. Act on the tagged line it prints (the exit code is always 0):
+   - `PR: #<n> <url> base=<base> opened|updated`: the PR is open. Report its URL.
+   - `RETARGETED: <old-base> merged, based on <default> instead`: the branch below was already merged; say so in the report.
+   - `STOP: <reason>`: nothing was opened. Report the reason and stop; never do the git or gh steps by hand.
 
-Always a **draft**. Run `gh pr create` as your own call (not from inside a
-script): the plugin's hook watches for it and, once the PR is open, assigns the
-author (detached) and starts `executor:review`.
+The PR is always a **draft**. The plugin's hook recognises a `pr-open.sh` call
+whose output says `opened`, assigns the author (detached) and starts
+`executor:review`.
 
 ## 4. Stop here
 
