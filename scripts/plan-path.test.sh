@@ -206,6 +206,7 @@ is "ci: no hook, off" "HOOKS: off" "$(printf '%s\n' "$out" | sed -n 3p)"
 mkdir -p "$CIR/.github/workflows"
 printf 'name: t\non: push\njobs:\n  a:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n' > "$CIR/.github/workflows/ci.yml"
 printf '{"scripts":{"lint":"echo ok"}}\n' > "$CIR/package.json"
+git -C "$CIR" add package.json
 bash "$SELF_DIR/git-hooks.sh" install "$CIR" >/dev/null 2>&1
 out=$(plan_path --ci "$CIR")
 is "ci: a workflow, configured" "CI: configured .github/workflows/ci.yml" "$(printf '%s\n' "$out" | sed -n 2p)"

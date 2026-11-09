@@ -14,6 +14,10 @@
 #
 # Usage:
 #   plan-path.sh [<repo>]              the repo's plans folder
+#   plan-path.sh --ci [<repo>]         the plans folder, then "CI: configured <file>"
+#                                      or "CI: none", then "HOOKS: installed" or
+#                                      "HOOKS: off": the build's first call. A bare
+#                                      call stays one line, as its readers want a path
 #   plan-path.sh --where               env | config | default
 #   plan-path.sh --title <spec file>   the plan title a file name gives
 #   plan-path.sh --new <title> [<repo>]  the path for a new plan, free right now
@@ -228,6 +232,12 @@ summary() {
 }
 
 case "${1:-}" in
+  --ci)
+    require_repo "${2:-.}"
+    printf '%s\n' "$REPO_FOLDER"
+    bash "$SELF_DIR/ci-checks.sh" --detect "${2:-.}" 2>/dev/null || printf 'CI: none\n'
+    bash "$SELF_DIR/git-hooks.sh" status "${2:-.}" 2>/dev/null || printf 'HOOKS: off\n'
+    ;;
   --where)
     plans_root
     printf '%s\n' "$PLANS_SOURCE"

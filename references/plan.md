@@ -48,6 +48,8 @@ The plans folder holds `<org>/<repo>` and no host. A PR is looked up on the host
 ```markdown
 # Build: <spec title>
 Spec: [<spec title>](<path or URL of the spec>)
+CI: <configured <workflow file> | none>
+HOOKS: <installed | off>
 
 ## Foundation
 - [x] <feature> — [<spec part>](<link to that part>) — PR #40 ✅ merged
@@ -62,6 +64,7 @@ Spec: [<spec title>](<path or URL of the spec>)
 ```
 
 - **`Host: <host>`**, under the `Spec:` line, only when `plan-path.sh --host` prints a host other than `github.com`, so the plan can be read from outside a checkout.
+- **`CI:` and `HOOKS:`**, under the `Spec:` line, as `plan-path.sh --ci` printed them on the build's first call. The build gives both to each builder in its brief, so no builder looks them up. A plan from before they existed has neither line: read it as `CI: none` and `HOOKS: off`.
 - **One item per feature**: a checkbox, the feature's name, a link to the part of the spec it owns, then its PR and state once there is one.
 - **A ticket**, when build created one (step 2b of the build skill): `ticket #12` on GitHub, `ticket TRAV-88` on Jira or Linear, after the spec link and before the PR. Readers of the plan skip it; a rerun reads it so it never creates one twice.
 - **Grouped by stack**, as `references/stacks.md` maps a spec: the foundation alone first, a chain of dependent features in one stack bottom-up, independent features in stacks of their own. Stacks are what runs in parallel; the items inside one run in order.
