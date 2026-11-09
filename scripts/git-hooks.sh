@@ -68,6 +68,19 @@ main_checkout() {
   printf '%s' "${hit:-$first}"
 }
 
+device_of() { stat -c %d "$1" 2>/dev/null || stat -f %d "$1" 2>/dev/null; }
+
+# Never a full copy: macOS cp -c quietly makes one where it can't clone, so APFS is
+# checked first; GNU cp is told to fail instead.
+clone_copy() { # <source> <destination>
+  if [ "$(uname)" = Darwin ]; then
+    [ "$(df -T apfs "$1" 2>/dev/null | wc -l)" -gt 1 ] || return 1
+    cp -cR "$1" "$2" 2>/dev/null
+  else
+    cp -R --reflink=always "$1" "$2" 2>/dev/null
+  fi
+}
+
 # 0 cloned or nothing to do, 1 the source is missing, 2 it can't be cloned.
 clone_folder() { # <source> <destination>
   local src=$1 dst=$2 real parent
@@ -76,10 +89,8 @@ clone_folder() { # <source> <destination>
   real=$(cd -P "$src" 2>/dev/null && pwd) || return 2
   parent=$(dirname "$dst")
   mkdir -p "$parent" 2>/dev/null || return 2
-  # cp -c quietly makes a full copy where it can't clone, so rule that out first.
-  [ "$(stat -f %d "$real" 2>/dev/null)" = "$(stat -f %d "$parent" 2>/dev/null)" ] || return 2
-  [ "$(df -T apfs "$real" 2>/dev/null | wc -l)" -gt 1 ] || return 2
-  if ! cp -cR "$real" "$dst" 2>/dev/null; then
+  [ "$(device_of "$real")" = "$(device_of "$parent")" ] || return 2
+  if ! clone_copy "$real" "$dst"; then
     rm -rf "$dst" 2>/dev/null
     return 2
   fi
