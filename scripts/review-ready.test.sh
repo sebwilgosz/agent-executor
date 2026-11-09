@@ -2,7 +2,8 @@
 # Spec tests for scripts/review-ready.sh — the review marks your own draft PR
 # ready, and nobody else's. No network: a stub `gh` on PATH answers from
 # $GH_VIEW and $GH_USER ("FAIL" makes a call fail), $GH_READY=FAIL fails the flip,
-# and every `pr ready` it receives is written to $CALLS.
+# and every `pr ready` it receives is written to $CALLS. $GH_CI sets the checks on
+# the PR's head: green, red, running, or unset for none.
 #
 # Run: bash scripts/review-ready.test.sh   (exit 0 = all pass)
 set -u
@@ -27,7 +28,21 @@ cat > "$BIN/gh" <<'STUB'
 #!/usr/bin/env bash
 reply(){ [ "$1" = FAIL ] && { echo "gh: HTTP 502" >&2; exit 1; }; echo "A new release of gh is available" >&2; [ -n "$1" ] && printf '%s\n' "$1"; exit 0; }
 case "$1 $2" in
-  "pr view") reply "${GH_VIEW:-}" ;;
+  "pr view")
+    case "$*" in *"--json headRefOid"*) echo abc123; exit 0 ;; esac
+    reply "${GH_VIEW:-}" ;;
+  "api --paginate")
+    case "$3" in
+      */check-runs*)
+        case "${GH_CI:-}" in
+          green) echo '{"check_runs":[{"name":"test","conclusion":"success","status":"completed","details_url":"https://ci/1"}]}' ;;
+          red) echo '{"check_runs":[{"name":"test","conclusion":"failure","status":"completed","details_url":"https://ci/2"}]}' ;;
+          running) echo '{"check_runs":[{"name":"test","conclusion":null,"status":"in_progress","details_url":"https://ci/3"}]}' ;;
+          *) echo '{"check_runs":[]}' ;;
+        esac ;;
+      *) echo '{"statuses":[]}' ;;
+    esac
+    exit 0 ;;
   "api user") reply "${GH_USER-me}" ;;
   "pr list")
     [ "${GH_LIST:-}" = FAIL ] && reply FAIL
@@ -42,6 +57,7 @@ exit 0
 STUB
 chmod +x "$BIN/gh"
 export PATH="$BIN:$PATH"
+cd "$ROOT" || exit 1
 
 run(){ : > "$CALLS"; bash "$READY" "$@" 2>&1; }
 calls(){ paste -sd ' ' - < "$CALLS"; }
@@ -68,6 +84,18 @@ is "a merged PR: skipped"        "SKIP: PR is merged"   "$(GH_VIEW='me false fal
 is "a merged PR: no flip"        ""                     "$(calls)"
 is "a closed draft: skipped"     "SKIP: PR is closed"   "$(GH_VIEW='me false true CLOSED' run 7)"
 is "a closed draft: no flip"     ""                     "$(calls)"
+
+# 2b. CI on the PR's head gates the flip: green or none flips, running and red don't.
+is "CI green: marked ready"      "READY: marked ready"  "$(GH_CI=green GH_VIEW='me false true OPEN' run 7)"
+is "CI green: flipped"           "7"                    "$(calls)"
+is "CI none: marked ready"       "READY: marked ready"  "$(GH_VIEW='me false true OPEN' run 7)"
+is "CI running: skipped"         "SKIP: CI still running" "$(GH_CI=running GH_VIEW='me false true OPEN' run 7)"
+is "CI running: no flip"         ""                     "$(calls)"
+is "CI red: skipped, named"      "SKIP: CI red: test"   "$(GH_CI=red GH_VIEW='me false true OPEN' run 7)"
+is "CI red: no flip"             ""                     "$(calls)"
+is "CI red, a PR URL: skipped"   "SKIP: CI red: test"   "$(GH_CI=red GH_VIEW='me false true OPEN' run "$URL")"
+is "a teammate's PR: not checked for CI" "SKIP: PR by @mate" "$(GH_CI=red GH_VIEW='mate false true OPEN' run 7)"
+is "already ready: not checked for CI"   "SKIP: already ready" "$(GH_CI=red GH_VIEW='me false false OPEN' run 7)"
 
 # 3. A failure is a plain line and a log entry, never a failed call, and it
 #    never flips: not knowing whose PR it is means not touching it.
@@ -140,6 +168,9 @@ is "unpushed commits: skipped"        "SKIP: no open PR at this commit" "$(GH_LI
 is "unpushed commits: no flip"        ""                    "$(calls)"
 is "a fork's same-named branch: skipped" "SKIP: no open PR at this commit" "$(GH_LIST="[$(pr_at 9 me true true "$SHA")]" run --branch)"
 is "a fork's same-named branch: no flip" ""                 "$(calls)"
+is "branch, CI red: skipped"          "SKIP: CI red: test"  "$(GH_CI=red GH_LIST=$OWN run --branch)"
+is "branch, CI red: no flip"          ""                    "$(calls)"
+is "branch, CI running: skipped"      "SKIP: CI still running" "$(GH_CI=running GH_LIST=$OWN run --branch)"
 is "your PR after a fork's: still yours" "7"                "$(GH_LIST="[$(pr_at 9 stranger true true "$SHA"),$(pr_at 7 me false true "$SHA")]" run --branch >/dev/null; calls)"
 
 echo two > tracked
