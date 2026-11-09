@@ -139,6 +139,19 @@ check "non-GitHub host: a finding" "not on GitHub" "$out"
 check "non-GitHub host: summary" "repo-audit:" "$out"
 code 0 "non-GitHub host: exit 0" "$d"
 
+# An SSH alias for github.com (Host github-work / HostName github.com) is GitHub.
+cat > "$BIN/ssh" <<'STUB'
+#!/usr/bin/env bash
+[ "$1" = "-G" ] && [ "$2" = "github-work" ] && { echo "hostname github.com"; exit 0; }
+echo "hostname $2"
+STUB
+chmod +x "$BIN/ssh"
+d=$(mkrepo alias git@github-work:o/alias.git)
+out=$(run "$d")
+refute "ssh alias for github.com: not a non-GitHub finding" "not on GitHub" "$out"
+check "ssh alias for github.com: PASS summary" "repo-audit: PASS — " "$out"
+rm "$BIN/ssh"
+
 d=$(mkrepo extras git@github.com:o/extras.git)
 rm "$d/.claude/settings.json"
 out=$(run "$d")

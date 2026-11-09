@@ -84,14 +84,10 @@ if [ -z "$url" ]; then
   err "remote: no origin remote, so there are no pull requests to check → add one: git remote add origin <url>"
   GITHUB=0
 else
-  case "$url" in
-    *://*) host=${url#*://}; host=${host#*@}; host=${host%%[/:]*} ;;
-    *@*:*) host=${url#*@}; host=${host%%:*} ;;
-    *) host=${url%%[/:]*} ;;
-  esac
+  host=$(bash "$S/plan-path.sh" --host "$TOP")
   case "$host" in
     github.com) GITHUB=1; ok "remote: origin is on GitHub" ;;
-    *) GITHUB=0; err "remote: origin is on $host, not on GitHub, so Executor's PR flow, gh stack and the CI draft do not apply → move the repository to GitHub, or build without them" ;;
+    *) GITHUB=0; err "remote: origin is on ${host:-a local path}, not on GitHub, so Executor's PR flow, gh stack and the CI draft do not apply → move the repository to GitHub, or build without them" ;;
   esac
 fi
 
