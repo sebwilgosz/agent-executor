@@ -25,7 +25,7 @@ Specs: Notion, the "RFCs" database. Tickets: Jira project TRAV.
 
 Other examples:
 
-- `Specs: in this vault, 623. Projects/<project>/<Name> - spec.md; next to the product note when the work belongs to no project.`
+- `Specs: in this vault, Projects/<project>/<Name> - spec.md; next to the product note when the work belongs to no project.`
 - `Specs: GitHub, a parent issue in this repo, one sub-issue per feature.`
 - `Specs: docs/specs/ in this repo.` The only case where a spec is committed.
 
