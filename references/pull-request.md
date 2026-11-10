@@ -48,7 +48,7 @@ Always these sections, in this order. A section with nothing to say is left out,
 - **Link, don't paste.** No logs, no full test output, no copied spec text: link to them.
 - **Only the change.** No story of how it was built, no "I ran…", no notes to the reviewer about the session.
 - **Explain here, not in the code.** The why of a decision goes in the PR description and the commit messages; the code carries at most a short comment.
-- **Nothing local.** No local file paths, Obsidian notes or `[[wikilinks]]`, numbered items of a local spec, or brainstorming sections. Say the thing itself.
+- **Nothing local.** No local file paths, notes from a personal notes app (such as Obsidian) or `[[wikilinks]]`, numbered items of a local spec, or brainstorming sections. Say the thing itself.
 
 ## Diagram
 
