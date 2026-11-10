@@ -42,10 +42,10 @@ is "notion: file" "$D/AGENTS.md" "$(field file "$out")"
 check "notion: names a tool" "Notion" "$(field tool "$out")"
 
 fresh
-put "$D/AGENTS.md" "## Specs" 'Specs: in this vault, 623. Projects/<project>/<Name> - spec.md; next to the product note when the work belongs to no project.'
+put "$D/AGENTS.md" "## Specs" 'Specs: in this vault, Projects/<project>/<Name> - spec.md; next to the product note when the work belongs to no project.'
 out=$(bash "$SH" "$D")
 is "vault: kind" "folder" "$(field kind "$out")"
-check "vault: location keeps the path" "623. Projects/<project>/<Name> - spec.md" "$(field location "$out")"
+check "vault: location keeps the path" "Projects/<project>/<Name> - spec.md" "$(field location "$out")"
 is "vault: no tracker" "none" "$(field tracker "$out")"
 
 fresh
