@@ -131,13 +131,13 @@ echo "status.sh spec tests"
 
 # A. The shape.
 reset
-prs "sebwilgosz/agent-executor 31 OPEN false run:SUCCESS" "sebwilgosz/agent-executor 32 OPEN false run:FAILURE"
-plan sebwilgosz/agent-executor "2026-11-07 - review depth and status" \
+prs "acme/api 31 OPEN false run:SUCCESS" "acme/api 32 OPEN false run:FAILURE"
+plan acme/api "2026-11-07 - review depth and status" \
   '## Stack A: docs' "$(item x 'Docs drift' 'PR #31 ✅ ready')" "$(item ' ' Later '')" \
   '## Stack B: status' "$(item ' ' Status 'PR #32')" >/dev/null
 is "the table, as a whole" "EXECUTOR STATUS
 
-sebwilgosz/agent-executor
+acme/api
   2026-11-07 - review depth and status
     MERGE NOW
       #31  Docs drift                 Stack A 1/2   CI green   review ready
@@ -145,7 +145,7 @@ sebwilgosz/agent-executor
       #32  Status                     Stack B 1/1   CI red
     MOVING
       Stack A: 1 not started" "$(status)"
-is "the table: the exact lookup, one per PR" "2" "$(grep -c -- '^pr view 3[12] --repo sebwilgosz/agent-executor --json state,isDraft,statusCheckRollup' "$GH_CALLS")"
+is "the table: the exact lookup, one per PR" "2" "$(grep -c -- '^pr view 3[12] --repo acme/api --json state,isDraft,statusCheckRollup' "$GH_CALLS")"
 (cd "$TMP" && "$SHELL_BIN" "$STATUS" >/dev/null 2>&1); is "the table: exit 0" "0" "$?"
 
 reset
