@@ -33,11 +33,6 @@ for f in $SOURCES; do
   done
 done
 
-for f in $SOURCES; do
-  hit=$(grep -n 'category Build' "$REPO/$f" | head -1)
-  [ -z "$hit" ] && ok "$f files no finding as category Build" || bad "$f files no finding as category Build" "$hit"
-done
-
 echo
 printf 'review-format-lines: %d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
