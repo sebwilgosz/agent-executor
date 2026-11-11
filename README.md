@@ -46,8 +46,8 @@ Type `/executor:review` with a PR number or URL, a branch, or nothing for the cu
 
 1. **Build.** Install, build, lint and tests, with your repo's commands, must pass. A PR is built in a throwaway worktree, never in yours.
 2. **Review** the diff for duplication, correctness against your spec, test coverage, security, best practices (including needless inline comments) and your repo's conventions (`CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, linter configs, the code around). A doc the diff makes false, like a removed flag, is Critical and gets corrected.
-3. **Verify.** Each Critical finding goes to its own `executor:verifier` agent, on Sonnet, which tries to disprove it. Debunked ones are dropped.
-4. **Fix**, on your own PRs. A confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits and reviews again, at most three rounds, without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports. `--fix` and `--no-fix` override that; a fork stays report-only.
+3. **Verify.** Each Critical finding goes to its own `executor:verifier` agent, on Sonnet, which tries to disprove it. Debunked ones are dropped, by a script, so no agent is spawned for that.
+4. **Fix**, on your own PRs, only when a Critical finding is confirmed (otherwise no fixer runs). A confirmed Critical finding is a bug: Executor writes the failing test, fixes it, commits and reviews again, at most three rounds, without new agents. It never edits a test to make it pass, never force-pushes and never touches a PR from a fork. On a teammate's PR or someone else's branch it only reports. `--fix` and `--no-fix` override that; a fork stays report-only.
 5. **Report**, always in the same shape: verdict, build, CI, spec, mode and bugs fixed, then what is still Critical and the Suggestions. Each finding links to the line, says when it fails and how to fix it.
 
 Suggestions are listed as drafted, never verified or fixed. Nothing is posted to GitHub unless you ask.
