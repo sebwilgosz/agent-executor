@@ -5,14 +5,15 @@
 #   RECLASSIFIED  the drafted finding moves to the top of Suggestions; the verifier's
 #                 one line replaces its header line when it starts with `#<n>`, else its
 #                 defect sentence; Fails when and the fix line stay
-#   CONFIRMED     the drafted finding stays Critical, untouched
+#   CONFIRMED     the drafted finding stays Critical; the verifier's one line replaces its
+#                 header line when it starts with `#<n>` (a corrected location), else it is not used
 # The verifier's SEVERITY is ignored: the verdict decides.
 # Findings are renumbered #1..#n across both sections and the heading counts fixed.
 #
 # The verdicts file holds one block per verdict: a header line `#<n> <VERDICT>`,
 # then, optionally, the verifier'"'"'s one-line FINDING (until the next header). A leading
-# `FINDING:` is dropped and the `#<n>` may be missing. Only its first line is used, and
-# only for RECLASSIFIED. Without it the finding keeps its drafted wording. A Critical with no verdict
+# `FINDING:` is dropped and the `#<n>` may be missing. Only its first line is used,
+# as the header (CONFIRMED, RECLASSIFIED) or the defect sentence (RECLASSIFIED). Without it the finding keeps its drafted wording. A Critical with no verdict
 # (a failed build or red CI) is left as it is.
 #
 # Prints `APPLIED: <c> Critical, <s> Suggestions`. On bad input it prints one
@@ -49,13 +50,14 @@ function vline(b,   p) {
   sub(/[ \t]+$/, "", b)
   return b
 }
+function rehead(draft, vt,   a, na, i, out2) {
+  na = split(draft, a, "\n"); out2 = vt
+  for (i = 2; i <= na; i++) out2 = out2 "\n" a[i]
+  return out2
+}
 function reclass(draft, vt,   a, na, i, out2, j) {
   if (vt == "") return draft
-  if (vt ~ /^(\*\*)?#[0-9]+/) {
-    na = split(draft, a, "\n"); out2 = vt
-    for (i = 2; i <= na; i++) out2 = out2 "\n" a[i]
-    return out2
-  }
+  if (vt ~ /^(\*\*)?#[0-9]+/) return rehead(draft, vt)
   na = split(draft, a, "\n"); out2 = a[1] "\n" vt
   for (i = 2; i <= na; i++) if (a[i] ~ /^[ \t]*$/) break
   for (j = i; j <= na; j++) out2 = out2 "\n" a[j]
@@ -110,7 +112,7 @@ END {
     n = cnum[i]; v = (n in verdict) ? verdict[n] : "NONE"
     if (v == "DEBUNKED") continue
     if (v == "RECLASSIFIED") { moved++; mtext[moved] = reclass(ctext[i], body[n]); continue }
-    kc++; keep[kc] = ctext[i]
+    kc++; keep[kc] = (v == "CONFIRMED" && body[n] ~ /^(\*\*)?#[0-9]+/) ? rehead(ctext[i], body[n]) : ctext[i]
   }
   total = 0
   for (i = 1; i <= kc; i++) { total++; fin_c[i] = renum(keep[i], total) }

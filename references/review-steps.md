@@ -107,13 +107,13 @@ The caller does this, from the reviewer's finding lines: subagents can't spawn a
 
 Tell to be sceptical. Never pass your reasoning, other findings or your confidence: the verifier's job is to disprove the claim.
 
-**The caller applies the verdicts itself, never by reading the review file.** Write them to a file under `$TMPDIR`, one block per finding: a header line `#<n> CONFIRMED|DEBUNKED|RECLASSIFIED`, then the verifier's one-line `FINDING` text under it (a leading `FINDING:` and a missing `#<n>` are tolerated) (a `[build]` finding has no block; for the fixer below, treat a `[build]` finding as CONFIRMED). Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-verdicts.sh <review file> <verdicts file>`. It applies the table below, numbers the findings `#1..#n` again and fixes the heading counts; a CONFIRMED finding stays Critical, as drafted. The verifier's SEVERITY is ignored: the verdict decides. On a `STOP:` line the file is untouched: mark the review `❌ review failed: <reason>`.
+**The caller applies the verdicts itself, never by reading the review file.** Write them to a file under `$TMPDIR`, one block per finding: a header line `#<n> CONFIRMED|DEBUNKED|RECLASSIFIED`, then the verifier's one-line `FINDING` text under it (a leading `FINDING:` and a missing `#<n>` are tolerated) (a `[build]` finding has no block; for the fixer below, treat a `[build]` finding as CONFIRMED). Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-verdicts.sh <review file> <verdicts file>`. It applies the table below, numbers the findings `#1..#n` again and fixes the heading counts; a CONFIRMED finding stays Critical, with the verifier's header line when it restates one (a corrected location). The verifier's SEVERITY is ignored: the verdict decides. On a `STOP:` line the file is untouched: mark the review `❌ review failed: <reason>`.
 
 **Then the fixer, or no fixer.** The fixer is spawned only in fix mode, and only when a verdict is CONFIRMED at severity critical or a `[build]` finding stands. It gets the review file, the mode, the target and the branch, and the file already carries the verdicts. In report-only mode the fixer is never spawned, whatever the verdicts say, and with every finding debunked or reclassified to a suggestion it is not spawned in fix mode either: the caller finishes as step 7 says for a review with no Critical finding.
 
 | Verdict      | Then                                                        |
 | ------------ | ----------------------------------------------------------- |
-| CONFIRMED    | keep the drafted finding as it is, still Critical (the verifier's text is not used) |
+| CONFIRMED    | keep the drafted finding, still Critical; the verifier's one line replaces its header line when it starts with `#<n>` (a corrected location), `Fails when` and the fix line stay |
 | RECLASSIFIED | move the drafted finding to the top of Suggestions; the verifier's one line replaces its header line when it starts with `#<n>`, else its defect sentence; `Fails when` and the fix line stay |
 | DEBUNKED     | remove from output                                          |
 
