@@ -26,7 +26,7 @@ If any of these fails, the feature isn't finished: keep working, or stop and say
 
 Two calls, nothing else: write the body, run the script. `pr-open.sh` puts the branch in its stack, pushes, opens the draft PR on the right base (or updates the one that exists), sets the title and body, and fills **Depends on** itself. Do not run `git`, `gh stack` or `gh pr` for this by hand; `${CLAUDE_PLUGIN_ROOT}/references/stacks.md` explains the stacks behind it.
 
-1. Write the body to a file as `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md` lays it out: short, readable, a diagram when the change has a shape, the spec tests under **Testing**. Leave out **Depends on**.
+1. Write the body to a file as `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md` lays it out: short and readable for a person: it starts from **Why** (the problem in plain words, from the background your brief gives you; when the brief has none, ask what was wrong from the spec's own text), then **Scope**, a diagram of the problem and the fix,  the spec tests under **Testing**. Leave out **Depends on**.
 2. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/pr-open.sh --branch <branch> --below <the branch below it in the stack, or default> --title "<title>" --body-file <file>`.
 3. Act on the tagged line it prints (the exit code is always 0):
    - `PR: #<n> <url> base=<base> opened|updated`: the PR is open. Report its URL.
