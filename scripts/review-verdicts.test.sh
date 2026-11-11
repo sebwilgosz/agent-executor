@@ -7,6 +7,8 @@
 #   D. a CONFIRMED verdict stays Critical (report-only mode applies only).
 #   E. bad input prints one STOP: line and leaves the file untouched.
 #   F. text outside the two sections is kept as it is.
+#   G. the verifier's one-line format keeps the drafted detail.
+#   H. a CONFIRMED finding takes the verifier's corrected header, the detail stays.
 #
 # Run: bash scripts/review-verdicts.test.sh   (exit 0 = all pass)
 set -u
@@ -181,7 +183,7 @@ is    "E and stays untouched" $'# x\n\nno sections here' "$FILE"
 review
 cat > "$ROOT/verdicts.md" <<'V'
 #1 CONFIRMED
-FINDING: #1: · **Correctness** · [`a.rb:1`](https://x/a.rb#L1) one line only.
+FINDING: #1: · **Correctness** · [`a.rb:1`](https://x/a.rb#L1)
 #2 RECLASSIFIED
 FINDING: Second defect, only cosmetic.
 #3 RECLASSIFIED
@@ -192,7 +194,6 @@ is    "G one-line verdicts: exit 0" 0 "$RC"
 check "G confirmed keeps Fails when" 'Fails when: a → b.' "$FILE"
 check "G confirmed keeps fix line" '🛠️: fix a.' "$FILE"
 check "G confirmed keeps drafted defect" 'First defect.' "$FILE"
-lacks "G confirmed ignores the verifier text" 'one line only' "$FILE"
 check "G reclassified defect sentence replaced" 'Second defect, only cosmetic.' "$FILE"
 lacks "G old defect sentence gone" $'Second defect.\n' "$FILE"
 check "G reclassified keeps Fails when" 'Fails when: c → d.' "$FILE"
@@ -213,6 +214,38 @@ run
 is    "G bold number restated: exit 0" 0 "$RC"
 check "G bold number renumbered" '**#1**: · **Security**' "$FILE"
 check "G bold keeps Fails when" 'Fails when: c → d.' "$FILE"
+
+# H. a CONFIRMED finding takes the verifier's corrected header, the detail stays
+review
+cat > "$ROOT/verdicts.md" <<'V'
+#1 DEBUNKED
+#2 CONFIRMED
+FINDING: #2: · **Security** · [`b.rb:7`](https://x/b.rb#L7)
+#3 CONFIRMED
+FINDING: **#3**: · **Docs** · [`c.md:9`](https://x/c.md#L9)
+V
+run
+is    "H moved location: exit 0" 0 "$RC"
+check "H summary" 'APPLIED: 2 Critical, 2 Suggestions' "$OUTPUT"
+check "H corrected location reaches the file" '[`b.rb:7`](https://x/b.rb#L7)' "$FILE"
+lacks "H drafted location gone" 'b.rb:2' "$FILE"
+check "H number is the new #1" '#1: · **Security**' "$FILE"
+check "H confirmed keeps the drafted defect" 'Second defect.' "$FILE"
+check "H confirmed keeps Fails when" 'Fails when: c → d.' "$FILE"
+check "H confirmed keeps fix line" '🛠️: fix b.' "$FILE"
+check "H bold-number header renumbered" '**#2**: · **Docs** · [`c.md:9`]' "$FILE"
+check "H second keeps Fails when" 'Fails when: e → f.' "$FILE"
+
+review
+cat > "$ROOT/verdicts.md" <<'V'
+#1 CONFIRMED
+FINDING: the verifier wrote prose, not a header
+#2 CONFIRMED
+#3 CONFIRMED
+V
+run
+lacks "H prose after CONFIRMED is not used" 'the verifier wrote prose' "$FILE"
+check "H no-header CONFIRMED keeps the drafted header" '[`a.rb:1`](https://x/a.rb#L1)' "$FILE"
 
 echo
 printf 'review-verdicts: %d passed, %d failed\n' "$PASS" "$FAIL"
