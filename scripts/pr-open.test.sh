@@ -187,6 +187,17 @@ out=$(GH_ADD_EXIT=8 run feat/top feat/lower)
 check "add locked: STOP" "STOP: gh stack is locked" "$out"
 refute "add locked: no plain PR" "pr create" "$(cat "$GH_CALLS")"
 
+# the add fails with a plain error (1): plain PR on the branch below, with the add's reason, not the init's
+fresh; feature feat/lower main l.txt; git -C "$WORK" push -q origin feat/lower
+printf '[{"number":5,"url":"u","state":"OPEN","baseRefName":"main"}]\n' > "$GH_DIR/pr-feat_lower.json"
+echo feat/lower > "$GH_DIR/stacked"; feature feat/top feat/lower t.txt
+out=$(GH_ADD_EXIT=1 run feat/top feat/lower)
+check "add fails (1): the notice carries the add's reason" "UNSTACKED: gh stack exited 1 (locked) - opened as a plain PR" "$out"
+refute "add fails (1): not the init's reason" "already exists in a stack" "$out"
+check "add fails (1): plain draft PR on the branch below" "pr create --draft --base feat/lower --head feat/top" "$(cat "$GH_CALLS")"
+check "add fails (1): logged with the add's exit code" "exit 1: locked" "$(cat "$EOW_HOME/executor/pr-open.log")"
+refute "add fails (1): not tagged as a STOP" "STOP:" "$out"
+
 fresh; feature feat/one main b.txt
 out=$(GH_INIT_EXIT=7 run feat/one default)
 check "init rebase in progress: STOP" "STOP: a gh stack rebase is in progress in work - finish it with gh stack rebase --continue or --abort, then retry" "$out"
