@@ -20,6 +20,7 @@ trap 'rm -rf "$ROOT"' EXIT
 BIN="$ROOT/bin"; mkdir -p "$BIN"
 export GH_DIR="$ROOT/gh"; export GH_CALLS="$ROOT/calls.log"
 export EOW_HOME="$ROOT/eow"
+export EXECUTOR_STACK_WAIT=0
 
 cat > "$BIN/gh" <<'STUB'
 #!/usr/bin/env bash
@@ -39,9 +40,14 @@ case "$1 $2" in
   "stack init") # like gh-stack: a branch already in a stack can't start another
     shift 2
     for b in "$@"; do grep -qx "$b" "$GH_DIR/stacked" 2>/dev/null && { echo "branch \"$b\" already exists in a stack" >&2; exit 5; }; done
+    if [ -n "${GH_INIT_EXIT:-}" ]; then # fail GH_INIT_FAILS times (default always), then work
+      c=$(cat "$GH_DIR/init-fails" 2>/dev/null || echo 0)
+      if [ "$c" -lt "${GH_INIT_FAILS:-999}" ]; then echo $((c+1)) > "$GH_DIR/init-fails"; echo "init failed" >&2; exit "$GH_INIT_EXIT"; fi
+    fi
     printf '%s\n' "$@" >> "$GH_DIR/stacked" ;;
   "stack add") # only from the top of a stack; adopts the branch, checkout unchanged
     [ "$(tail -1 "$GH_DIR/stacked" 2>/dev/null)" = "$br" ] || { echo "can only add branches to the top of the stack" >&2; exit 5; }
+    [ -n "${GH_ADD_EXIT:-}" ] && { echo "locked" >&2; exit "$GH_ADD_EXIT"; }
     echo "$3" >> "$GH_DIR/stacked"; echo "add-from $br" >> "$GH_CALLS" ;;
   "stack submit")
     [ -n "${GH_SUBMIT_EXIT:-}" ] && { echo "stacked PRs not enabled" >&2; exit "$GH_SUBMIT_EXIT"; }
@@ -153,6 +159,72 @@ out=$(GH_SUBMIT_EXIT=9 run feat/one default)
 check "no stacks: PR line" "PR: #7 https://github.com/o/r/pull/7 base=main opened" "$out"
 check "no stacks: plain draft PR on the same base" "pr create --draft --base main --head feat/one" "$(cat "$GH_CALLS")"
 on_origin feat/one && ok "no stacks: branch is pushed" || bad "no stacks: branch is pushed" "not on origin"
+
+# gh stack exit codes
+fresh; feature feat/one main b.txt
+out=$(GH_INIT_EXIT=8 GH_INIT_FAILS=1 run feat/one default)
+check "init locked once: stacked PR" "PR: #7 https://github.com/o/r/pull/7 base=main opened" "$out"
+refute "init locked once: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+[ "$(grep -c '^stack init' "$GH_CALLS")" = 2 ] && ok "init locked once: init called twice" || bad "init locked once: init called twice" "$(cat "$GH_CALLS")"
+refute "init locked once: no unstacked notice" "UNSTACKED" "$out"
+
+fresh; feature feat/one main b.txt
+out=$(GH_SUBMIT_EXIT=8 run feat/one default)
+check "submit locked: STOP with the lock message" "STOP: gh stack is locked by another process in work - retry the ship" "$out"
+refute "submit locked: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+[ "$(grep -c '^stack submit' "$GH_CALLS")" = 4 ] && ok "submit locked: tried 1 + 3 retries" || bad "submit locked: tried 1 + 3 retries" "$(cat "$GH_CALLS")"
+check "submit locked: logged" "exit 8" "$(cat "$EOW_HOME/executor/pr-open.log")"
+
+fresh; feature feat/one main b.txt
+out=$(GH_INIT_EXIT=8 run feat/one default)
+check "init locked always: STOP" "STOP: gh stack is locked" "$out"
+refute "init locked always: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+
+fresh; feature feat/lower main l.txt; git -C "$WORK" push -q origin feat/lower
+printf '[{"number":5,"url":"u","state":"OPEN","baseRefName":"main"}]\n' > "$GH_DIR/pr-feat_lower.json"
+echo feat/lower > "$GH_DIR/stacked"; feature feat/top feat/lower t.txt
+out=$(GH_ADD_EXIT=8 run feat/top feat/lower)
+check "add locked: STOP" "STOP: gh stack is locked" "$out"
+refute "add locked: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+
+# the add fails with a plain error (1): plain PR on the branch below, with the add's reason, not the init's
+fresh; feature feat/lower main l.txt; git -C "$WORK" push -q origin feat/lower
+printf '[{"number":5,"url":"u","state":"OPEN","baseRefName":"main"}]\n' > "$GH_DIR/pr-feat_lower.json"
+echo feat/lower > "$GH_DIR/stacked"; feature feat/top feat/lower t.txt
+out=$(GH_ADD_EXIT=1 run feat/top feat/lower)
+check "add fails (1): the notice carries the add's reason" "UNSTACKED: gh stack exited 1 (locked) - opened as a plain PR" "$out"
+refute "add fails (1): not the init's reason" "already exists in a stack" "$out"
+check "add fails (1): plain draft PR on the branch below" "pr create --draft --base feat/lower --head feat/top" "$(cat "$GH_CALLS")"
+check "add fails (1): logged with the add's exit code" "exit 1: locked" "$(cat "$EOW_HOME/executor/pr-open.log")"
+refute "add fails (1): not tagged as a STOP" "STOP:" "$out"
+
+fresh; feature feat/one main b.txt
+out=$(GH_INIT_EXIT=7 run feat/one default)
+check "init rebase in progress: STOP" "STOP: a gh stack rebase is in progress in work - finish it with gh stack rebase --continue or --abort, then retry" "$out"
+refute "init rebase in progress: nothing run to finish it" "stack rebase" "$(cat "$GH_CALLS")"
+refute "init rebase in progress: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+
+fresh; feature feat/one main b.txt
+out=$(GH_INIT_EXIT=6 run feat/one default)
+check "init shared branch: STOP" "STOP: feat/one belongs to more than one stack - check out a branch in only one stack, then retry" "$out"
+refute "init shared branch: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+
+fresh; feature feat/one main b.txt
+out=$(GH_SUBMIT_EXIT=7 run feat/one default)
+check "submit rebase in progress: STOP" "STOP: a gh stack rebase is in progress" "$out"
+refute "submit rebase in progress: no plain PR" "pr create" "$(cat "$GH_CALLS")"
+
+fresh; feature feat/one main b.txt
+out=$(GH_INIT_EXIT=1 run feat/one default)
+check "init fails (1): plain PR opened" "PR: #7 https://github.com/o/r/pull/7 base=main opened" "$out"
+check "init fails (1): plain draft PR" "pr create --draft --base main --head feat/one" "$(cat "$GH_CALLS")"
+check "init fails (1): the caller is told it is unstacked" "UNSTACKED: gh stack exited 1 (init failed) - opened as a plain PR" "$out"
+check "init fails (1): logged with the exit code" "exit 1: init failed" "$(cat "$EOW_HOME/executor/pr-open.log")"
+refute "init fails (1): not tagged as a STOP" "STOP:" "$out"
+
+fresh; feature feat/one main b.txt
+out=$(GH_SUBMIT_EXIT=9 run feat/one default)
+refute "submit 9: no unstacked notice" "UNSTACKED" "$out"
 
 # a PR already exists: updated, never a second one
 fresh; feature feat/one main b.txt

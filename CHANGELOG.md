@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1 — 2026-11-11
+
+- `scripts/pr-open.sh` acts on the exit code of every `gh stack` call (init, add, submit) through one helper, `gstack`. Exit 8 (stack locked by another process) is retried up to 3 times, waiting 2 seconds (`EXECUTOR_STACK_WAIT` overrides it), then stops with `gh stack is locked by another process in <repo> - retry the ship`; a lock never falls back to a plain PR. Exit 7 (rebase in progress) and exit 6 (branch in more than one stack) stop with their own reason and never run `--abort` or `--continue`. Exit 9 keeps the plain-PR fallback.
+- Any other `gh stack init`/`add` failure still falls back to a plain PR, but is no longer silent: the exit code and last stderr line go to the log, and the script prints `UNSTACKED: gh stack exited <n> (<reason>) - opened as a plain PR, not in a stack` before the `PR:` line. `references/feature-done.md` and the ship skill tell the caller to report it; the review hook reads only the `PR:` line, so it is unaffected.
+- `references/stacks.md` gains the rules for the commands the model runs: exit 8 retry, exit 7 finish-or-report, exit 6 never guess, and `gh stack checkout` takes a branch name, never a PR number.
+
 ## 0.13.0 — 2026-11-09
 
 The build orchestrates the review agents and prints one compact summary. On the 0.10.0 build (9 PRs) the main thread carried 3.98M of 7.1M weighted tokens, 56%, most of it the reviews run inline and a full summary printed per PR. The reviews now run in agents that return a line each, and the build prints one line per PR and one block at the end.
