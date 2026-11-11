@@ -53,8 +53,12 @@ Fails when: <concrete input or state → wrong result>.
 ```
 
 - **A local diff has no PR**, so the header drops the link: `# EXECUTOR REVIEW · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
+- **The Branch line names the base** only after a hand-off with `--base origin/<default>`: the checkout's local default branch was dirty, diverged or not up to date, so the review worked from `origin/<default>`, e.g. `` **Branch:** `fix-login` · from origin/main, not the local main ``.
+- **The Build line says where the build ran:** `✅ passed · CI` when CI passed, `⚪ not run · CI still running` while it is, the local command otherwise.
+- **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · fork PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings are all still open and the verdict rule applies to them unchanged.
+- **The Checkout line prints only when the checkout's branch at the end differs from the one at the start** (`git branch --show-current`), `<why>` saying what stopped the review from switching back, e.g. uncommitted changes.
 - **The Docs line prints only when the docs check was skipped**, `<why>` as `docs-mentions.sh` printed it after `UNKNOWN:`.
-- **The Ready line prints only when `review-ready.sh` printed `READY:`, `UNKNOWN:` or a `SKIP:` for CI**, `<why>` as it printed it after `UNKNOWN:` or `SKIP:`. A draft left because CI is still running reads `⚪ not marked · CI still running, rerun review-ready.sh <n> once green`: nothing flips it later.
+- **The Ready line prints only when `review-ready.sh` printed `READY:`, `UNKNOWN:` or a `SKIP:` for CI**, `<why>` as it printed it after `UNKNOWN:` or `SKIP:`. A draft left because CI is still running reads `⚪ draft · CI still running, rerun review-ready.sh <n> once green`: nothing flips it later.
 
 ## Where the review lives
 
@@ -75,6 +79,10 @@ In a build, the review file stays out of the build session's context. Each finis
 ```text
 PR #41 · ✅ ready · 0 Critical · 4 suggestions · 2 rounds · <comment url | file path>
 ```
+
+- **The mark** is the verdict: `✅ ready`, `⚠️ mergeable` or `❌ changes required`. A review that failed reads `PR #41 · ❌ review failed: <reason>`.
+- **The last field** is the comment's url when `review-post.sh` printed `POSTED:`, the review file otherwise. On a `STOP:` it is the file, followed by the reason in a few words.
+- **Standalone `/executor:review`** still prints the full summary above, read from the file: there it is the one review the user asked for.
 
 ## The build block
 

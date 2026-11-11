@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.2 — 2026-11-11
+
+Follow-up to the compact review layout: the rules that went with its lines come back.
+
+- `references/review-format.md` gains the rules for the Branch, Build, Rounds and Checkout lines and the three bullets under the one-line PR summary. The Ready rule's example says `⚪ draft`, as the block does.
+- `scripts/review-format-lines.test.sh` fails when a line the instructions write has no place in the format's template.
+
 ## 0.13.1 — 2026-11-11
 
 - `scripts/pr-open.sh` acts on the exit code of every `gh stack` call (init, add, submit) through one helper, `gstack`. Exit 8 (stack locked by another process) is retried up to 3 times, waiting 2 seconds (`EXECUTOR_STACK_WAIT` overrides it), then stops with `gh stack is locked by another process in <repo> - retry the ship`; a lock never falls back to a plain PR. Exit 7 (rebase in progress) and exit 6 (branch in more than one stack) stop with their own reason and never run `--abort` or `--continue`. Exit 9 keeps the plain-PR fallback.
