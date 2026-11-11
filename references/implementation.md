@@ -63,4 +63,4 @@ When the feature needs a refactor that would make its PR big, the refactor is a 
 
 ## Model and effort
 
-Implementation runs on Sonnet at medium reasoning effort: the `executor:builder` agent sets `model: sonnet` and `effort: medium`. Planning stays on the session's model. Review runs on Opus and its verifiers on Sonnet, both at high effort.
+Implementation runs on Sonnet at medium reasoning effort: the `executor:builder` agent sets `model: sonnet` and `effort: medium`. The build skill itself, planning and the spec check included, runs on Sonnet; only `/executor:review` keeps the session's model. Review runs on Opus and its verifiers on Sonnet, both at high effort.

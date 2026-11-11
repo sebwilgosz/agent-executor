@@ -53,6 +53,13 @@ check "an unusable agent return fails the PR"       '❌ review failed: <reason>
 check "a failed review stops its stack"             'its stack stops' "$step4"
 check "nothing is retried silently"                 'nothing is retried silently' "$step4"
 
+count_bullet() { printf '%s\n' "$step4" | grep -cF -- "- **$1:**"; }
+for b in '✅ or ⚠️' '❌'; do
+  n=$(count_bullet "$b")
+  if [ "$n" = 1 ]; then ok "step 4 lists the $b outcome bullet once"
+  else bad "step 4 lists the $b outcome bullet once" "found $n"; fi
+done
+
 check "no spec: /executor:spec drafts it"           '/executor:spec' "$BUILD"
 check "planning stays in the build session"         'no planner agent' "$BUILD"
 
