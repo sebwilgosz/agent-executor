@@ -100,11 +100,7 @@ Run the review's agents for the PR here, as its PR comes in: the builder can't, 
 4. **No fixer:** the review file, with the verdicts applied, is final. Write the Verdict and the Rounds line (`fix · <why> · no fixes needed`) into it. In fix mode, run `review-ready.sh <n>` and the checkout assertion as step 7 says, and add the Ready and Checkout lines to the file.
 5. **Post.** `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-post.sh <url> <file>`. Keep its `POSTED:` url, or the file path on `SAVED:`. On a `STOP:`, the PR's line links the file and adds the reason in a few words.
 
-Each finished PR prints exactly one line, as it finishes, in the shape `references/review-format.md` gives, and nothing else:
-
-```text
-PR #<n> · ✅ ready · <c> Critical · <s> suggestions · <r> rounds · <comment url | file path>
-```
+Reviews are posted to each PR as each finishes, so the next item of its stack can start. Nothing is printed per PR: the orchestrator keeps each PR's outcome (the reviewer and fixer return lines, and the posted URL or the saved file) in the plan file, and step 5 prints it once.
 
 - **✅ or ⚠️:** the review has marked the PR ready. Mark the item `PR #n ✅ ready` and tick it; a **Ready:** line saying it was not marked (a draft left because CI was still running, say) goes in step 5. The next item of its stack can start (step 3, point 4).
 - **❌:** the PR stays a draft. Mark the item `PR #n ❌` with what is still Critical; its stack stops there.
@@ -117,7 +113,7 @@ When no builder is running and no review is left:
 1. Remove the worktrees still left from builders that stopped (`git worktree remove`), once their branches are pushed.
 2. If any item is `⛔` or `❌`: ask everything that is open in one message, each question with a suggested answer, and a wrong spec test with its proposed change. With the answers, a run of `/executor:build` carries on from the first unticked item.
 3. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh --mark "<the plan>"`: everything may have been merged while this ran. On `DONE`, say in one line that the plan is marked done.
-4. Print one block for the whole build, as `references/review-format.md` gives it, and nothing else. The plan file keeps its full checklist as `references/plan.md` shows; the block is what is printed.
+4. Print the one build block, once, at the very end, built from the plan file, as `references/review-format.md` gives it. With the questions of point 2 when something is open, it is the only thing the user sees from the review phase. The plan file keeps its full checklist as `references/plan.md` shows; the block is what is printed.
 
 ```text
 Executor build · <spec title>
