@@ -33,6 +33,10 @@ Every `gh stack` command runs non-interactively. Without these flags and argumen
 | After changing a lower branch | `gh stack rebase --upstack`, then `gh stack push` |
 | After a lower PR was merged | `gh stack sync --prune`, then `bash ${CLAUDE_PLUGIN_ROOT}/scripts/repo-tidy.sh <repo>` detached |
 | A rebase conflict (exit 3) | resolve, `git add`, `gh stack rebase --continue`; or `gh stack rebase --abort` |
+| Stack locked (exit 8) on `rebase --upstack`, `push` or `sync --prune` | wait a few seconds, run the same command again, up to 3 times |
+| A rebase is in progress (exit 7) | if this session started it, finish it (`--continue` after resolving, or `--abort`); otherwise stop and report it |
+| The branch is in two stacks (exit 6) | check out a branch that is in only one stack; never guess |
+| `gh stack checkout` | a branch name, never a PR number: it opens a prompt that can't be skipped |
 
 Commit with plain `git add <paths>` and `git commit`, never `-A`: each branch takes only its own feature's files.
 

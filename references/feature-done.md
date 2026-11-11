@@ -31,6 +31,7 @@ Two calls, nothing else: write the body, run the script. `pr-open.sh` puts the b
 3. Act on the tagged line it prints (the exit code is always 0):
    - `PR: #<n> <url> base=<base> opened|updated`: the PR is open. Report its URL.
    - `RETARGETED: <old-base> merged, based on <default> instead`: the branch below was already merged, so the PR is based on the default branch. Say so in the report.
+   - `UNSTACKED: <reason> - opened as a plain PR`: `gh stack` failed, so the PR is open outside the stack. Say so in the report, with the reason.
    - `STOP: <reason>`: nothing was opened. Report the reason and stop; do not try the git or gh steps by hand.
 
 When the script prints `opened`, the plugin's hook starts `executor:review` on the new PR; an `updated` PR never starts it again. Let it run to its summary. A feature built by a builder agent under `/executor:build` stops at the open PR: build runs the review, since a builder can't start the review's agents.
