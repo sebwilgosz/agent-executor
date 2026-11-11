@@ -19,28 +19,28 @@ EXECUTOR · HELP ━━━━━━━━━━━━━━━━━━━━━
 builds a spec into reviewed pull requests, reviews every pull request
 
 BUILD
-  ▸ /executor:spec <what to build>   — draft a spec from your notes and the repo,
-                                       save it where your specs live
-  ▸ /executor:build <spec>           — plan it with you, build in parallel,
-                                       review every PR; you merge
-  ▸ /executor:review [PR | branch]   — review, verify Criticals, fix, review again
-                                       no argument: the current branch
-                                       owner/repo#N or a URL from any folder:
-                                       opens it in that repo's checkout
-  ▸ /executor:ship                   — commit, push, open a draft PR
-                                       the review starts on its own
-  ▸ /executor:status                 — across every repo: what to merge now,
-                                       what waits on you, what is still moving
+  ▸ /executor:spec <what to build> — draft a spec from your notes and the repo,
+                                     save it where your specs live
+  ▸ /executor:build <spec>         — plan it with you, build in parallel,
+                                     review every PR; you merge
+  ▸ /executor:review [PR | branch] — review, verify Criticals, fix, review again
+                                     no argument: the current branch
+                                     owner/repo#N or a URL from any folder:
+                                     opens it in that repo's checkout
+  ▸ /executor:ship                 — commit, push, open a draft PR
+                                     the review starts on its own
+  ▸ /executor:status               — across every repo: what to merge now,
+                                     what waits on you, what is still moving
 
 SETUP
-  ▸ /executor:init                   — checks gh and its sign-in, offers gh stack
-                                       and the per-repo enable, asks where your
-                                       checkouts and your plans live
-  ▸ /executor:help                   — this list
-  ▸ scripts/plan-sweep.sh [--dry-run]
-                                     — marks every finished plan done
-  ▸ scripts/plans-migrate.sh [--dry-run] [<root>]
-                                     — moves legacy .executor/ folders to the plans folder
+  ▸ /executor:init                 — checks gh and its sign-in, offers gh stack
+                                     and the per-repo enable, asks where your
+                                     checkouts and your plans live
+  ▸ /executor:help                 — this list
+
+SCRIPTS
+  ▸ scripts/plan-sweep.sh [--dry-run]             — marks finished plans done
+  ▸ scripts/plans-migrate.sh [--dry-run] [<root>] — migrates legacy .executor/
 
 Type what you want after /executor:help and it routes.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
