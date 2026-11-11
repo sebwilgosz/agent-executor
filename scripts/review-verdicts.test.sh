@@ -88,11 +88,7 @@ check "F header kept" '# EXECUTOR REVIEW · [acme/api#7]' "$FILE"
 review
 cat > "$ROOT/verdicts.md" <<'V'
 #1 RECLASSIFIED
-#1: · **Correctness** · [`a.rb:1`](https://x/a.rb#L1)
-First defect, only a style issue.
-
-Fails when: nothing breaks.
-🛠️: rename a.
+FINDING: First defect, only a style issue.
 #2 RECLASSIFIED
 #3 RECLASSIFIED
 V
@@ -180,6 +176,43 @@ printf '#1 DEBUNKED\n' > "$ROOT/verdicts.md"
 run
 is    "E a file with no sections stops" 1 "$RC"
 is    "E and stays untouched" $'# x\n\nno sections here' "$FILE"
+
+# G. the verifier's real one-line format keeps the drafted detail
+review
+cat > "$ROOT/verdicts.md" <<'V'
+#1 CONFIRMED
+FINDING: #1: · **Correctness** · [`a.rb:1`](https://x/a.rb#L1) one line only.
+#2 RECLASSIFIED
+FINDING: Second defect, only cosmetic.
+#3 RECLASSIFIED
+FINDING: #3: · **Docs** · [`c.md:3`](https://x/c.md#L3) reworded header
+V
+run
+is    "G one-line verdicts: exit 0" 0 "$RC"
+check "G confirmed keeps Fails when" 'Fails when: a → b.' "$FILE"
+check "G confirmed keeps fix line" '🛠️: fix a.' "$FILE"
+check "G confirmed keeps drafted defect" 'First defect.' "$FILE"
+lacks "G confirmed ignores the verifier text" 'one line only' "$FILE"
+check "G reclassified defect sentence replaced" 'Second defect, only cosmetic.' "$FILE"
+lacks "G old defect sentence gone" $'Second defect.\n' "$FILE"
+check "G reclassified keeps Fails when" 'Fails when: c → d.' "$FILE"
+check "G reclassified keeps fix line" '🛠️: fix b.' "$FILE"
+check "G reclassified header replaced" 'reworded header' "$FILE"
+check "G header-reworded keeps Fails when" 'Fails when: e → f.' "$FILE"
+check "G summary" 'APPLIED: 1 Critical, 4 Suggestions' "$OUTPUT"
+lacks "G no FINDING: prefix left" 'FINDING:' "$FILE"
+
+review
+cat > "$ROOT/verdicts.md" <<'V'
+#2 RECLASSIFIED
+FINDING: **#2**: · **Security** · [`b.rb:2`](https://x/b.rb#L2) restated
+#1 DEBUNKED
+#3 DEBUNKED
+V
+run
+is    "G bold number restated: exit 0" 0 "$RC"
+check "G bold number renumbered" '**#1**: · **Security**' "$FILE"
+check "G bold keeps Fails when" 'Fails when: c → d.' "$FILE"
 
 echo
 printf 'review-verdicts: %d passed, %d failed\n' "$PASS" "$FAIL"
