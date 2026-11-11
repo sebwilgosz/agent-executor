@@ -30,5 +30,7 @@ VERDICT: CONFIRMED | DEBUNKED | RECLASSIFIED
 SEVERITY: critical | suggestion
 LOCATION: path:line
 EVIDENCE: <one or two sentences, citing path:line>
-FINDING: <the finding line, restated; rewritten when reclassified>
+FINDING: <one line: the finding's header line restated, or its defect sentence rewritten when reclassified>
 ```
+
+The verdict decides, not SEVERITY: CONFIRMED stays Critical and keeps the drafted finding, RECLASSIFIED goes to Suggestions. Give the two consistently (CONFIRMED with `critical`, RECLASSIFIED with `suggestion`).
