@@ -1,6 +1,7 @@
 ---
 name: build
 description: "Executor: build a spec (an RFC, a feature spec, an issue) into a stack of reviewed pull requests. Checks the spec, plans it as a checklist of features you approve, builds each feature with its own builder agent in parallel worktrees, reviews and fixes every PR, and leaves the merging to you. Use when the user asks to build or implement a spec ('build this', 'executor, build docs/rfc-12.md', 'implement this RFC')."
+model: sonnet
 allowed-tools: Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/ticket-github.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/spec-home.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-state.sh:*), Bash(bash ${CLAUDE_PLUGIN_ROOT}/scripts/plans-migrate.sh:*)
 ---
 
@@ -108,9 +109,6 @@ PR #<n> · ✅ ready · <c> Critical · <s> suggestions · <r> rounds · <commen
 - **✅ or ⚠️:** the review has marked the PR ready. Mark the item `PR #n ✅ ready` and tick it; a **Ready:** line saying it was not marked (a draft left because CI was still running, say) goes in step 5. The next item of its stack can start (step 3, point 4).
 - **❌:** the PR stays a draft. Mark the item `PR #n ❌` with what is still Critical; its stack stops there.
 - **An agent returns nothing usable** (no `REVIEW:` or `DONE:` line): mark the item `PR #n ❌ review failed: <reason>`; its stack stops, and nothing is retried silently.
-
-- **✅ or ⚠️:** the review has marked the PR ready. Mark the item `PR #n ✅ ready` and tick it; a **Ready:** line saying it was not marked (a draft left because CI was still running, say) goes in step 5. The next item of its stack can start (step 3, point 4).
-- **❌:** the PR stays a draft. Mark the item `PR #n ❌` with what is still Critical; its stack stops there.
 
 ## 5. Report
 
