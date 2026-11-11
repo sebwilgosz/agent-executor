@@ -77,6 +77,7 @@ Branch names: `<stack>/<feature>`, short and in kebab case (`invites/send-email`
 1. **Foundation first.** If the plan has an unmerged foundation item, build it alone (point 2), review it (step 4), then stop: "Merge PR #n, then run `/executor:build` again." Nothing else starts before it is merged.
 2. **One builder per stack.** For each stack whose next item isn't blocked, spawn one `executor:builder` agent for that item, **all in one message**, each with `isolation: "worktree"` and in the background. Give each one only:
    - the feature's name and the full text of the requirements it owns, with the spec answers that touch them
+   - the background: the feature's Why line, or the spec's Why when it has none, in plain sentences (what is wrong or missing today). The builder opens its PR description with it, and without it can only list code changes
    - the repo path, its branch name and the branch below it: the previous item's branch, or the default branch for the bottom of a stack
    - the spec's path or link, to read for context
    - its ticket, when the plan records one: `Closes #<n>` on GitHub, the key on Jira and Linear

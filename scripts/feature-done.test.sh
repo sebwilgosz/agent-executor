@@ -30,6 +30,11 @@ has   "the builder points at the opening step"        'pr-open.sh' agents/builde
 has   "the builder reports a STOP, not git by hand"   'STOP' agents/builder.md
 has   "pull-request says the script fills Depends on" 'pr-open.sh' references/pull-request.md
 has   "ship runs pr-open.sh"                           'scripts/pr-open.sh' skills/ship/SKILL.md
+has   "the PR template opens with Why"                '## Why' references/pull-request.md
+has   "the PR template asks for plain words"          'Write for a person' references/pull-request.md
+has   "the builder opens the PR with Why"             'opens with Why' agents/builder.md
+has   "the spec shape gives each feature a Why"       '**Why**, in one or two plain sentences' references/spec.md
+has   "the build brief carries the background"        'the background:' skills/build/SKILL.md
 has   "ship acts on the STOP: line"                   'STOP:' skills/ship/SKILL.md
 lacks "ship has no by-hand gh pr create"              'gh pr create' skills/ship/SKILL.md
 

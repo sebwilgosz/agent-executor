@@ -2,13 +2,18 @@
 # review-verdicts.sh <review-file> <verdicts-file>
 # Applies the verifiers' verdicts to a review file, so the caller never reads it:
 #   DEBUNKED      the finding is removed
-#   RECLASSIFIED  the finding moves to the top of Suggestions, with the verifier's wording
-#   CONFIRMED     the finding stays Critical, with the verifier's wording
+#   RECLASSIFIED  the drafted finding moves to the top of Suggestions; the verifier's
+#                 one line replaces its header line when it starts with `#<n>`, else its
+#                 defect sentence; Fails when and the fix line stay
+#   CONFIRMED     the drafted finding stays Critical; the verifier's one line replaces its
+#                 header line when it starts with `#<n>` (a corrected location), else it is not used
+# The verifier's SEVERITY is ignored: the verdict decides.
 # Findings are renumbered #1..#n across both sections and the heading counts fixed.
 #
 # The verdicts file holds one block per verdict: a header line `#<n> <VERDICT>`,
-# then, optionally, the finding as the verifier restated it (until the next header).
-# Without that text the finding keeps its drafted wording. A Critical with no verdict
+# then, optionally, the verifier'"'"'s one-line FINDING (until the next header). A leading
+# `FINDING:` is dropped and the `#<n>` may be missing. Only its first line is used,
+# as the header (CONFIRMED, RECLASSIFIED) or the defect sentence (RECLASSIFIED). Without it the finding keeps its drafted wording. A Critical with no verdict
 # (a failed build or red CI) is left as it is.
 #
 # Prints `APPLIED: <c> Critical, <s> Suggestions`. On bad input it prints one
@@ -39,6 +44,25 @@ function renum(text, n,   p, first, rest) {
   else fail("a finding does not start with its number: " first)
   return first rest
 }
+function vline(b,   p) {
+  p = index(b, "\n"); if (p) b = substr(b, 1, p - 1)
+  sub(/^[ \t]*(\*\*)?FINDING(\*\*)?:[ \t]*/, "", b)
+  sub(/[ \t]+$/, "", b)
+  return b
+}
+function rehead(draft, vt,   a, na, i, out2) {
+  na = split(draft, a, "\n"); out2 = vt
+  for (i = 2; i <= na; i++) out2 = out2 "\n" a[i]
+  return out2
+}
+function reclass(draft, vt,   a, na, i, out2, j) {
+  if (vt == "") return draft
+  if (vt ~ /^(\*\*)?#[0-9]+/) return rehead(draft, vt)
+  na = split(draft, a, "\n"); out2 = a[1] "\n" vt
+  for (i = 2; i <= na; i++) if (a[i] ~ /^[ \t]*$/) break
+  for (j = i; j <= na; j++) out2 = out2 "\n" a[j]
+  return out2
+}
 function emit(count, list, name,   i) {
   printf "## %s (%d)\n\n", name, count > out
   if (count == 0) { print "None." > out; return }
@@ -57,7 +81,7 @@ BEGIN {
     } else body[cur] = body[cur] "\n" line
   }
   if (nv == 0) fail("the verdicts file has no verdicts")
-  for (n in verdict) body[n] = trim(body[n])
+  for (n in verdict) body[n] = vline(trim(body[n]))
   section = 0; nc = 0; ns = 0; pre = ""; post = ""; cf = 0
 }
 {
@@ -86,10 +110,9 @@ END {
   kc = 0; moved = 0
   for (i = 1; i <= nc; i++) {
     n = cnum[i]; v = (n in verdict) ? verdict[n] : "NONE"
-    text = (v != "NONE" && body[n] != "") ? body[n] : ctext[i]
     if (v == "DEBUNKED") continue
-    if (v == "RECLASSIFIED") { moved++; mtext[moved] = text; continue }
-    kc++; keep[kc] = text
+    if (v == "RECLASSIFIED") { moved++; mtext[moved] = reclass(ctext[i], body[n]); continue }
+    kc++; keep[kc] = (v == "CONFIRMED" && body[n] ~ /^(\*\*)?#[0-9]+/) ? rehead(ctext[i], body[n]) : ctext[i]
   }
   total = 0
   for (i = 1; i <= kc; i++) { total++; fin_c[i] = renum(keep[i], total) }
