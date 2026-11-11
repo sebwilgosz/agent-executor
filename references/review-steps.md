@@ -6,8 +6,8 @@ The steps of a review, shared by `/executor:review`, `/executor:build` and the a
 |---|---|---|
 | 1, hand-off part | the caller, a main thread | before any agent starts |
 | 1, 2, 3, 4 | `executor:reviewer` | writes the draft to the review file |
-| 5 | the caller spawns the verifiers; `executor:fixer` applies the verdicts | subagents can't spawn agents |
-| 6, and 7 up to the Ready line | `executor:fixer` | only when a Critical finding is left |
+| 5 | the caller spawns the verifiers and applies the verdicts with `scripts/review-verdicts.sh` | subagents can't spawn agents |
+| 6, and 7 up to the Ready line | `executor:fixer` | only in fix mode, when a Critical finding is confirmed or a `[build]` finding stands |
 | 7, save, post and print | the caller | |
 
 ## 1. Target and mode
@@ -81,7 +81,7 @@ Write each finding as the format file says. Merge findings with one root cause i
 
 Sort the findings into **Critical** and **Suggestions**, one numbered finding each in the format file's finding line, the count running continuously across both sections. When you cannot settle a finding's severity, draft it as Critical: a verifier then judges it and can bring it down. A real bug must not escape verification by being drafted as a Suggestion. This draft is what the verifiers check.
 
-**The reviewer writes the whole draft to the review file** (`bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-post.sh --path pr <url>`, or `--path branch [<name>]`, prints where), laid out as `references/review-format.md` says, and never edits a tracked file or pushes. With no Critical finding the file is final: it writes the Verdict, the Rounds line (`fix · <why> · no fixes needed`, or `report-only · <why>`) and the Build and CI lines itself. With Critical findings it leaves the Verdict, Rounds, Ready and Checkout lines to the fixer.
+**The reviewer writes the whole draft to the review file** (`bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-post.sh --path pr <url>`, or `--path branch [<name>]`, prints where), laid out as `references/review-format.md` says, and never edits a tracked file or pushes. With no Critical finding the file is final: it writes the Verdict, the Rounds line (`fix · <why> · no fixes needed`, or `report-only · <why>`) and the Build and CI lines itself. With Critical findings it leaves the Verdict, Rounds, Ready and Checkout lines to whoever finishes the file after step 5: the fixer, or the caller.
 
 It returns only this, so the caller's context stays small:
 
@@ -107,7 +107,9 @@ The caller does this, from the reviewer's finding lines: subagents can't spawn a
 
 Tell to be sceptical. Never pass your reasoning, other findings or your confidence: the verifier's job is to disprove the claim.
 
-The verdicts go to the fixer with the review file and the mode, a `[build]` finding as CONFIRMED. The fixer applies each one to the file, also when every finding was debunked (then it only applies, and fixes nothing):
+**The caller applies the verdicts itself, never by reading the review file.** Write them to a file under `$TMPDIR`, one block per finding: a header line `#<n> CONFIRMED|DEBUNKED|RECLASSIFIED`, then the verifier's `FINDING` text under it (a `[build]` finding has no block; for the fixer below, treat a `[build]` finding as CONFIRMED). Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/review-verdicts.sh <review file> <verdicts file>`. It applies the table below, numbers the findings `#1..#n` again and fixes the heading counts; a CONFIRMED finding stays Critical. On a `STOP:` line the file is untouched: mark the review `❌ review failed: <reason>`.
+
+**Then the fixer, or no fixer.** The fixer is spawned only in fix mode, and only when a verdict is CONFIRMED at severity critical or a `[build]` finding stands. It gets the review file, the mode, the target and the branch, and the file already carries the verdicts. In report-only mode the fixer is never spawned, whatever the verdicts say, and with every finding debunked or reclassified to a suggestion it is not spawned in fix mode either: the caller finishes as step 7 says for a review with no Critical finding.
 
 | Verdict      | Then                                                        |
 | ------------ | ----------------------------------------------------------- |
@@ -141,7 +143,7 @@ Every Critical finding left after step 5 is a bug, and Executor fixes it. Sugges
 DONE: #<n> · <✅|⚠️|❌> · <c> Critical open · <s> suggestions · <r> rounds · <f> fixed · <file>
 ```
 
-With no Critical finding there is no fixer: the caller does what this paragraph says, from the reviewer's file.
+With no fixer (no Critical finding, report-only mode, or none confirmed) the caller does what this paragraph says, from the review file: the Verdict, the Rounds line (`fix · <why> · no fixes needed` or `report-only · <why>`), and in fix mode `review-ready.sh`, the checkout assertion, and the Ready and Checkout lines.
 
 **The caller then saves, posts and prints, in this order:**
 
