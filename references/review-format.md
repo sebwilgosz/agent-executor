@@ -64,17 +64,13 @@ Every review writes its full text, laid out as above, to a file under the Execut
 
 `scripts/review-post.sh --path pr <url>` or `--path branch [<name>]` prints the path and creates the folder. A re-review of the same PR overwrites its file, so a stacked PR re-reviewed after `gh stack rebase` keeps one file. `scripts/review-post.sh <pr-url> <file>` then follows the `Post:` setting in `## Reviews` of `executor/config.md`: `off` (the default) only prints `SAVED:`; `own PRs` posts the file as a comment on the user's own open PR, or edits the comment it posted before, and never posts on someone else's PR. A review with no findings is saved and posted as its short summary.
 
-## The line per PR
+## The PR outcome in a build
 
-In a build, the review file stays out of the build session's context. Each finished PR prints exactly one line instead of its summary:
-
-```text
-PR #41 · ✅ ready · 0 Critical · 4 suggestions · 2 rounds · <comment url | file path>
-```
+In a build, the review file stays out of the build session's context and nothing is printed per PR. The review is posted to the PR as it finishes; the orchestrator keeps the outcome (the agents' return lines and the posted URL or saved file) in the plan file. Only the build block below is printed, once, at the end. A standalone `/executor:review` prints its summary as above.
 
 ## The build block
 
-When no builder or review is left, a build prints one block for the whole build, instead of a checklist and a summary per PR. The plan file keeps its full checklist.
+When no builder or review is left, a build prints one block for the whole build, built from the plan file, instead of a checklist, a summary or a line per PR. The plan file keeps its full checklist.
 
 ```text
 Executor build · <spec title>

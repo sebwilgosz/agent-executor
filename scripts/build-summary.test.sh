@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Spec tests for the build orchestrating the review agents and printing one compact summary:
 #   A. step 4 runs reviewer, verifiers, fixer and review-post.sh; no inline /executor:review.
-#   B. one line per finished PR, one block for the whole build; no full summary per PR.
+#   B. nothing printed per PR, one block for the whole build; no full summary per PR.
 #   C. the failure rules.
 #   D. the formats are documented; the standalone review keeps its full summary.
-#   E. release 0.13.0: version, version-check calls, CHANGELOG.
+#   E. release 0.13.1: version, version-check calls, CHANGELOG.
 #
 # Run: bash scripts/build-summary.test.sh   (exit 0 = all pass)
 set -u
@@ -39,7 +39,13 @@ check "fixer takes head and base from gh pr view"   'gh pr view' "$step4"
 check "reviews of different stacks run together"    'different stacks' "$step4"
 check "one fixer per stack"                         'one fixer per stack' "$step4"
 
-check "one line per finished PR"                    'PR #<n> · ✅ ready · <c> Critical · <s> suggestions · <r> rounds · <comment url | file path>' "$step4"
+lacks "no line printed per finished PR"            'PR #<n> · ✅ ready' "$step4"
+lacks "step 4 prints nothing per PR, as it finishes" 'prints exactly one line' "$step4"
+check "step 4 prints nothing per PR"                'Nothing is printed per PR' "$step4"
+check "step 4 keeps the outcome in the plan file"   'in the plan file' "$step4"
+check "step 4 still posts as each finishes"         'posted to each PR as each finishes' "$step4"
+check "step 5 prints the block once, at the end"    'once, at the very end, built from the plan file' "$step5"
+lacks "format has no per-PR line"                   'PR #41 · ✅ ready · 0 Critical' "$FORMAT"
 check "step 5 prints the build block"               'Executor build · <spec title>' "$step5"
 check "block lists stacks bottom first"             'bottom first' "$step5"
 check "block counts suggestions"                    'Suggestions: <n> across <m> PRs' "$step5"
@@ -65,13 +71,17 @@ check "planning stays in the build session"         'no planner agent' "$BUILD"
 
 check "review skill still prints the full summary"  'prints the result' "$REVIEW"
 check "format documents the review file"            '## Where the review lives' "$FORMAT"
-check "format documents the per-PR line"            '## The line per PR' "$FORMAT"
+check "format documents the PR outcome in a build"  '## The PR outcome in a build' "$FORMAT"
 check "format documents the build block"            '## The build block' "$FORMAT"
 
 check "plugin.json is 0.13.1"                       '"version": "0.13.1"' "$(cat "$REPO/.claude-plugin/plugin.json")"
 for s in build ship init; do
   check "$s skill checks version 0.13.1"            'version-check.sh 0.13.1' "$(cat "$REPO/skills/$s/SKILL.md")"
 done
+check "CHANGELOG has 0.13.1"                        '## 0.13.1' "$CHANGELOG"
+check "CHANGELOG covers the final block only"       'prints only the final block' "$CHANGELOG"
+check "CHANGELOG covers the Sonnet orchestrator"    'orchestrator runs on Sonnet' "$CHANGELOG"
+check "CHANGELOG covers the fixer rule"             'No fixer unless a Critical is confirmed' "$CHANGELOG"
 check "CHANGELOG has 0.13.0"                        '## 0.13.0' "$CHANGELOG"
 check "CHANGELOG gives the measured reason"         '3.98M of 7.1M' "$CHANGELOG"
 check "CHANGELOG covers the review file"            'review-post.sh' "$CHANGELOG"
