@@ -437,6 +437,14 @@ check "plan.md: an item with only a branch" 'branch <name>' "$(cat references/pl
 HELPBLOCK=$(awk '/^## HELP$/{h=1} h' skills/help/SKILL.md | awk '/^```$/{f++; next} f==1')
 is "help: lists the sweep in one line" "1" "$(printf '%s\n' "$HELPBLOCK" | grep -c 'plan-sweep.sh')"
 check "help: may run the sweep" 'scripts/plan-sweep.sh:*' "$(sed -n 1,6p skills/help/SKILL.md)"
+# Width in characters, not bytes: drop the UTF-8 continuation bytes (0x80-0xBF),
+# so it holds in any locale. The help is printed as it stands: 80 columns at most.
+WIDE=$(printf '%s\n' "$HELPBLOCK" | while IFS= read -r row; do
+  n=$(printf '%s' "$row" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' ')
+  [ "$n" -gt 80 ] && printf '%s\n' "$row"
+done)
+is "help: no row wider than 80 columns" "" "$WIDE"
+is "help: the width check reads the block" "1" "$([ "$(printf '%s\n' "$HELPBLOCK" | wc -l)" -gt 20 ] && echo 1)"
 
 local_refs=$(grep -nE '/Users/|\[\[[A-Za-z]' scripts/plan-state.sh scripts/plan-sweep.sh)
 is "nothing local in what ships" "" "$local_refs"
