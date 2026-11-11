@@ -34,7 +34,7 @@ check "step 5 says Suggestions get no verifier"        'Suggestions get no verif
 check "step 4 drafts an unsettled severity as Critical" 'draft it as Critical' "$STEP4"
 check "RECLASSIFIED still moves the finding"           'move it to the severity the verifier gave, with its wording' "$STEP5"
 check "DEBUNKED still removes the finding"             'remove from output' "$STEP5"
-check "the format file says only Critical is verified" 'Only Critical findings are verified' "$FORMAT"
+check "the format file says only Critical is verified" 'Only Critical findings are auto-verified' "$FORMAT"
 check "the format file lists Suggestions as drafted"   'as the reviewer drafted them' "$FORMAT"
 check "the verifier is spawned per Critical finding"   'one agent per Critical finding' "$(grep '^description:' "$REPO/agents/verifier.md")"
 lacks "the skill no longer verifies every finding"     'verifying every finding' "$(cat "$SKILL")"
