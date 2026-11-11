@@ -1,6 +1,6 @@
 {
   "name": "executor",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Executor: a spec in, a stack of reviewed pull requests out. It builds the spec in parallel, reviews every PR against your spec and conventions, fixes the confirmed bugs and ships. Free.",
   "author": {
     "name": "Sebastian Wilgosz",
