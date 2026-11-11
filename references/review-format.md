@@ -16,12 +16,12 @@ Fails when: <concrete input or state → wrong result>.
 
 - **Number.** Continuous `#1 … #n` over the whole review, assigned in print order (every Critical, then every Suggestion). It is how a finding is referred to afterwards; in a multi-repo build, as `#4  · [category] · <owner>/<repo>#<PR> · [PATH-TO-FILE]`.
 - **Link.** For a pull request: `https://github.com/<owner>/<repo>/blob/<head-sha>/<path>#L<line>`, pinned to the head commit so it never drifts. For a local diff: the repo-relative path, `path/to/file.rb:42`.
-- **Category** is one of: Duplication · Correctness · Test coverage · Security · Best practice · Convention · Docs · Other.
+- **Category** is one of: Duplication · Correctness · Test coverage · Security · Best practice · Convention · Docs · Build · Other.
 - **Fails when** names inputs or state, not a feeling. A finding that can't fill it in is a suggestion at most.
 
 ## Severity
 
-- **Critical**: merging it causes wrong behaviour, data loss/leak or a security hole, breaks the build, leaves a spec requirement unmet or untested, adds a performance degradation, or leaves docs stating something false. Critical findings are bugs: in fix mode the review fixes them, in report-only mode they stay open.
+- **Critical**: merging it causes wrong behaviour, data loss/leak or a security hole, breaks the build, leaves a spec requirement unmet or untested, adds a performance trap whose cost is real on a path the diff touches, or leaves docs stating something false. Critical findings are bugs: in fix mode the review fixes them, in report-only mode they stay open.
 - **Suggestion**: everything else worth changing/improving. Suggestions are listed, never fixed by the review.
 - **Only Critical findings are auto-verified.** Suggestions are listed as the reviewer drafted them. A Critical brought down by its verifier is listed among the Suggestions, with the verifier's wording.
 
@@ -42,15 +42,23 @@ Fails when: <concrete input or state → wrong result>.
 
 ## VERDICT [<owner>/<repo>#<PR>](PR URL)
   ▸ **Verdict:** <❌ Changes required | ⚠️ Mergeable | ✅ Ready>
+  ▸ **Branch:** `<branch name>`[ · from origin/<default>, not the local <default>]
   ▸ **Build:** <✅ passed · `<command>`> | <❌ failed · `<command>`> | <⚪ not run · <reason>>
   ▸ **CI:** <✅ green | ❌ red | ⏳ running | ⚪ none> · **Spec:** <link to the spec> | none found, PR description
+  ▸ **Rounds:** fix · <why> · <n> · <f> bugs auto-fixed | fix · <why> · no fixes needed | report-only · <why>
+  ▸ [**Docs:** ⚪ not checked · <why>]
   ▸ [**Ready:** ✅ marked ready | ⚪ draft · <why>]
+  ▸ [**Checkout:** ⚠️ left on `<branch>`, not `<start>` · <why>]
 ––––––––––––––––
 ```
 
-- **A local diff has no PR**, so the header drops the link: `# Executor review · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
+- **A local diff has no PR**, so the header drops the link: `# EXECUTOR REVIEW · <owner>/<repo> @ <branch>`. Everything below it is unchanged.
+- **The Branch line names the base** only after a hand-off with `--base origin/<default>`: the checkout's local default branch was dirty, diverged or not up to date, so the review worked from `origin/<default>`, e.g. `` **Branch:** `fix-login` · from origin/main, not the local main ``.
+- **The Build line says where the build ran:** `✅ passed · CI` when CI passed, `⚪ not run · CI still running` while it is, the local command otherwise.
+- **Rounds says which mode ran and why**, `<why>` as `review-mode.sh` printed it: `fix · your PR · 1 · 2 bugs auto-fixed`, `report-only · PR by @teammate`, `report-only · --no-fix`. Report-only runs no rounds, so its Critical findings all stay open.
 - **The Docs line prints only when the docs check was skipped**, `<why>` as `docs-mentions.sh` printed it after `UNKNOWN:`.
 - **The Ready line prints only when `review-ready.sh` printed `READY:`, `UNKNOWN:` or a `SKIP:` for CI**, `<why>` as it printed it after `UNKNOWN:` or `SKIP:`. A draft left because CI is still running reads `⚪ not marked · CI still running, rerun review-ready.sh <n> once green`: nothing flips it later.
+- **The Checkout line prints only when the checkout's branch at the end differs from the one at the start** (`git branch --show-current`), `<why>` saying what stopped the review from switching back, e.g. uncommitted changes.
 
 ## Where the review lives
 
