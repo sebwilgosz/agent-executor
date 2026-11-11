@@ -10,6 +10,7 @@
 # Output is tagged lines, and the exit code is always 0:
 #   PR: #<n> <url> base=<base> opened|updated
 #   RETARGETED: <old-base> merged, based on <default> instead   (before PR:)
+#   UNSTACKED: gh stack exited <n> (<last line>) - opened as a plain PR   (before PR:)
 #   STOP: <one-line reason>                  - nothing opened; tell the user why
 set -u
 
@@ -43,6 +44,33 @@ try() { # run a command; on failure log it and keep its last error line
   fail_msg=$(printf '%s' "$out" | tail -1)
   log_fail "$*: $fail_msg"
   return 1
+}
+
+# Like try, for a gh stack call, but it acts on the exit code: 8 (locked) is
+# retried after $EXECUTOR_STACK_WAIT seconds (default 2), up to 3 times. It
+# returns the command's exit code and sets fail_msg, gs_rc and $TMP/gs_msg (the
+# last survives a subshell). stack_fatal turns 6, 7 and 8 into a STOP.
+gstack() {
+  local out rc tries=0
+  while :; do
+    out=$("$@" 2>&1) && return 0
+    rc=$?
+    [ "$rc" = 8 ] && [ "$tries" -lt 3 ] || break
+    tries=$((tries+1)); sleep "${EXECUTOR_STACK_WAIT:-2}"
+  done
+  fail_msg=$(printf '%s' "$out" | tail -1); gs_rc=$rc
+  printf '%s' "$fail_msg" > "$TMP/gs_msg"
+  log_fail "$*: exit $rc: $fail_msg"
+  return "$rc"
+}
+
+stack_fatal() { # <exit code> - stop on 6, 7, 8; main shell only
+  local repo; repo=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)")
+  case "$1" in
+    8) stop "gh stack is locked by another process in $repo - retry the ship" ;;
+    7) stop "a gh stack rebase is in progress in $repo - finish it with gh stack rebase --continue or --abort, then retry" ;;
+    6) stop "$branch belongs to more than one stack - check out a branch in only one stack, then retry" ;;
+  esac
 }
 
 guard_branch "$want_branch"
@@ -133,27 +161,35 @@ stack_add_on_below() {
     wt="$TMP/below"
     try git worktree add -q "$wt" "$below" || return 1
   fi
-  (cd "$wt" && try gh stack add "$branch"); rc=$?
+  (cd "$wt" && gstack gh stack add "$branch"); rc=$?
   [ "$wt" = "$TMP/below" ] && git worktree remove --force "$wt" >/dev/null 2>&1
   return $rc
 }
 
-# Put the branch in its stack, then open the PR.
-stacked=1
+# Put the branch in its stack, then open the PR. 6, 7 and 8 stop; 9 (stacked
+# PRs not enabled) falls back to a plain PR; any other failure falls back too,
+# and is reported as UNSTACKED.
+stacked=1; unstacked=""
 if ! gh stack view --json >/dev/null 2>&1; then
   if [ -n "$below_pr" ]; then
-    try gh stack init "$below" "$branch" || stack_add_on_below || stacked=0
-  else try gh stack init "$branch" || stacked=0; fi
+    gstack gh stack init "$below" "$branch"; rc=$?
+    if [ "$rc" != 0 ]; then stack_fatal "$rc"; stack_add_on_below; rc=$?; fi
+  else gstack gh stack init "$branch"; rc=$?; fi
+  if [ "$rc" != 0 ]; then
+    stack_fatal "$rc"
+    stacked=0
+    [ "$rc" = 9 ] || unstacked="gh stack exited $rc ($(cat "$TMP/gs_msg" 2>/dev/null)) - opened as a plain PR, not in a stack"
+  fi
 fi
 
 write_body "$(depends_for "$base")"
 opened=0
 if [ "$stacked" = 1 ]; then
-  out=$(gh stack submit --auto 2>&1); rc=$?
+  gstack gh stack submit --auto; rc=$?
   if [ "$rc" = 0 ]; then opened=1
   elif [ "$rc" != 9 ]; then
-    log_fail "gh stack submit: $(printf '%s' "$out" | tail -1)"
-    stop "could not open the PR: $(printf '%s' "$out" | tail -1) - see $LOG"
+    stack_fatal "$rc"
+    stop "could not open the PR: $fail_msg - see $LOG"
   fi
 fi
 if [ "$opened" = 0 ]; then
@@ -166,5 +202,6 @@ n=$pr_n; url=$pr_url; used=${pr_base:-$base}
 edit_pr "$n" "$used"
 
 [ -n "$retargeted" ] && printf 'RETARGETED: %s merged, based on %s instead\n' "$retargeted" "$def"
+[ -n "$unstacked" ] && printf 'UNSTACKED: %s\n' "$unstacked"
 printf 'PR: #%s %s base=%s opened\n' "$n" "$url" "$used"
 exit 0
