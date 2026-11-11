@@ -9,6 +9,10 @@ Follow-up to the compact review layout: the rules that went with its lines come 
 
 ## 0.13.1 — 2026-11-11
 
+- The build orchestrator runs on Sonnet (`model: sonnet`); the reviewer stays on Opus. Planning happens in the build session, so it now runs on Sonnet too.
+- No fixer unless a Critical is confirmed in fix mode, and never on someone else's PR. A script (`review-verdicts.sh`) applies the verifiers' verdicts instead of the model.
+- The build prints only the final block: nothing per PR. Reviews are still posted to each PR as each finishes, so the next item of a stack starts at once; the orchestrator keeps each PR's outcome in the plan file and step 5 prints the one build block at the end, plus the questions when something is open. A standalone `/executor:review` still prints its summary.
+- The duplicate step 4 bullets in the build skill are removed.
 - `scripts/pr-open.sh` acts on the exit code of every `gh stack` call (init, add, submit) through one helper, `gstack`. Exit 8 (stack locked by another process) is retried up to 3 times, waiting 2 seconds (`EXECUTOR_STACK_WAIT` overrides it), then stops with `gh stack is locked by another process in <repo> - retry the ship`; a lock never falls back to a plain PR. Exit 7 (rebase in progress) and exit 6 (branch in more than one stack) stop with their own reason and never run `--abort` or `--continue`. Exit 9 keeps the plain-PR fallback.
 - Any other `gh stack init`/`add` failure still falls back to a plain PR, but is no longer silent: the exit code and last stderr line go to the log, and the script prints `UNSTACKED: gh stack exited <n> (<reason>) - opened as a plain PR, not in a stack` before the `PR:` line. `references/feature-done.md` and the ship skill tell the caller to report it; the review hook reads only the `PR:` line, so it is unaffected.
 - `references/stacks.md` gains the rules for the commands the model runs: exit 8 retry, exit 7 finish-or-report, exit 6 never guess, and `gh stack checkout` takes a branch name, never a PR number.
