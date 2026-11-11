@@ -24,7 +24,7 @@ You build one feature. There is no user on the other end: never wait for an answ
 
 Read the plugin root's `references/implementation.md` and follow it, step by step: spec tests first, build in the repo's way, commit and grade every finished step, refactors in their own PR, no inline comments, no references to local material.
 
-Put the ticket in the PR description: `Closes #<n>` on GitHub, the key on Jira and Linear.
+The PR description is for the reviewer: it opens with Why, the problem in plain human words, then Scope. Never write it as a list of code changes. Put the ticket in the PR description: `Closes #<n>` on GitHub, the key on Jira and Linear.
 
 Then finish as `references/feature-done.md` says: write the PR body as `references/pull-request.md` lays it out, then one `scripts/pr-open.sh` call opens the draft PR in its stack. On a `STOP:` line, report its reason as the PR not opened and do not do the git or gh steps by hand. Stop there: build runs the review, which marks the PR ready. If a hook asks you to review the new PR, leave it; you can't start the review's agents, and build runs it once you report.
 

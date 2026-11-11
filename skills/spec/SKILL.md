@@ -30,6 +30,7 @@ A source that can't be read (a private URL, a missing connector) is listed as un
 
 Write one spec in the shape of `references/spec.md`. Rules:
 
+- Write Why, and each feature's Why line, for a person: the problem in everyday words, before any requirement. A spec that only lists what to do makes every PR built from it read like a diff.
 - Every fact names its source. What you inferred is marked as inferred and becomes an open question; it is never written as decided.
 - When sources disagree, current state comes from the code and the CHANGELOG, intent from the notes, and the disagreement is listed.
 - Work the code shows as already built is reported as done, not drafted again.
