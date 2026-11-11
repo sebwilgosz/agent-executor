@@ -11,9 +11,9 @@ Review once, verify every Critical finding independently, then fix the confirmed
 
 1. **Hand-off.** Do step 1's hand-off part yourself, before any agent starts. Note the checkout's branch (`git branch --show-current`, or `git rev-parse HEAD` when detached). Pass `--fix`, `--no-fix` and `--base origin/<default>` on to the reviewer if the user gave them.
 2. **Reviewer.** Spawn `executor:reviewer` with the resolved target, those flags and the repo path. It does steps 1 to 4 and returns the `REVIEW:`, `MODE:`, `BUILD:`, `CRITICAL:` and `SUGGESTIONS:` lines.
-3. **Verifiers**, only when `CRITICAL` is above 0: step 5, from the finding lines.
-4. **Fixer**, only when `CRITICAL` is above 0. Spawn `executor:fixer` with the review file, the verdicts, the mode, the target, the noted branch and the `CI:` answer. It applies the verdicts and, in fix mode, steps 6 and 7 up to the Ready line. It returns one `DONE:` line.
-5. **No Critical finding:** the reviewer's file is final. In fix mode and with a verdict of ✅ or ⚠️, run `review-ready.sh` and the checkout assertion as step 7 says, and add the Ready and Checkout lines to the file.
+3. **Verifiers**, only when `CRITICAL` is above 0: step 5, from the finding lines. Then apply the verdicts yourself with `review-verdicts.sh`, as step 5 says; never read the review file.
+4. **Fixer**, only in fix mode, and only when a verdict is CONFIRMED at severity critical or a `[build]` finding stands. Spawn `executor:fixer` with the review file, the mode, the target, the noted branch and the `CI:` answer. It runs steps 6 and 7 up to the Ready line and returns one `DONE:` line. In report-only mode it is never spawned.
+5. **No fixer** (no Critical finding, report-only mode, or every Critical debunked or reclassified): the review file, with the verdicts applied, is final. Write the Verdict and the Rounds line (`fix · <why> · no fixes needed` or `report-only · <why>`) into it. In fix mode and with a verdict of ✅ or ⚠️, run `review-ready.sh` and the checkout assertion as step 7 says, and add the Ready and Checkout lines to the file.
 6. **Save, post, print:** step 7's last part, in its order.
 
 An agent that returns nothing usable marks the PR `❌ review failed: <reason>`; nothing is retried silently. The review is posted to GitHub only through `review-post.sh`, as the setting or the user's request says.
