@@ -43,16 +43,14 @@ Each PR is a draft in a [GitHub stack](https://github.com/github/gh-stack), with
 ## How it works
 
 ```mermaid
-flowchart TD
-    S["Your spec<br/>notes, RFC, issue, Notion page"] --> P["Plan<br/>features and stacks, a checklist"]
-    P --> A1{{"You approve the plan"}}
-    A1 --> F["Foundation PR<br/>shared groundwork, built alone"]
+flowchart LR
+    S["Your spec<br/>notes, RFC, issue"] --> P["Plan<br/>a checklist"]
+    P --> A1{{"You approve"}}
+    A1 --> F["Foundation PR<br/>built alone"]
     F --> B1["Builder · stack A<br/>Sonnet, own worktree"]
     F --> B2["Builder · stack B<br/>Sonnet, own worktree"]
-    B1 --> T1["Tests from the spec first,<br/>then code, a commit per step"]
-    B2 --> T2["Tests from the spec first,<br/>then code, a commit per step"]
-    T1 --> R["Review every PR"]
-    T2 --> R
+    B1 --> R["Review every PR"]
+    B2 --> R
     R --> M{{"You merge,<br/>bottom of each stack first"}}
 ```
 
