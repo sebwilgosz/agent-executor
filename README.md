@@ -6,6 +6,8 @@ Executor is a free Claude Code plugin that runs the engineer's loop for you. It 
 
 You approve twice: the plan, and the merge.
 
+**New to agent builds?** Take the [free 5-day email course](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor#course): install Executor and run your first review on day one, then specs, context budgets and your own plugin. More on the [Executor page](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor).
+
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-0.13.2-informational)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-orange)
@@ -149,6 +151,8 @@ In Claude Code:
 
 Then type `/executor:init`. It checks the GitHub CLI, its sign-in and the [gh-stack](https://github.com/github/gh-stack) extension, offering to install it. In a build repository it offers to enable Executor in the committed `.claude/settings.json`, merged in without touching your other settings, so every worktree inherits it. It asks for your [search roots](#search-roots), [plans folder](#where-plans-live) and [spec home](#where-specs-live), then ends with a setup check, `scripts/self-audit.sh`, that you can rerun any time.
 
+**Next:** the [free 5-day course](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor-install#course) walks you through your first review and your first build, one email a day.
+
 **Requirements**
 
 - [Claude Code](https://claude.com/claude-code)
@@ -158,7 +162,7 @@ Then type `/executor:init`. It checks the GitHub CLI, its sign-in and the [gh-st
 
 ## FAQ
 
-**Is it free?** Yes, under the MIT license. You pay for your own Claude usage.
+**Is it free?** Yes, under the MIT license, and so is the [5-day course](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor-faq#course). You pay for your own Claude usage.
 
 **Does it work with my language or framework?** It builds and tests with your repo's own commands, which it finds in `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md` or the README. It reviews against your linter configs and the code around the change.
 
