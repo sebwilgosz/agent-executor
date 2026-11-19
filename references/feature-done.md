@@ -26,13 +26,14 @@ If any of these fails, the feature isn't finished: keep working, or stop and say
 
 Two calls, nothing else: write the body, run the script. `pr-open.sh` puts the branch in its stack, pushes, opens the draft PR on the right base (or updates the one that exists), sets the title and body, and fills **Depends on** itself. Do not run `git`, `gh stack` or `gh pr` for this by hand; `${CLAUDE_PLUGIN_ROOT}/references/stacks.md` explains the stacks behind it.
 
-1. Write the body to a file as `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md` lays it out: short and readable for a person: it starts from **Why** (the problem in plain words, from the background your brief gives you; when the brief has none, ask what was wrong from the spec's own text), then **Scope**, a diagram of the problem and the fix,  the spec tests under **Testing**. Leave out **Depends on**.
+1. Write the body to a file as `${CLAUDE_PLUGIN_ROOT}/references/pull-request.md` lays it out: short and readable for a person: it starts from **Why** (the problem in plain words, from the background your brief gives you; when the brief has none, ask what was wrong from the spec's own text), then **Scope**, a diagram of the problem and the fix,  the spec tests under **Testing**. A repo with its own PR template keeps its headings, with these sections mapped under them as that file says. Leave out **Depends on**.
 2. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/pr-open.sh --branch <branch> --below <the branch below it in the stack, or default> --title "<title>" --body-file <file>`.
 3. Act on the tagged line it prints (the exit code is always 0):
    - `PR: #<n> <url> base=<base> opened|updated`: the PR is open. Report its URL.
    - `RETARGETED: <old-base> merged, based on <default> instead`: the branch below was already merged, so the PR is based on the default branch. Say so in the report.
    - `UNSTACKED: <reason> - opened as a plain PR`: `gh stack` failed, so the PR is open outside the stack. Say so in the report, with the reason.
    - `STOP: <reason>`: nothing was opened. Report the reason and stop; do not try the git or gh steps by hand.
+   - `LINT: ...` then `REWRITE: ...`: nothing was pushed or opened; the body breaks the readability rules. Rewrite it as each `LINT:` line says and run the same call again. Add `--lint-checked` only when a line left is wrong for this PR; the `LINT:` lines then print with the `PR:` line, and go in your report.
 
 When the script prints `opened`, the plugin's hook starts `executor:review` on the new PR; an `updated` PR never starts it again. Let it run to its summary. A feature built by a builder agent under `/executor:build` stops at the open PR: build runs the review, since a builder can't start the review's agents.
 

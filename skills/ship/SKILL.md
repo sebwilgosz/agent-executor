@@ -12,7 +12,7 @@ message and the PR body. You never run the review; opening the PR starts it.
 
 ## 0. Assert the plugin is current
 
-This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.13.2`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — ship nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
+This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.14.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — ship nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
 
 ## 1. Commit what is pending
 
@@ -53,6 +53,7 @@ Only on `OPEN_PR`. Two calls, nothing else: write the body, run the script.
    - `RETARGETED: <old-base> merged, based on <default> instead`: the branch below was already merged; say so in the report.
    - `UNSTACKED: <reason> - opened as a plain PR`: `gh stack` failed, so the PR is open outside the stack; say so in the report, with the reason.
    - `STOP: <reason>`: nothing was opened. Report the reason and stop; never do the git or gh steps by hand.
+   - `LINT: ...` then `REWRITE: ...`: nothing was pushed or opened; the body breaks the readability rules. Rewrite it as each `LINT:` line says and run the same call again. Add `--lint-checked` only when a line left is wrong for this PR, and report the `LINT:` lines it prints.
 
 The PR is always a **draft**. The plugin's hook recognises a `pr-open.sh` call
 whose output says `opened`, assigns the author (detached) and starts

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # pr-open.sh — from a finished branch to an open draft PR in one call. No AI.
-#   bash pr-open.sh --branch <b> --below <branch|default> --title "<t>" --body-file <f>
+#   bash pr-open.sh --branch <b> --below <branch|default> --title "<t>" --body-file <f> [--lint-checked]
+# First it lints the body (pr-body-lint.sh). A body that breaks the readability
+# rules is sent back for a rewrite, with nothing pushed or opened, unless
+# --lint-checked says the caller rewrote it and judges what is left wrong for
+# this PR; then it opens anyway and prints the remaining LINT: lines before PR:.
 # It puts the branch in its stack, pushes, opens the draft PR on the right base
 # (or updates the one that exists), sets title and body, and fills the body's
 # "Depends on" section itself from the base it used. Every gh/git call lives
@@ -11,6 +15,8 @@
 #   PR: #<n> <url> base=<base> opened|updated
 #   RETARGETED: <old-base> merged, based on <default> instead   (before PR:)
 #   UNSTACKED: gh stack exited <n> (<last line>) - opened as a plain PR   (before PR:)
+#   LINT: <rule> line <n>: ... → <fix>       (before REWRITE:, or before PR: with --lint-checked)
+#   REWRITE: <reason>                        - nothing pushed or opened; rewrite the body, run again
 #   STOP: <one-line reason>                  - nothing opened; tell the user why
 set -u
 
@@ -18,20 +24,33 @@ EOW="${EOW_HOME:-$HOME/.engineer-of-wealth}"
 LOG="$EOW/executor/pr-open.log"
 . "$(dirname "$0")/branch-guard.sh"
 
-want_branch=""; below=""; title=""; body_file=""
+want_branch=""; below=""; title=""; body_file=""; lint_checked=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --branch)    want_branch=${2:-}; shift ;;
     --below)     below=${2:-}; shift ;;
     --title)     title=${2:-}; shift ;;
     --body-file) body_file=${2:-}; shift ;;
-    *) stop "unknown argument $1 - usage: pr-open.sh --branch <b> --below <branch|default> --title <t> --body-file <f>" ;;
+    --lint-checked) lint_checked=1; shift; continue ;;
+    *) stop "unknown argument $1 - usage: pr-open.sh --branch <b> --below <branch|default> --title <t> --body-file <f> [--lint-checked]" ;;
   esac
   shift
 done
 [ -n "$want_branch" ] && [ -n "$below" ] && [ -n "$title" ] && [ -n "$body_file" ] || \
-  stop "usage: pr-open.sh --branch <b> --below <branch|default> --title <t> --body-file <f>"
+  stop "usage: pr-open.sh --branch <b> --below <branch|default> --title <t> --body-file <f> [--lint-checked]"
 [ -f "$body_file" ] || stop "body file $body_file not found"
+
+# The body is read by a person: lint it before anything is pushed.
+lint=""
+lint_script="$(dirname "$0")/pr-body-lint.sh"
+if [ -f "$lint_script" ]; then
+  lint=$(bash "$lint_script" "$body_file" 2>/dev/null | grep '^LINT: ' | grep -vx 'LINT: ok')
+fi
+if [ -n "$lint" ] && [ "$lint_checked" = 0 ]; then
+  printf '%s\n' "$lint"
+  printf 'REWRITE: the PR body breaks the readability rules above - nothing pushed or opened. Rewrite %s as references/pull-request.md says and run pr-open.sh again; add --lint-checked only if a line above is wrong for this PR\n' "$body_file"
+  exit 0
+fi
 command -v jq >/dev/null 2>&1 || stop "jq is required"
 
 TMP=$(mktemp -d 2>/dev/null) || stop "could not create a temp folder"
@@ -107,6 +126,7 @@ if [ -n "$pr_n" ]; then
   n=$pr_n; url=$pr_url; base=${pr_base:-$def}
   push_branch
   edit_pr "$n" "$base"
+  [ -n "$lint" ] && printf '%s\n' "$lint"
   printf 'PR: #%s %s base=%s updated\n' "$n" "$url" "$base"
   exit 0
 fi
@@ -203,5 +223,6 @@ edit_pr "$n" "$used"
 
 [ -n "$retargeted" ] && printf 'RETARGETED: %s merged, based on %s instead\n' "$retargeted" "$def"
 [ -n "$unstacked" ] && printf 'UNSTACKED: %s\n' "$unstacked"
+[ -n "$lint" ] && printf '%s\n' "$lint"
 printf 'PR: #%s %s base=%s opened\n' "$n" "$url" "$used"
 exit 0

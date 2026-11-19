@@ -252,6 +252,26 @@ fresh; feature feat/one main b.txt
 check "missing body file: STOP" "STOP:" "$(run feat/one default "$ROOT/nope.md")"
 refute "missing body file: nothing submitted" "stack submit" "$(cat "$GH_CALLS")"
 
+# the body is linted first: a body that breaks the rules is sent back, nothing pushed
+fresh; feature feat/one main b.txt
+printf '## Link to the ticket\nhttps://example.atlassian.net/browse/ABC-1\n' > "$ROOT/bad.md"
+out=$(run feat/one default "$ROOT/bad.md")
+check "lint: the problem is shown" "LINT: bare-url line 2: https://example.atlassian.net/browse/ABC-1" "$out"
+check "lint: asks for a rewrite" "REWRITE: the PR body breaks the readability rules above - nothing pushed or opened" "$out"
+refute "lint: no PR line" "PR:" "$out"
+[ -s "$GH_CALLS" ] && bad "lint: no gh call" "$(cat "$GH_CALLS")" || ok "lint: no gh call"
+on_origin feat/one && bad "lint: nothing pushed" "on origin" || ok "lint: nothing pushed"
+
+out=$( cd "$WORK" && bash "$POPEN" --branch feat/one --below default --title "My feature" --body-file "$ROOT/bad.md" --lint-checked 2>&1 )
+check "lint checked: opens anyway" "PR: #7 https://github.com/o/r/pull/7 base=main opened" "$out"
+check "lint checked: what is left stays visible" "LINT: bare-url line 2" "$out"
+refute "lint checked: no rewrite asked" "REWRITE:" "$out"
+case "$out" in *LINT:*PR:*) ok "lint checked: LINT lines come before the PR line" ;; *) bad "lint checked: LINT lines come before the PR line" "$out" ;; esac
+
+fresh; feature feat/one main b.txt
+out=$(run feat/one default)
+refute "clean body: no LINT line" "LINT:" "$out"
+
 # failures become a STOP and a log line
 fresh; feature feat/one main b.txt; git -C "$WORK" remote set-url origin "$ROOT/does-not-exist.git"
 out=$(run feat/one default)
