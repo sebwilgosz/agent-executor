@@ -64,7 +64,7 @@ advance() {
 remote_sha() { git --git-dir="$GH/$1.git" rev-parse "${2:-main}"; }
 new_remote acme/api
 new_remote acme/web
-new_remote Kaligo/billing
+new_remote Globex/billing
 new_remote other/tools
 new_remote acme/modern v2
 
@@ -378,9 +378,9 @@ check "stale default worktree, plain: not pruned" "$CASE/gone" "$(git -C "$P/api
 fresh
 clone_to acme/api "$P/api"; clone_to acme/web "$P/deep/web"
 clone_to other/tools "$P/a/b/tools"
-clone_to Kaligo/billing "$P/Archive/billing"; clone_to Kaligo/billing "$P/old/Archive"
+clone_to Globex/billing "$P/Archive/billing"; clone_to Globex/billing "$P/old/Archive"
 { echo "## Roots"; echo "- $CASE/missing"; echo "- $P"; } > "$EOW_HOME/executor/config.md"
-tools_before=$(sha_of "$P/a/b/tools"); archived_before=$(sha_of "$P/Archive/billing"); advance Kaligo/billing; advance other/tools
+tools_before=$(sha_of "$P/a/b/tools"); archived_before=$(sha_of "$P/Archive/billing"); advance Globex/billing; advance other/tools
 is "search: two levels, no Archive, missing root skipped" "Pulled all 2 repos." "$(run)"
 is "search: depth 3 not touched" "$tools_before" "$(sha_of "$P/a/b/tools")"
 is "search: Archive not touched" "$archived_before" "$(sha_of "$P/Archive/billing")"
@@ -418,7 +418,7 @@ Could not pull:
 # GROUPS
 groups_repos() {
   clone_to acme/api "$P/api"; clone_to acme/web "$P/web"
-  clone_to Kaligo/billing "$P/billing"; clone_to other/tools "$P/tools"
+  clone_to Globex/billing "$P/billing"; clone_to other/tools "$P/tools"
   git init -q "$P/local-only"
   behind_commit "$P/api" mark; behind_commit "$P/web" mark; behind_commit "$P/billing" mark; behind_commit "$P/tools" mark
 }
@@ -451,7 +451,7 @@ fresh; groups_repos; group_cfg empty
 is "group: an empty section selects nothing" "No repos match empty (looked in $P)." "$(run empty)"
 
 fresh; groups_repos
-is "no section: owner in another case" "billing " "$(names_in "$(run kaligo)")"
+is "no section: owner in another case" "billing " "$(names_in "$(run globex)")"
 is "no section: repo name in another case" "tools " "$(names_in "$(run TOOLS)")"
 is "no match: one line" "No repos match nobody (looked in $P)." "$(run nobody)"
 
@@ -477,9 +477,9 @@ fresh
 clone_to acme/api "$P/api"; behind_commit "$P/api" local
 clone_to acme/web "$P/web"; printf 'mine\n' >> "$P/web/file.txt"
 clone_to other/tools "$P/tools"; git -C "$P/tools" checkout -q -b release/0.3.0; printf 'mine\n' > "$P/tools/scratch"
-clone_to Kaligo/billing "$P/billing"
+clone_to Globex/billing "$P/billing"
 git init -q "$P/local-only"
-advance acme/web; advance other/tools; advance Kaligo/billing
+advance acme/web; advance other/tools; advance Globex/billing
 out=$(run)
 is "failures: exactly the lines of the list" "Pulled 2 of 4 repos. 1 skipped, no remote.
 Could not pull:
@@ -589,7 +589,7 @@ is "never: no stash entry anywhere" "" "$sweep_stash"
 is "never: no reset or rebase in any reflog" "" "$sweep_flog"
 is "never: no commit made by the script" "" "$sweep_commit"
 is "never: the exit code is always 0" "" "$(grep -v '^0$' "$RCS")"
-for slug in acme/api acme/web other/tools Kaligo/billing; do
+for slug in acme/api acme/web other/tools Globex/billing; do
   seed_head=$(sha_of "$ROOT/seed/$slug")
   is "never: nothing pushed to $slug" "$seed_head" "$(remote_sha "$slug")"
 done

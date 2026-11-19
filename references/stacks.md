@@ -53,7 +53,7 @@ The stack stays rooted in live branches, never in merged ones. The ship and revi
 
 ## Titles and bodies
 
-`submit --auto` writes titles and bodies from the commits. Right after it, give every new PR its real ones: `gh pr edit <n> --title "<feature name>" --body-file <file>`, with the body from `references/feature-done.md`.
+`submit --auto` writes titles and bodies from the commits. Right after it, give every new PR its real ones: `gh pr edit <n> --title "<feature name>" --body-file <file>`, with the body from `references/feature-done.md`, run through `bash ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-lint.sh <file>` first: rewrite it until it prints `LINT: ok`.
 
 ## Draft until reviewed
 
