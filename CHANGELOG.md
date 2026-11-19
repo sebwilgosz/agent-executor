@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0 — 2026-11-20
+
+PR descriptions stay readable whatever PR template the repo uses. A build in a repo with its own `.github/pull_request_template.md` used the template's headings and dropped Executor's rules with Executor's own headings. The result had bare ticket URLs, and an Approach bullet that held a metric's label set, a query and a library's mechanics. A review suggestion to "link the tickets" then added more bare URLs, and the fixer appended another long clause.
+
+- `references/pull-request.md` maps Executor's sections onto a repo's own template, keeping the template's headings verbatim: Why under the background heading; Scope, trade-offs and the diagram under the approach heading; Testing under the testing heading. Every readability rule still applies under those headings. Two rules are new: no internals in prose (label sets, queries, mechanics), and references written as linked IDs, `[ABC-123](…/browse/ABC-123)` or `[#42](…/pull/42)`, never a bare URL. A bullet may now run to two lines (about 40 words).
+- `scripts/pr-body-lint.sh <file>` (or `--pr <n|url>`) checks a body with no model. It flags bare URLs (and suggests the linked ID), bullets over 40 words, paragraphs over 60, bullets with four or more code names or with label-set or query syntax, and a body over 40 lines, not counting the diagram or HTML comments. It prints `LINT:` lines or `LINT: ok`, and always exits 0.
+- `scripts/pr-open.sh` lints the body before anything is pushed. On a `LINT:` line it prints `REWRITE:` and opens nothing. The builder and ship rewrite the body and run it again. `--lint-checked` opens anyway when a remaining line is wrong for the PR, and prints those lines before `PR:`, so they stay visible.
+- The fixer edits a PR description only when a fix makes it wrong, and every edit goes through `pr-body-lint.sh` before `gh pr edit`. A manual `gh pr edit` after `gh stack submit` (`references/stacks.md`) lints first too.
+- The review (step 3, convention 6) judges the description against the rules whatever its headings, runs `pr-body-lint.sh --pr` as evidence, and writes any "link X" suggestion out as linked IDs.
+- `scripts/self-audit.sh` reports a missing `pr-body-lint.sh`. `scripts/pr-body-lint.test.sh` is new, and `scripts/pr-open.test.sh` covers the rewrite gate.
+
 ## 0.13.2 — 2026-11-11
 
 Follow-up to the compact review layout: the rules that went with its lines come back.

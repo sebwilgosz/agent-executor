@@ -25,6 +25,12 @@ Read the plugin root's `references/review-steps.md`.
 
 Never edit a test to make it pass; never force-push outside a stack restack; never post the review.
 
+**Editing the PR description.** Only when a fix makes it wrong; never to log what you fixed (that goes in the commit message). Every body edit goes through the lint, with no exception:
+
+1. Write the whole new body to a file, `gh pr view <n> --json body -q .body` as the start. Change the least that makes it true, in the same short form: one idea per bullet, at most two lines, no label sets, queries or mechanics, references as linked IDs (`[ABC-123](https://example.atlassian.net/browse/ABC-123)`, `[#42](https://github.com/acme/shop/pull/42)`), never a bare URL. The rules are the plugin root's `references/pull-request.md`, whatever headings the repo's template uses.
+2. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/pr-body-lint.sh <file>`. On any `LINT:` line other than `LINT: ok`, rewrite and run it again. A line you can't clear without making the body wrong, leave, and note it in the review file under the description's finding.
+3. Only then `gh pr edit <n> --body-file <file>`.
+
 ## Answer: exactly this line, nothing else
 
 ```text
