@@ -123,6 +123,23 @@ is_ok "a 41-word paragraph is fine"        "$long41"
 check "a 61-word paragraph is long"        "LINT: long-para line 1: 61 words" "$(run "$(printf 'word %.0s' $(seq 1 61))")"
 is_ok "a table row is not a bullet"        "| $long41 | x |"
 
+# The Testing layout of references/pull-request.md: bold-label lines, one per line,
+# render as separate lines, so they are not one paragraph
+TESTING='## Testing
+
+**Spec tests**, written before the code:
+- [x] A webhook that fails pages once — `spec/webhook_spec.rb`
+
+**Also added:** `spec/models/webhook_spec.rb` — covers the retry window
+**Changed with approval:** none
+**Build:** `bundle exec rspec`, `bundle exec rubocop` — all green
+**Try it:** run `bin/dev`, then fail a webhook from the console'
+is_ok "bold-label lines are not one paragraph"  "$TESTING"
+long_label=$(printf 'word %.0s' $(seq 1 31))
+is_ok "two labelled lines are not one long paragraph" "**Build:** $long_label
+**Try it:** $long_label"
+check "a long labelled line is still long"      "LINT: long-para line 1:" "$(run "**Build:** $(printf 'word %.0s' $(seq 1 61))")"
+
 # Dense and internals
 is_ok "three code names are fine"          '- Run `a`, `b` and `c`.'
 check "four code names are dense"          "LINT: dense line 1: 4 code names" "$(run '- Set `a`, `b`, `c` and `d`.')"
