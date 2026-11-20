@@ -74,9 +74,9 @@ check "format documents the review file"            '## Where the review lives' 
 check "format documents the PR outcome in a build"  '## The PR outcome in a build' "$FORMAT"
 check "format documents the build block"            '## The build block' "$FORMAT"
 
-check "plugin.json is 0.14.0"                       '"version": "0.14.0"' "$(cat "$REPO/.claude-plugin/plugin.json")"
+check "plugin.json is 0.14.1"                       '"version": "0.14.1"' "$(cat "$REPO/.claude-plugin/plugin.json")"
 for s in build ship init; do
-  check "$s skill checks version 0.14.0"            'version-check.sh 0.14.0' "$(cat "$REPO/skills/$s/SKILL.md")"
+  check "$s skill checks version 0.14.1"            'version-check.sh 0.14.1' "$(cat "$REPO/skills/$s/SKILL.md")"
 done
 check "CHANGELOG has 0.13.1"                        '## 0.13.1' "$CHANGELOG"
 check "CHANGELOG covers the final block only"       'prints only the final block' "$CHANGELOG"
