@@ -125,6 +125,7 @@ BEGIN { issues = 0; body = 0; fence = ""; mermaid = 0; comment = 0; blk = "" }
   if (line ~ /^[ \t]*([-*+]|[0-9]+[.)])[ \t]+/) {                          # a new bullet
     close_block(); blk = line; blk_line = NR; blk_bullet = 1; next
   }
+  if (line ~ /^[ \t]*\*\*[^*]+:\*\*/) close_block()                        # a bold label line (**Build:** ...) renders on its own line
   if (blk == "") { blk = line; blk_line = NR; blk_bullet = 0 }             # a new paragraph
   else blk = blk " " line                                                  # a wrapped line
 }
