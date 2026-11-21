@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1 — 2026-11-20
+
+- `scripts/pr-body-lint.sh`: a line that starts with a bold label (`**Build:**`, `**Try it:**`) starts its own block. The Testing layout in `references/pull-request.md` puts those lines one after another, and the lint read them as one paragraph, so a body that followed the rules was flagged and `pr-open.sh` refused to open it.
+
 ## 0.14.0 — 2026-11-20
 
 PR descriptions stay readable whatever PR template the repo uses. A build in a repo with its own `.github/pull_request_template.md` used the template's headings and dropped Executor's rules with Executor's own headings. The result had bare ticket URLs, and an Approach bullet that held a metric's label set, a query and a library's mechanics. A review suggestion to "link the tickets" then added more bare URLs, and the fixer appended another long clause.

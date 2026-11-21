@@ -9,7 +9,7 @@ You approve twice: the plan, and the merge.
 **New to agent builds?** Take the [free 5-day email course](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor-launch&utm_content=top-course#course): install Executor and run your first review on day one, then specs, context budgets and your own plugin. The story behind it: [I don't code anymore. Executor does it all.](https://newsletter.sebwilgosz.com/p/i-dont-code-anymore-executor-does?utm_source=github&utm_medium=readme&utm_campaign=executor-launch&utm_content=top-article). More on the [Executor page](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor-launch&utm_content=top-page).
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.14.0-informational)
+![Version](https://img.shields.io/badge/version-0.14.1-informational)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-orange)
 ![Measured cost](https://img.shields.io/badge/measured-%242.18--2.58%20per%20PR-success)
 
