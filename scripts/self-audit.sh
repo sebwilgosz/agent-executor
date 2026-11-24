@@ -115,6 +115,34 @@ awk '/^## HELP$/{h=1} h&&/^```$/{f++} END{exit !(f>=2)}' "$door" \
   || warn "integrity: skills/help/SKILL.md has no fenced block under \"## HELP\" — /executor:help falls back to the model → $REINSTALL"
 [ "$e$w" = "$ERRS$WARNS" ] && ok "integrity: the help routes to every skill and all references are present"
 
+# -- the help block's entries: a proportional font drops leading spaces, so a
+#    continuation line reads as a new, unrelated entry, and a long one wraps.
+# Defined as a function, called through a pipe: a case inside $(...) directly
+# can fail to parse under macOS's bash 3.2. Width in characters, not bytes:
+# drop the UTF-8 continuation bytes (0x80-0xBF), so it holds in any locale.
+e=$ERRS
+help_line_issues() {
+  local line n
+  while IFS= read -r line; do
+    case "$line" in
+      *"▸"*)
+        n=$(printf '%s' "$line" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' ')
+        [ "$n" -le 80 ] || printf 'long: %s\n' "$line"
+        ;;
+      [\ ]*[!\ ]*) printf 'cont: %s\n' "$line" ;;
+    esac
+  done
+}
+help_issues=$(awk '/^## HELP$/{h=1} h&&/^```$/{f++; next} f==1' "$door" | help_line_issues)
+while IFS= read -r issue; do
+  [ -n "$issue" ] || continue
+  case "$issue" in
+    long:*) err "integrity: skills/help/SKILL.md help line over 80 characters:${issue#long:} → shorten it, move details to the skill's own text" ;;
+    cont:*) err "integrity: skills/help/SKILL.md has a continuation line with no ▸:${issue#cont:} → one line per command" ;;
+  esac
+done <<< "$help_issues"
+[ "$e" = "$ERRS" ] && ok "integrity: every help line fits on one line of at most 80 characters"
+
 # -- the hooks: without them no PR is reviewed or assigned on its own.
 e=$ERRS
 for s in assign-author review-new-pr; do

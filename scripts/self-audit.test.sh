@@ -280,6 +280,29 @@ for s in repo-tidy branch-finished folder-state drift; do
   [ "$rc" -eq 0 ] && ok "$s missing: exit 0" || bad "$s missing: exit 0" "exit $rc"
 done
 
+# 21. INTEGRITY: every help line fits on one line of at most 80 characters, and
+#     no continuation line (leading spaces, no ▸) hides under a command.
+copy_ok
+out=$(ROOT="$PLUG" audit -v)
+check  "help lines as shipped: ok line" "✓ integrity: every help line fits on one line of at most 80 characters" "$out"
+refute "help lines as shipped: no long-line error" "help line over 80 characters" "$out"
+refute "help lines as shipped: no continuation error" "has a continuation line" "$out"
+copy_ok
+sed -i.bak 's#▸ /executor:help — this list#▸ /executor:help — this list, far past the eighty character line limit set here#' "$PLUG/skills/help/SKILL.md"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "a help line over 80 characters: integrity error" "✗ integrity: skills/help/SKILL.md help line over 80 characters" "$out"
+check "a help line over 80 characters: names the line" "far past the eighty character line limit" "$out"
+check "a help line over 80 characters: says what to do" "→ shorten it" "$(printf '%s\n' "$out" | grep -F 'help line over 80 characters')"
+[ "$rc" -eq 0 ] && ok "a help line over 80 characters: exit 0" || bad "a help line over 80 characters: exit 0" "exit $rc"
+copy_ok
+sed -i.bak 's#▸ /executor:help — this list#▸ /executor:help — this list\n                                     a second, unrelated-looking line#' "$PLUG/skills/help/SKILL.md"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "a continuation line: integrity error" "✗ integrity: skills/help/SKILL.md has a continuation line with no ▸" "$out"
+check "a continuation line: names the line" "a second, unrelated-looking line" "$out"
+check "a continuation line: says what to do" "→ one line per command" "$(printf '%s\n' "$out" | grep -F 'has a continuation line')"
+[ "$rc" -eq 0 ] && ok "a continuation line: exit 0" || bad "a continuation line: exit 0" "exit $rc"
+refute "a continuation line: section headers are not flagged" "has a continuation line with no ▸:BUILD" "$out"
+
 # --integrity-only: a machine with no gh and no roots passes; a broken plugin still fails.
 NOGH=$(mktemp -d)
 for t in bash dirname basename cat grep sed awk sort head tail tr wc cut jq date git uname mktemp rm cp mkdir; do

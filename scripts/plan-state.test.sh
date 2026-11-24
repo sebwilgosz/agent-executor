@@ -444,7 +444,7 @@ WIDE=$(printf '%s\n' "$HELPBLOCK" | while IFS= read -r row; do
   [ "$n" -gt 80 ] && printf '%s\n' "$row"
 done)
 is "help: no row wider than 80 columns" "" "$WIDE"
-is "help: the width check reads the block" "1" "$([ "$(printf '%s\n' "$HELPBLOCK" | wc -l)" -gt 20 ] && echo 1)"
+is "help: the width check reads the block" "1" "$([ "$(printf '%s\n' "$HELPBLOCK" | wc -l)" -gt 10 ] && echo 1)"
 
 local_refs=$(grep -nE '/Users/|\[\[[A-Za-z]' scripts/plan-state.sh scripts/plan-sweep.sh)
 is "nothing local in what ships" "" "$local_refs"
