@@ -11,9 +11,11 @@ You approve twice: the plan, and the merge. Build does everything between them. 
 
 Read before you start, from the plugin root: `references/implementation.md` (step 0, the spec check), `references/plan.md` (the checklist), `references/stacks.md` (how a spec maps to stacks, and the commands).
 
-**First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.14.1`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
+**First, assert the plugin is current.** This session may carry an old snapshot of Executor while a newer one is installed. Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/version-check.sh 0.15.0`. On a `MISMATCH:` line, stop and give the user that one line (the loaded snapshot is stale; reload the plugin or start a fresh session) — build nothing. `OK:` or `STOP:` (the check could not read the manifest): carry on.
 
 ## 0. Carry on, or start
+
+Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/drift.sh --checkout <repo>` on the target repo, before anything else: it reads the main checkout's branch and status against its default branch, no fetch. On exit `2` (off the default branch, dirty, or diverged from `origin/<default>` — a fast-forward would fail), print the `CHECKOUT:` line it gave, with its fixes, and stop: build nothing until the user has fixed it or says to go on anyway. Never run the fix yourself. Exit `1` (behind only) is a nudge: print the line and carry on. Exit `0`: nothing to say.
 
 Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/plan-path.sh --ci`: this repo's plans folder on its first line, then a `CI: configured <workflow file>` or `CI: none` line, then a `HOOKS: installed` or `HOOKS: off` line. On a `STOP:` line, give the user that line and stop, so nothing moves outside a repository. Keep the `CI:` and `HOOKS:` lines: they go in the plan's header and in every builder's brief, and nothing else in the build or in a builder detects them again.
 
