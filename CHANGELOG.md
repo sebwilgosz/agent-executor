@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.15.0 — 2026-11-24
+
+Builds branch from a repo's local default branch and fast-forward it; when the main checkout itself has drifted (a stale branch, local commits ahead of what the last fetch saw, uncommitted work), every build started from the wrong base or failed the fast-forward with no explanation.
+
+- `scripts/drift.sh` gains `checkout_drift`, judging only the main worktree (never a build's own linked one): off its default branch, dirty, diverged from `origin/<default>` (a fast-forward would fail), or behind it (a nudge). It reports one `CHECKOUT: ... - fix: <command>` line, read-only, no fetch, each part naming its own fix folded into one command. `drift.sh --checkout <repo>` runs it directly, for `/executor:build`.
+- `scripts/status.sh` shows the `CHECKOUT` line under a repo's name, next to its existing `DRIFT` line.
+- `scripts/self-audit.sh` reports a drifted checkout as a warning, never an error, and without needing `-v`: a wrong base breaks the next build.
+- `/executor:build` runs the check on the target repo before it plans, and stops with the line and its fixes when the checkout is off default, dirty or diverged. It never runs a fix itself.
+- `scripts/checkout-drift.test.sh` is new.
+
 ## 0.14.1 — 2026-11-20
 
 - `scripts/pr-body-lint.sh`: a line that starts with a bold label (`**Build:**`, `**Try it:**`) starts its own block. The Testing layout in `references/pull-request.md` puts those lines one after another, and the lint read them as one paragraph, so a body that followed the rules was flagged and `pr-open.sh` refused to open it.
