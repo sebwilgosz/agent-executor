@@ -140,6 +140,37 @@ is "linked worktree: never judged" "" "$out"
 out=$(checkout_of "$REPO")
 is "linked worktree: the main checkout is still judged on its own state" "" "$out"
 
+# No origin/HEAD at all (git init -b master, remote add origin, push -u origin
+# master): the local fallback names master, so a healthy checkout on master is not
+# called off default.
+NOHEAD_ORIGIN="$ROOT/noheadorigin.git"
+NOHEAD_REPO="$ROOT/noheadrepo"
+rm -rf "$NOHEAD_ORIGIN" "$NOHEAD_REPO"
+git init -q --bare --initial-branch=master "$NOHEAD_ORIGIN"
+git init -q -b master "$NOHEAD_REPO"
+git -C "$NOHEAD_REPO" remote add origin "$NOHEAD_ORIGIN"
+printf 'one\n' > "$NOHEAD_REPO/file.txt"
+git -C "$NOHEAD_REPO" add file.txt
+git -C "$NOHEAD_REPO" commit -q -m init
+git -C "$NOHEAD_REPO" push -q -u origin master
+out=$(checkout_of "$NOHEAD_REPO")
+is "no origin/HEAD, local master only: not off default" "" "$out"
+
+# Neither origin/HEAD nor a local main/master: no default can be named, so off
+# default is skipped instead of guessed.
+NODEF_ORIGIN="$ROOT/nodeforigin.git"
+NODEF_REPO="$ROOT/nodefrepo"
+rm -rf "$NODEF_ORIGIN" "$NODEF_REPO"
+git init -q --bare --initial-branch=trunk "$NODEF_ORIGIN"
+git init -q -b trunk "$NODEF_REPO"
+git -C "$NODEF_REPO" remote add origin "$NODEF_ORIGIN"
+printf 'one\n' > "$NODEF_REPO/file.txt"
+git -C "$NODEF_REPO" add file.txt
+git -C "$NODEF_REPO" commit -q -m init
+git -C "$NODEF_REPO" push -q -u origin trunk
+out=$(checkout_of "$NODEF_REPO")
+is "no default can be named: off default skipped, not guessed" "" "$out"
+
 echo
 echo "drift.sh --checkout <repo> (the build pre-check)"
 

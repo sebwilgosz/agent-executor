@@ -43,12 +43,22 @@ DRIFT_SELF_DIR=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$DRIFT_SELF_DIR/executor-owned.sh"
 
 # The default branch's name, as origin/HEAD left it (status.sh's and self-audit.sh's
-# one way to find it; no gh call, no fetch).
+# one way to find it; no gh call, no fetch). With no origin/HEAD, falls back to the
+# first of main/master that exists locally, as default-branch.sh's local half does;
+# empty when neither does, so the caller skips rather than guesses.
 drift_default() {
-  local def
+  local def b
   def=$(git -C "$1" symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null)
   def=${def#refs/remotes/origin/}
-  [ -n "$def" ] || def=main
+  if [ -z "$def" ]; then
+    for b in main master; do
+      if git -C "$1" show-ref --verify --quiet "refs/remotes/origin/$b" \
+          || git -C "$1" show-ref --verify --quiet "refs/heads/$b"; then
+        def=$b
+        break
+      fi
+    done
+  fi
   printf '%s' "$def"
 }
 
@@ -71,7 +81,7 @@ checkout_drift() {
 
   def=$(drift_default "$repo")
   head=$(git -C "$repo" symbolic-ref --quiet --short HEAD 2>/dev/null)
-  if [ "$head" != "$def" ]; then
+  if [ -n "$def" ] && [ "$head" != "$def" ]; then
     off=1
     parts="on ${head:-detached HEAD}"
   fi
