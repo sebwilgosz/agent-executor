@@ -186,6 +186,7 @@ grep -qF 'scripts/pr-open.sh' "$ROOT/references/feature-done.md" 2>/dev/null || 
 e=$ERRS
 [ -s "$ROOT/scripts/plan-path.sh" ] || err "integrity: scripts/plan-path.sh missing - /executor:build cannot find or name a plan → $REINSTALL"
 [ -s "$ROOT/scripts/remote-slug.sh" ] || err "integrity: scripts/remote-slug.sh missing - plan-path.sh sources it to read a repo's owner and name → $REINSTALL"
+[ -s "$ROOT/scripts/tilde.sh" ] || err "integrity: scripts/tilde.sh missing - plan-path.sh sources it to print its summary's paths as ~/… → $REINSTALL"
 [ "$e" = "$ERRS" ] && ok "integrity: the plans resolver is present"
 
 # -- legacy plans: build step 0 and /executor:help run the migration.

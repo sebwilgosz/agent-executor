@@ -24,7 +24,9 @@
 #   plan-path.sh --dated <YYYY-MM-DD> <title> [<repo>]  where a plan of that date
 #                                      and title goes, whether or not it is taken
 #   plan-path.sh --live [<repo>]       live plans, newest first, one path per line
-#   plan-path.sh --summary [<repo>]    what /executor:help prints about plans
+#   plan-path.sh --summary [<repo>]    what /executor:help prints about plans;
+#                                      paths print as ~/… in backticks, for a
+#                                      model showing the output as Markdown
 #   plan-path.sh --root                the plans folder
 #   plan-path.sh --all-live            live plans of every <org>/<repo>, one per line
 #   plan-path.sh --slug <plan>         the plan's <org>/<repo>, nothing when it is
@@ -78,6 +80,7 @@ plans_root() {
 }
 
 . "$SELF_DIR/remote-slug.sh"
+. "$SELF_DIR/tilde.sh"
 
 # Prints the host of a remote URL, nothing when it names none. An SSH one may name
 # an alias: ssh -G reads the real host from the ssh config, with no network.
@@ -211,18 +214,18 @@ new_plan() {
 summary() {
   local live first=1 l
   plans_root
-  printf 'PLANS:\n  folder     %s (%s)\n' "$PLANS_ROOT" "$PLANS_SOURCE"
+  printf 'PLANS:\n  folder     `%s` (%s)\n' "$(tilde "$PLANS_ROOT")" "$PLANS_SOURCE"
   if ! root_is_absolute; then
     printf '  this repo  the plans folder must be absolute\n'
   elif repo_folder "$1"; then
-    printf '  this repo  %s\n' "$REPO_FOLDER"
+    printf '  this repo  `%s`\n' "$(tilde "$REPO_FOLDER")"
     live=$(live_plans)
     if [ -z "$live" ]; then
       printf '  live       none\n'
     else
       while IFS= read -r l; do
-        if [ "$first" -eq 1 ]; then printf '  live       %s\n' "$l"; first=0
-        else printf '             %s\n' "$l"; fi
+        if [ "$first" -eq 1 ]; then printf '  live       `%s`\n' "$(tilde "$l")"; first=0
+        else printf '             `%s`\n' "$(tilde "$l")"; fi
       done <<< "$live"
     fi
   else

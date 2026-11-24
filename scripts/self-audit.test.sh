@@ -111,6 +111,16 @@ out=$(ROOT="$PLUG" audit); rc=$?
 check "resolver missing: integrity error" "✗ integrity: scripts/plan-path.sh missing" "$out"
 check "resolver missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F 'scripts/plan-path.sh')"
 [ "$rc" -eq 0 ] && ok "resolver missing: exit 0" || bad "resolver missing: exit 0" "exit $rc"
+cp "$REPO/scripts/plan-path.sh" "$PLUG/scripts/"
+
+# 6b. INTEGRITY: the shared tilde helper plan-path.sh sources for its summary.
+refute "tilde helper present: no integrity error" "scripts/tilde.sh" "$(ROOT="$PLUG" audit)"
+rm -f "$PLUG/scripts/tilde.sh"
+out=$(ROOT="$PLUG" audit); rc=$?
+check "tilde helper missing: integrity error" "✗ integrity: scripts/tilde.sh missing" "$out"
+check "tilde helper missing: says what to do" "→ reinstall" "$(printf '%s\n' "$out" | grep -F 'scripts/tilde.sh')"
+[ "$rc" -eq 0 ] && ok "tilde helper missing: exit 0" || bad "tilde helper missing: exit 0" "exit $rc"
+cp "$REPO/scripts/tilde.sh" "$PLUG/scripts/"
 
 # 7. INTEGRITY: so are the scripts that tell and mark a finished plan.
 for s in plan-state plan-sweep; do
