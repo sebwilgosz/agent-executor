@@ -67,8 +67,8 @@ drift_default() {
 # git-dir is its own, under the main's .git/worktrees/.
 checkout_is_main() {
   local gd gcd
-  gd=$(git -C "$1" rev-parse --git-dir 2>/dev/null) || return 1
-  gcd=$(git -C "$1" rev-parse --git-common-dir 2>/dev/null) || return 1
+  gd=$(git -C "$1" rev-parse --path-format=absolute --git-dir 2>/dev/null) || return 1
+  gcd=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
   [ "$gd" = "$gcd" ]
 }
 

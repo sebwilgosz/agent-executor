@@ -171,6 +171,15 @@ git -C "$NODEF_REPO" push -q -u origin trunk
 out=$(checkout_of "$NODEF_REPO")
 is "no default can be named: off default skipped, not guessed" "" "$out"
 
+# A subfolder of the main checkout (a build session started below the repo root,
+# passing "."): git prints --git-dir absolute and --git-common-dir relative, which
+# must not be taken for a linked worktree and skipped.
+fresh
+git -C "$REPO" switch -q -c docs/x
+mkdir -p "$REPO/sub"
+out=$(checkout_of "$REPO/sub")
+is "subfolder of the main checkout: still judged, not skipped" "CHECKOUT: on docs/x - fix: git switch main" "$out"
+
 echo
 echo "drift.sh --checkout <repo> (the build pre-check)"
 
