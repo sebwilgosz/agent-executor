@@ -308,13 +308,21 @@ for f in .claude-plugin/plugin.json skills/help/SKILL.md; do
 done
 [ "$e" = "$WARNS" ] && ok "integrity: the copy names what Executor does"
 
-# -- drift: the current repo, judged by drift.sh, the same check status.sh runs. Shown
-#    with -v only; drift is a nudge, not a finding, so it never changes the result.
-if [ "$VERBOSE" -eq 1 ] && [ -s "$ROOT/scripts/drift.sh" ] && . "$ROOT/scripts/drift.sh"; then
+# -- drift: the current repo, judged by drift.sh, the same check status.sh runs.
+#    Leftover drift (Executor's own worktrees and branches) shows with -v only: a
+#    nudge, never a finding, so it never changes the result. A drifted main checkout
+#    is the user's state, not a broken plugin, but a wrong base breaks the next
+#    build, so it shows without -v, as a warning, never an error. --integrity-only
+#    skips both: they need a real checkout to judge.
+if [ "$INTEGRITY_ONLY" -eq 0 ] && [ -s "$ROOT/scripts/drift.sh" ] && . "$ROOT/scripts/drift.sh"; then
   here=$(git rev-parse --show-toplevel 2>/dev/null)
   if [ -n "$here" ]; then
-    if repo_drift "$here"; then info "$DRIFT"
-    else info "drift: none in this repo"; fi
+    if checkout_drift "$here"; then warn "$CHECKOUT"
+    else info "checkout: none drifted"; fi
+    if [ "$VERBOSE" -eq 1 ]; then
+      if repo_drift "$here"; then info "$DRIFT"
+      else info "drift: none in this repo"; fi
+    fi
   fi
 fi
 
