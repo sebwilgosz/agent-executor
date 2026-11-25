@@ -47,6 +47,7 @@ mkdir -p "$STATE"
 . "$SELF_DIR/repo-discovery.sh"
 . "$SELF_DIR/remote-slug.sh"
 . "$SELF_DIR/folder-state.sh"
+. "$SELF_DIR/tilde.sh"
 
 # Sessions run in these repos, so a status check must not take their index lock.
 export GIT_OPTIONAL_LOCKS=0
@@ -57,13 +58,6 @@ same_text() {
   [[ $1 == "$2" ]] && hit=0
   shopt -u nocasematch
   return $hit
-}
-
-tilde() {
-  case "$1" in
-    "$HOME"/*) printf '~/%s' "${1#"$HOME"/}" ;;
-    *) printf '%s' "$1" ;;
-  esac
 }
 
 is_repo() {

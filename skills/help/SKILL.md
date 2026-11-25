@@ -19,24 +19,15 @@ EXECUTOR · HELP ━━━━━━━━━━━━━━━━━━━━━
 builds a spec into reviewed pull requests, reviews every pull request
 
 BUILD
-  ▸ /executor:spec <what to build> — draft a spec from your notes and the repo,
-                                     save it where your specs live
-  ▸ /executor:build <spec>         — plan it with you, build in parallel,
-                                     review every PR; you merge
+  ▸ /executor:spec <what to build> — draft a spec, save it where specs live
+  ▸ /executor:build <spec> — plan, build in parallel, review every PR; you merge
   ▸ /executor:review [PR | branch] — review, verify Criticals, fix, review again
-                                     no argument: the current branch
-                                     owner/repo#N or a URL from any folder:
-                                     opens it in that repo's checkout
-  ▸ /executor:ship                 — commit, push, open a draft PR
-                                     the review starts on its own
-  ▸ /executor:status               — across every repo: what to merge now,
-                                     what waits on you, what is still moving
+  ▸ /executor:ship — commit, push, open a draft PR; the review starts on its own
+  ▸ /executor:status — across every repo: what to merge, what waits, what moves
 
 SETUP
-  ▸ /executor:init                 — checks gh and its sign-in, offers gh stack
-                                     and the per-repo enable, asks where your
-                                     checkouts and your plans live
-  ▸ /executor:help                 — this list
+  ▸ /executor:init — checks gh, offers gh stack, asks where things live
+  ▸ /executor:help — this list
 
 SCRIPTS
   ▸ scripts/plan-sweep.sh [--dry-run]             — marks finished plans done

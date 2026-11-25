@@ -79,7 +79,7 @@ is "relative env: --live stops"      "$RELATIVE"        "$(env_plans --live "$WE
 is "relative env: still exit 0"      "0"                "$(env_plans "$WEB" >/dev/null; echo $?)"
 is "relative env: --where names it"  "env"              "$(env_plans --where)"
 OUT=$(env_plans --summary "$WEB")
-check "relative env: summary shows it" "plans (env)"    "$OUT"
+check "relative env: summary shows it" "\`plans\` (env)" "$OUT"
 check "relative env: summary says why" "must be absolute" "$OUT"
 refute "relative env: summary no STOP" "STOP:"          "$OUT"
 refute "relative env: summary no path" "plans/acme/web" "$OUT"
@@ -294,17 +294,32 @@ refute "git failing: no raw error" "fatal" "$out"
 mkdir -p "$F"
 plan "$F/2026-05-01 - Live one.md" '# Build: Live one\n\n## Stack'
 out=$(plan_path --summary "$WEB")
-check "summary: the plans folder and its source" "$DEFAULT (default)" "$out"
-check "summary: this repo's folder" "$F" "$out"
-check "summary: the live plans" "$F/2026-05-01 - Live one.md" "$out"
+check "summary: the plans folder and its source" "\`$DEFAULT\` (default)" "$out"
+check "summary: this repo's folder, backticked" "\`$F\`" "$out"
+check "summary: the live plans, backticked" "\`$F/2026-05-01 - Live one.md\`" "$out"
 check "summary: points at init" "/executor:init" "$out"
-check "summary: env named" "/srv/env (env)" "$(EXECUTOR_PLANS=/srv/env "$SHELL_BIN" "$SCRIPT" --summary "$WEB" 2>&1)"
+check "summary: env named" "\`/srv/env\` (env)" "$(EXECUTOR_PLANS=/srv/env "$SHELL_BIN" "$SCRIPT" --summary "$WEB" 2>&1)"
 out=$(plan_path --summary "$NOGIT"); rc=$?
 is "summary outside a repo: exit 0" 0 "$rc"
-check "summary outside a repo: still the plans folder" "$DEFAULT (default)" "$out"
+check "summary outside a repo: still the plans folder" "\`$DEFAULT\` (default)" "$out"
 check "summary outside a repo: says so" "not a git repository" "$out"
 refute "summary outside a repo: no STOP" "STOP:" "$out"
 rm -rf "$DEFAULT"
+
+# The home folder prints as ~, for a model that renders the summary as Markdown.
+HOMEROOT="$HOME/.engineer-of-wealth/executor/plans"
+HOMEWEB="$TMP/home-src/web"
+new_repo "$HOMEWEB" "git@github.com:acme/web.git"
+out=$(env -u EOW_HOME "$SHELL_BIN" "$SCRIPT" --summary "$HOMEWEB" 2>&1)
+check "summary: the home folder prints as ~" "\`~/.engineer-of-wealth/executor/plans\` (default)" "$out"
+check "summary: this repo's folder under home prints as ~" "\`~/.engineer-of-wealth/executor/plans/acme/web\`" "$out"
+refute "summary: the home folder's real path does not leak" "$HOME/.engineer-of-wealth" "$out"
+mkdir -p "$HOMEROOT/acme/web"
+plan "$HOMEROOT/acme/web/2026-05-02 - Home one.md" '# Build: Home one\n\n## Stack'
+out=$(env -u EOW_HOME "$SHELL_BIN" "$SCRIPT" --summary "$HOMEWEB" 2>&1)
+check "summary: a live plan under home prints as ~" "\`~/.engineer-of-wealth/executor/plans/acme/web/2026-05-02 - Home one.md\`" "$out"
+refute "summary: a live plan's real path does not leak" "$HOME/.engineer-of-wealth" "$out"
+rm -rf "$HOMEROOT"
 
 # F. Nothing in the repo: the skills and docs go through the script.
 cd "$REPO_ROOT" || exit 1
