@@ -9,7 +9,7 @@ You approve twice: the plan, and the merge.
 **New to agent builds?** Take the [free 5-day email course](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor-launch&utm_content=top-course#course): install Executor and run your first review on day one, then specs, context budgets and your own plugin. The story behind it: [I don't code anymore. Executor does it all.](https://newsletter.sebwilgosz.com/p/i-dont-code-anymore-executor-does?utm_source=github&utm_medium=readme&utm_campaign=executor-launch&utm_content=top-article). More on the [Executor page](https://sebwilgosz.com/products/executor?utm_source=github&utm_medium=readme&utm_campaign=executor-launch&utm_content=top-page).
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.14.1-informational)
+![Version](https://img.shields.io/badge/version-0.15.0-informational)
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-orange)
 ![Measured cost](https://img.shields.io/badge/measured-%242.18--2.58%20per%20PR-success)
 
@@ -244,6 +244,7 @@ The bare command needs no model turn; text after it ("what blocks acme/api?") is
 
 - A finished, unmarked plan ends with `finished, not marked: run scripts/plan-sweep.sh`.
 - Executor's own leftover worktrees and branches from finished builds show as a `DRIFT` line with the clearing command, `scripts/repo-tidy.sh <repo>`. Your own branches and a finished-branch checkout are not drift. `scripts/self-audit.sh -v` reports the same for the current repo.
+- A main checkout that is off its default branch, dirty, diverged from `origin/<default>`, or behind it shows as a `CHECKOUT` line with the fix for each part, for example `CHECKOUT: on docs/x, 2 dirty files - fix: git stash push -u`. `/executor:build` runs the same check on the target repo and stops before planning when it is off default, dirty or diverged; `scripts/self-audit.sh` reports it too, with no `-v` needed, since a wrong base breaks the next build.
 
 ### Settings
 

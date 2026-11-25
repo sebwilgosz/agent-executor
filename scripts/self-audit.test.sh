@@ -42,6 +42,9 @@ export PATH="$BIN:$PATH"
 
 config(){ mkdir -p "$(dirname "$CFG")"; printf '%s\n' "$@" > "$CFG"; }
 audit(){ bash "$AUDIT" "$@"; }
+# Outside a git repo, so these roots-only tests never pick up this checkout's own
+# git state now that self-audit also reports a drifted checkout (scripts/drift.sh).
+audit_here(){ ( cd "$TMP" && bash "$AUDIT" "$@" ); }
 summary_last(){ printf '%s\n' "$2" | tail -1 | grep -q '^  executor: ' && ok "$1" || bad "$1" "last line: $(printf '%s\n' "$2" | tail -1)"; }
 
 echo "self-audit.sh search-roots spec tests"
@@ -49,7 +52,7 @@ echo "self-audit.sh search-roots spec tests"
 # 1. Every configured root is a directory: one ok line, no warning.
 mkdir -p "$HOME/code" "$TMP/srv"
 config "# Executor settings" "" "## Roots" "- ~/code" "- $TMP/srv"
-out=$(audit -v); rc=$?
+out=$(audit_here -v); rc=$?
 check  "all roots present: one ok line" "✓ setup: search roots" "$out"
 [ "$(count '✓ setup: search roots' "$out")" -eq 1 ] && ok "all roots present: exactly one ok line" \
   || bad "all roots present: exactly one ok line" "$out"
@@ -60,7 +63,7 @@ summary_last "all roots present: summary line last" "$out"
 
 # 2. A configured root that is missing: a warning naming it, ending with what to do.
 config "## Roots" "- ~/code" "- ~/gone" "- $TMP/also-gone"
-out=$(audit); rc=$?
+out=$(audit_here); rc=$?
 line=$(printf '%s\n' "$out" | grep -F '⚠ setup: search root' | grep -F 'gone' | head -1)
 check  "missing root: warned"             "gone" "$line"
 check  "missing root: says what to do"    "→ create the folder, or change the roots with /executor:init" "$line"
@@ -68,26 +71,26 @@ check  "missing root: says what to do"    "→ create the folder, or change the 
   || bad "missing roots: one warning per missing root" "$out"
 check  "missing root: the other missing root is named too" "also-gone" "$out"
 refute "missing root: the present root is not warned" "search root ~/code " "$(printf '%s\n' "$out" | grep -F '⚠ setup: search root')"
-refute "missing root: no ok line for roots" "✓ setup: search roots" "$(audit -v)"
+refute "missing root: no ok line for roots" "✓ setup: search roots" "$(audit_here -v)"
 check  "missing root: WARN" "executor: WARN" "$out"
 [ "$rc" -eq 0 ] && ok "missing root: exit 0" || bad "missing root: exit 0" "exit $rc"
 summary_last "missing root: summary line last" "$out"
-audit --strict >/dev/null; rc=$?
+audit_here --strict >/dev/null; rc=$?
 [ "$rc" -eq 1 ] && ok "missing root: --strict exits 1" || bad "missing root: --strict exits 1" "exit $rc"
 
 # 3. Nothing configured: the default ~/Projects is checked.
 rm -rf "$EOW_HOME"
-out=$(audit)
+out=$(audit_here)
 check "no config, no ~/Projects: warned" "Projects" "$(printf '%s\n' "$out" | grep -F '⚠ setup: search root')"
 mkdir -p "$HOME/Projects"
-out=$(audit -v)
+out=$(audit_here -v)
 check  "no config, ~/Projects there: ok" "✓ setup: search roots" "$out"
 refute "no config, ~/Projects there: no warning" "⚠ setup: search root" "$out"
 
 # 4. A root that is a file, not a folder, is missing too.
 : > "$HOME/afile"
 config "## Roots" "- ~/afile"
-check "a file is not a root" "afile" "$(audit | grep -F '⚠ setup: search root')"
+check "a file is not a root" "afile" "$(audit_here | grep -F '⚠ setup: search root')"
 
 # 5. INTEGRITY: the roots reader is checked like the other scripts.
 PLUG="$TMP/plugin"; mkdir -p "$PLUG"

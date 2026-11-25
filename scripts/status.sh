@@ -22,6 +22,10 @@
 # one "DRIFT: <n> worktrees and <m> branches left from finished builds - fix: repo-tidy.sh <repo>" line under its name, from drift.sh,
 # which is also what self-audit.sh -v reports. No line when GitHub can't be asked.
 #
+# A repo whose main checkout has drifted from its default branch gets a second line
+# under its name, "CHECKOUT: ... - fix: ...", from the same drift.sh (self-audit.sh
+# reports it too, without needing -v).
+#
 # Failures are logged to ~/.engineer-of-wealth/executor/status.log (EOW_HOME overrides
 # the root). Takes no arguments; the exit code is always 0.
 set -u
@@ -412,7 +416,8 @@ start_drift() {
     s=$(printf '%s' "$slug" | tr '[:upper:]' '[:lower:]')
     for r in ${found[@]+"${found[@]}"}; do
       [ "${r%% *}" = "$s" ] || continue
-      ( repo_drift "${r#* }" && printf '  %s\n' "$DRIFT" > "$WORK/drift-$i" ) &
+      ( repo_drift "${r#* }" && printf '  %s\n' "$DRIFT" > "$WORK/drift-$i"
+        checkout_drift "${r#* }" && printf '  %s\n' "$CHECKOUT" > "$WORK/checkout-$i" ) &
       DRIFT_PIDS+=($!)
       break
     done
@@ -426,6 +431,13 @@ drift_line() {
   return 0
 }
 
+# Sets CHECKOUT_LINE: the CHECKOUT line of the <n>th repo, or nothing.
+checkout_line() {
+  CHECKOUT_LINE=""
+  [ -s "$WORK/checkout-$1" ] && CHECKOUT_LINE=$(cat "$WORK/checkout-$1")$'\n'
+  return 0
+}
+
 render_repo() {
   local slug=$1 n=$2 p=0
   BUF=""; NAMES=""; REPO_LOOKUPS=0; REPO_FAILED=0; REPO_WHY=""
@@ -434,7 +446,8 @@ render_repo() {
     p=$((p+1))
   done
   drift_line "$n"
-  OUT="$OUT$slug"$'\n'"$DRIFT_LINE"
+  checkout_line "$n"
+  OUT="$OUT$slug"$'\n'"$DRIFT_LINE""$CHECKOUT_LINE"
   if [ "$REPO_LOOKUPS" -gt 0 ] && [ "$REPO_FAILED" -eq "$REPO_LOOKUPS" ]; then
     OUT="$OUT  UNKNOWN: $REPO_WHY"$'\n'"$NAMES"
   else
